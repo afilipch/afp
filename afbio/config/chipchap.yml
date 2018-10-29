@@ -1,0 +1,34 @@
+bowtie:
+    ignore-quals: ['True', '--']
+    local: ['True', '--']
+    very-sensitive-local: ['True', '--']
+    rfg: ['9,5', '--']
+    rdg: ['9,5', '--']
+    score-min: ['L,40,1.2', '--'] 
+    k: ['8', '-']
+    no-unal: ['True', '--']
+    no-mixed: ['True', '--']
+    threads: ['8', '--']
+    I: ['40', '-']
+    X: ['800', '-']
+peak_detection:
+    widthfactor: 0.9
+    meanmult: 4.0
+    zscore: 2.0
+    minmedian: 1.0
+coverage:
+    zscore: 2.0
+    mode: 'noise'
+    trackopts: 
+        color: '60,150,237'
+        type: 'bedGraph'
+        visibility: '2'
+    multiplier: 100
+annotation:
+    maxshift: 50
+    flen: 50
+region:
+    flank: 40
+    zscore: 5
+    min-zscore: 2
+    maxshift: 40

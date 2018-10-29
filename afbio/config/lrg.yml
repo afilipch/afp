@@ -1,0 +1,5 @@
+support: 0.02 
+maxiter: 20  
+lookforward: 10 
+ncsupport: 0.1 
+nciter: 1

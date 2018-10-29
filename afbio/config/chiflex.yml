@@ -1,0 +1,82 @@
+modes_order:
+    interaction: 1
+    splicing: 2
+    clustering: 3
+
+bowtie:
+    splicing:
+        N: ['0', '-']
+        L: ['16','-']
+        i: ['C,1', '-']
+        ignore-quals: ['True', '--']
+        norc: ['False', '--']
+        local: ['True', '--'] 
+        mp: ['8,8', '--']
+        rfg: ['18,12', '--']
+        rdg: ['8,6', '--']
+        min-score: ['C,40', '--'] 
+        k: ['8', '-']
+        D: ['35', '-']
+        R: ['3', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['8', '-']
+    interaction:
+        N: ['0', '-']
+        L: ['16','-']
+        i: ['C,1', '-']
+        ignore-quals: ['True', '--']
+        norc: ['False', '--']
+        local: ['True', '--'] 
+        mp: ['8,8', '--']
+        rfg: ['18,12', '--']
+        rdg: ['10,7', '--']
+        min-score: ['C,42', '--'] 
+        k: ['10', '-']
+        D: ['50', '-']
+        R: ['4', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['8', '-']    
+    clustering:
+        N: ['0', '-']
+        L: ['13','-']
+        i: ['C,3', '-']
+        ignore-quals: ['False', '--']
+        norc: ['False', '--']
+        local: ['True', '--'] 
+        mp: ['5,5', '--']
+        rfg: ['18,12', '--']
+        rdg: ['8,6', '--']
+        min-score: ['C,36', '--'] 
+        k: ['4', '-']
+        D: ['35', '-']
+        R: ['3', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['8', '-']    
+        
+demultiplex_sam:
+    score: 'as_qstart'
+    bestdistance: 12
+       
+demultiplex_chimera:
+    score: 'as_qstart'
+    score_chimera: 'as_gap'
+    maxgap: 8
+    s_distance: 12
+    ch_distance: 14 
+    
+filter_alignment:
+    fdr: 0.05
+    features: ['AS', 'qstart']
+ 
+filter_chimera: 
+    fdr: 0.05
+    features: ['AS1', 'AS2', 'gap']    
+    
+collapse2interaction: 
+    distance: -10    
+    
+    
+    

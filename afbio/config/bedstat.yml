@@ -1,0 +1,73 @@
+score:
+    title:  'Interval Score'
+    xlabel: 'score'
+    ylabel: 'num of intervals'
+    range: [0,300]
+    step: 1
+    color: 'lightgreen'
+chscore:
+    title:  'Chimera Score'
+    xlabel: 'score'
+    ylabel: 'num of intervals'
+    range: [0,300]
+    step: 1
+    color: 'lightgreen'
+length:
+    title:  'Length'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    #range: [0,300]    
+    step: 1
+    color: 'lightgreen'
+left:
+    title:  'Length of rantom head'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    step: 1    
+    color: 'lightgreen'
+right:
+    title:  'Length of random tail'
+    xlabel: 'length, nts'
+    ylabel: 'num of intervals'
+    step: 1    
+    color: 'lightgreen'
+conv:
+    title:  'Number of conversions'
+    xlabel: 'num of conversions'
+    ylabel: 'num of intervals'
+    step: 1    
+    color: 'lightgreen'
+gap:
+    title:  'Gap'
+    xlabel: 'gap'
+    ylabel: 'num of intervals'
+    step: 1
+    rwidth: 0.75
+    align: 'left'
+    color: 'lightgreen'
+n_uniq:
+    title:  'Read Support'
+    xlabel: 'number of unique reads'
+    ylabel: 'num of intervals'
+    range: [0,50]
+    step: 1
+    color: 'lightgreen'
+transcript_types:
+    title: "Type of the transcript"
+transcription_blocks:
+    title: "Transcription units"
+mRNA:
+    title: "mRNA functional parts"
+regulation_regions:
+    title: "Regulatory regions"
+misc_RNA:
+    title: "Types of miscellaneous RNA"
+interaction:
+    title:  "Types of the interaction"
+ktype:
+    title:  "Types of the interaction"
+gtype:
+    title:  "Genomic type of interval"
+rtype:
+    title:  "Type of a read"
+        

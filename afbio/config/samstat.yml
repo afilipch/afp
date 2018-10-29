@@ -1,0 +1,77 @@
+ascore:
+    title:  'Alignment Score'
+    xlabel: 'score'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightgreen'
+query_start:
+    title:  'Start position of the match in the query'
+    xlabel: 'position nt'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+clipped_length_right:
+    title:  'Number of nucleotides soft clipped downstream'
+    xlabel: 'num of nts'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+query_end:
+    title:  'End position of the match in the query'
+    xlabel: 'position nts'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+conv:
+    title:  'Type of conversion'
+    xlabel: 'conversion'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+    rwidth: 0.5
+    xticksrotation: 90
+    align: 'left'
+conv_weighted:
+    title:  'Type of conversion normalized'
+    xlabel: 'conversion'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+    rwidth: 0.5
+    xticksrotation: 90
+    align: 'left'
+conv_number:
+    title:  'Number of conversions per hit'
+    xlabel: 'num of conversions'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+query_ref_start:
+    title:  'Start position of the match in the query and the reference'
+    xlabel: 'ref start <> query start'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+    rwidth: 0.5
+    xticksrotation: 90
+    align: 'left'
+ref_start:
+    title:  'Start position of the match in the reference'
+    xlabel: 'ref start'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+ref_end:   
+    title:  'End position of the match in the reference'
+    xlabel: 'ref end'
+    ylabel: 'num of hits'
+    step: 1
+    color: 'lightblue'
+  
+# clipped_seq_left
+# clipped_seq_right
+
+
+# ["Alignment Score", "Start position of the match in query", "number of nucleotides soft clipped downstream", "End position of the match in query", "Type of conversion", "Type of conversion weighted to a number of conversions in one read", "Number of conversion per read", "Soft clipped upstream sequence", "Soft clipped downstream sequence"]
+
+# histogram(data, title=None, xlabel=None, ylabel=None, xticks=None, xticklabels=None, output=None, step = None, bins=None, range=None, normed=False, cumulative=False, bottom=None, histtype=u'bar', align=u'mid', orientation=u'vertical', rwidth=None, log=False, color=None, label=None, stacked=False, hold=None):

@@ -1,0 +1,66 @@
+first:
+    bowtie:
+        N: ['0', '-']
+        L: ['12','-']
+        i: ['C,1', '-']
+        ignore-quals: ['True', '--']
+        norc: ['True', '--']
+        local: ['True', '--'] 
+        mp: ['5,5', '--']
+        rfg: ['14,8', '--']
+        rdg: ['8,6', '--']
+        min-score: ['C,26', '--'] 
+        k: ['8', '-']
+        D: ['40', '-']
+        R: ['4', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['4', '-']
+        
+    demultiplex_sam:
+        score: 'as_qstart_rstart'
+        bestdistance: 2
+        
+    filter_alignment:
+        fdr: 0.05
+        features: ['AS', 'qstart', 'pos']
+    
+second:
+    bowtie:
+        N: ['0', '-']
+        L: ['14','-']
+        i: ['C,1', '-']
+        ignore-quals: ['True', '--']
+        norc: ['False', '--']
+        local: ['True', '--'] 
+        mp: ['5,5', '--']
+        rfg: ['18,12', '--']
+        rdg: ['8,6', '--']
+        min-score: ['C,32', '--'] 
+        k: ['6', '-']
+        D: ['35', '-']
+        R: ['4', '-']
+        no-unal: ['True', '--'] 
+        f: ['False', '-']
+        p: ['4', '-']    
+
+    demultiplex_sam:
+        score: 'as_qstart'
+        bestdistance: 8
+        
+    filter_alignment:
+        fdr: 0.05
+        features: ['AS', 'qstart']
+ 
+shuffle_trials: 10 
+ 
+min_right_length: 16
+
+collapse2interaction: 
+    distance: -10  
+ 
+ 
+
+    
+    
+    
