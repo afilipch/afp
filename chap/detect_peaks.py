@@ -90,6 +90,7 @@ if(args.plot):
     
     _format = args.plot.split(".")[-1]
     plt.savefig(args.plot, format = _format)
+    #plt.show()
     
     
         

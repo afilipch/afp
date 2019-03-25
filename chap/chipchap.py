@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
 '''Creates makefile and directory structure for chip/chap seq analysis'''
 
 
@@ -25,10 +25,16 @@ bowtie_help_str = "[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x 
 parser = argparse.ArgumentParser(description='Creates makefile and directories for chiflex project')#, formatter_class = argparse.RawTextHelpFormatter);
 #Required options
 parser.add_argument('path', metavar = 'N', nargs = '?', type = os.path.abspath, help = "Path to the project folder. If folder does not exist, it will be created");
-parser.add_argument('--reads', nargs = '+', type = os.path.abspath, required = True, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
-parser.add_argument('--index', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping reference bowtie2 indices");
 parser.add_argument('--package', nargs = '?', type = os.path.abspath, required = True, help = "Path to the afp package");
-parser.add_argument('--genome', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
+parser.add_argument('--reads', nargs = '+', type = os.path.abspath, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
+parser.add_argument('--index', nargs = '?', type = os.path.abspath, help = "Path to the mapping reference bowtie2 indices");
+parser.add_argument('--genome', nargs = '?', type = os.path.abspath, help = "Path to the mapping references in fasta format");
+
+#parser.add_argument('--reads', nargs = '+', type = os.path.abspath, required = True, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
+#parser.add_argument('--index', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping reference bowtie2 indices");
+#parser.add_argument('--genome', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
+
+parser.add_argument('--coverage', nargs = '+', type = os.path.abspath, help = "Path to the already generated coverage files. If provided, --reads argument is obsolete and ignored");
 
 #Options for the mapping result postprocessing
 parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collapsed with collapse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
@@ -44,6 +50,18 @@ parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, help = 
 #bowtie2 options
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
 args = parser.parse_args();
+
+
+#######################################################################################################################
+# Process input options
+
+
+if(args.reads):
+    if(not (args.genome and args.index) ):
+        parser.error('If --reads are provided, --genome and --index must be set as well');
+elif(not args.coverage):
+    parser.error('Either --reads or --coverage argument must be provided');
+    
 
 
 
@@ -84,31 +102,38 @@ while(not args.only_makefile):
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
-def makefile_local(reads, multi=False):
+def makefile_local(m_input, coverage_mode, multi=False):
     mlist=[];
-    name = os.path.basename(reads[0]).split(".")[0];
+    if(type(m_input) == str):
+        name = os.path.basename(m_input).split(".")[0];
+    else:
+        name = os.path.basename(m_input[0]).split(".")[0];
 
-    # Processing of the left chimeric part bowite2 settings
-    bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, reads, name)
+    if(not coverage_mode):
+        # Processing of the left chimeric part bowite2 settings
+        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name)
 
-    # Map reads with bowtie2
-    input_files = reads
-    output_files = os.path.join('sam', '%s.sam' % name)
-    script = bs_list
-    mlist.append(dependence(input_files, output_files, script))
-    
-    # Convert mappings into coverage
-    input_files = output_files;
-    output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-    script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': 'statistics', '--outcoverage': 'coverage'}, inp = input_files)
-    mlist.append(dependence(input_files, output_files, script));   
-    
-    # Merge coverages coming from different strands
-    input_files = output_files;
-    output_files = os.path.join('coverage', '%s.bed' % name)
-    covpath = output_files
-    script = get_script('merge_coverages.py', chap_package, inp = input_files, out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
+        # Map reads with bowtie2
+        input_files = m_input
+        output_files = os.path.join('sam', '%s.sam' % name)
+        script = bs_list
+        mlist.append(dependence(input_files, output_files, script))
+        
+        # Convert mappings into coverage
+        input_files = output_files;
+        output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['minus', 'plus']]
+        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': 'statistics', '--outcoverage': 'coverage'}, inp = input_files)
+        mlist.append(dependence(input_files, output_files, script));   
+        
+        # Merge coverages coming from different strands
+        input_files = output_files;
+        output_files = os.path.join('coverage', '%s.bed' % name)
+        covpath = output_files
+        script = get_script('merge_coverages.py', chap_package, inp = input_files, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));
+    else:
+        covpath = m_input;
+        output_files = m_input
     
     # Detect peaks
     input_files = output_files
@@ -159,15 +184,27 @@ def makefile_local(reads, multi=False):
 #######################################################################################################################
 #Create Makefiles
 
-if(args.paired):
-    reads_list = [(args.reads[2*x], args.reads[2*x+1]) for x in range(int(len(args.reads)/2))]
+if(args.reads):
+    if(args.paired):
+        input_list = [(args.reads[2*x], args.reads[2*x+1]) for x in range(int(len(args.reads)/2))]
+    else:
+        input_list = args.reads;
+    coverage_mode = False
 else:
-    reads_list = args.reads;
+    input_list = args.coverage;
+    coverage_mode = True
+
+#input_list = [x for x in input_list]
+#sys.stderr.write("%s\n" % input_list)
+sample_names = [os.path.basename(x[0]).split(".") for x in input_list]
+
+
+
  
 mf_names = []
 all_outputs = []
-for reads in reads_list:
-    local_makefile, mname, local_output =  makefile_local(reads, args.multi)
+for m_input in input_list:
+    local_makefile, mname, local_output =  makefile_local(m_input, coverage_mode, args.multi)
     mname = 'makefile_%s' % mname
     mf_names.append(mname);
     all_outputs.append(local_output);
@@ -181,7 +218,7 @@ for reads in reads_list:
 mlist = [];
 mf_multipath = [os.path.join(project_path, 'makefiles', x) for x in mf_names] 
 
-for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, reads_list):
+for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     if(type(input_names) == str):
         input_names = [input_names]
     input_files = [mf_path] + list(input_names)
@@ -200,11 +237,10 @@ if(args.multi):
     script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
-    names = [os.path.basename(args.reads[x*2]).split(".")[0] for x in range(int(len(args.reads)/2))]
     input_files = output_files
     output_files = os.path.join('statistics', 'peaks.correlation.png')
     global_output.append(output_files)
-    script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': names, '--plot': output_files}, inp = input_files)
+    script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));
     
     #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff
