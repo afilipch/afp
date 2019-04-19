@@ -5,14 +5,18 @@ import sys;
 
 
         
-def kernel2scale(kernel, peakwidth):
-    bw = 0;
-    km12 = max(kernel)/2.0;
-    for c, el in enumerate(kernel):
-        if(el>km12):
-            bw = (0.5 - float(c)/len(kernel))*2;
-            break;
-    flank_size = int(round(peakwidth/(bw*2)));
+def kernel2scale(kernel, peakwidth, takepeak):
+    if(takepeak):
+        bw = 0;
+        km12 = max(kernel)/2.0;
+        for c, el in enumerate(kernel):
+            if(el>km12):
+                bw = (0.5 - float(c)/len(kernel))*2;
+                break;
+        
+        flank_size = int(round(peakwidth/(bw*2)));
+    else:
+        flank_size = peakwidth//2;
     step = len(kernel)/(flank_size*2+1)
     ends = [int(round(x)) for x in np.cumsum([step]*(flank_size*2+1))]
     starts = [0] + ends[:-1]
@@ -25,11 +29,9 @@ def kernel2scale(kernel, peakwidth):
     
     return np.array(scaled);
 
-#def _local_convolution(window):
-    #return window**10 #sum(np.array(window)*scaled)
 
-def convolute(arr, kernel, peakwidth, threads = 4):
-    scaled = kernel2scale(kernel, peakwidth);
+def convolute(arr, kernel, peakwidth, threads = 4, takepeak=True):
+    scaled = kernel2scale(kernel, peakwidth, takepeak);
     def _local_convolution(window):
         return sum(window*scaled) 
 
@@ -41,7 +43,8 @@ def convolute(arr, kernel, peakwidth, threads = 4):
     #windows = [np.array(x) for x in sliding_window(extended, wsize)]
     #sys.stderr.write('f\n')
     
-    return pool.map(_local_convolution, sliding_window(extended, wsize))
+    return [_local_convolution(np.array(x)) for x in sliding_window(extended, wsize)]
+    #return pool.imap(_local_convolution, sliding_window(extended, wsize))
 
 
 def detect_peaks(signal):

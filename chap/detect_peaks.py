@@ -43,7 +43,7 @@ else:
 exec("from afbio.filters import %s as kernelfunc" % args.kernel)
 kernel = kernelfunc(truncate = 4.0);
 #sys.stderr.write("bb\n")
-convolution = np.array(convolute(coverage, kernel, bandwidth, threads=8))
+convolution = np.array(convolute(coverage, kernel, bandwidth, threads=4))
 #sys.stderr.write("%s\n" % convolution)
 
 
@@ -73,7 +73,7 @@ if(args.plot):
     fig, ax1 = plt.subplots()
 
     ax1.plot(coverage, 'b-')
-    ax1.set_xlabel("postion (nt)")
+    ax1.set_xlabel("position (nt)")
     ax1.set_ylabel('coverage', color='b')
     ax1.tick_params('y', colors='b')
     

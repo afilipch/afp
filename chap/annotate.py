@@ -22,7 +22,11 @@ parser.add_argument('--coverage', nargs = '?', type = str, help = "Path to the c
 parser.add_argument('--overlap', nargs = '?', default=0.01, type = float, help = "Min overlap required overlap between a peak and genomic feature (as fraction of peak length)");
 parser.add_argument('--maxshift', nargs = '?', default=50, type = int, help = "Max allowed shift (in nucleotides) of the peak top position downstream to start of the gene, to be still counted as peak upstream the gene");
 parser.add_argument('--flen', nargs = '?', default=50, type = int, help = "Length of the peak\'s flanks to be included into analyses");
+parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
 args = parser.parse_args();
+
+
+
 
 #################################################################################################################################################################
 ### Read the input
@@ -30,6 +34,37 @@ args = parser.parse_args();
 genes = BedTool(args.genes);
 peaks = BedTool(args.path);
 offset = len(peaks[0].fields)
+
+#################################################################################################################################################################
+### Convert NCBI genes the input
+if(not args.custom):
+    coding_genes = [];
+    
+    def genebox2coding(genebox):
+        name = genebox[0].name
+        function = genebox[1].attrs.get('Note', 'None').replace(';', ':');
+        annotation = genebox[1].attrs['product'].replace(';', ':')
+        return construct_gff_interval('chr1', genebox[0].start, genebox[0].end, 'protein_coding', score='0', strand=genebox[0].strand, source='.', frame='.', attrs=[ ('Name', name), ('function', function), ('annotation', annotation)])
+    
+    genebox = [];
+    for interval in genes:
+        if(interval[2] in ['gene', 'pseudogene']):
+            if(genebox):
+                if(len(genebox)==2):
+                    coding_genes.append(genebox2coding(genebox))
+                    #print([x[2] for x in genebox])
+            genebox = [interval]
+        elif(genebox):
+            genebox.append(interval)
+    else:
+        if(len(genebox)==2):
+            coding_genes.append(genebox2coding(genebox))
+            
+#for interval in coding_genes:
+    #print(interval)
+    genes = coding_genes;
+    
+
 genes2annotation = dict([ (x.name, (x.attrs['annotation'], x.attrs['function']) ) for x in genes])
                         
 
@@ -38,7 +73,8 @@ genes2annotation = dict([ (x.name, (x.attrs['annotation'], x.attrs['function']) 
 
   
 def get_gene_name(intersection, offset):
-    attrs = dict( [x.strip().split('=') for x in intersection[offset+8].split(";")])
+    #print([x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
+    attrs = dict( [x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
     return attrs['Name']
 
 peak2genenames = defaultdict(list);
@@ -73,6 +109,7 @@ def annotate_coverage(interval, coverage, flen):
  
 if(args.coverage):
     coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
+    #print(len(coverage))
 
     for interval in peaks:
         topcoverage, start, end = annotate_coverage(interval, coverage, args.flen)

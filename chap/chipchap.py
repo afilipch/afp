@@ -216,6 +216,7 @@ for m_input in input_list:
 
 
 mlist = [];
+global_output = []
 mf_multipath = [os.path.join(project_path, 'makefiles', x) for x in mf_names] 
 
 for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
@@ -227,7 +228,6 @@ for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     mlist.append(dependence(input_files, output_files, script))
 
 if(args.multi):
-    global_output = []
     all_coverages = [x[0] for x in all_outputs]
     all_peaks = [x[1] for x in all_outputs]
     
@@ -250,16 +250,13 @@ if(args.multi):
         script = get_script('annotate.py', chap_package, arguments={'--maxshift': region_settings['maxshift'], '--flen': region_settings['flank'], '--genes': args.annotation}, inp = input_files, out = output_files)
         mlist.append(dependence(input_files, output_files, script));    
     
-    
-    
-
-
-#makefile header
-if(type(output_files) == str):
-    global_output.append(output_files);
-else:
-    global_output.extend(output_files);
-    
+    if(type(output_files) == str):
+        global_output.append(output_files);
+    else:
+        global_output.extend(output_files);
+        
+        
+#makefile header    
 mlist.insert(0, get_header(global_output, phonyfiles=mf_names))
 # makefie cleaner
 mlist.append( 'clean:\n%s' %  ("\n".join(["\t$(MAKE) -f %s clean" % x for x in mf_multipath])) );
