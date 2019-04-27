@@ -1,9 +1,9 @@
 #! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
 '''Generates genomic coverage based on provided mappings (paired sam/bam files). This script also outputs miscelaneous statistics for the mapped paired-end reads'''
-
 import argparse
 import os
 import sys
+#sys.stderr.write("%s\n\n" % sys.version)
 import numpy as np;
 import matplotlib.pyplot as plt;
 from collections import defaultdict

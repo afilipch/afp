@@ -35,6 +35,8 @@ if(args.peakwidth):
     sys.stderr.write("Bandwidth was manually set up to:\t%1.2f\n\n" % bandwidth)
 else:
     rawbandwidth, numpeaks = estimate_bandwidth(coverage, args.meanmult)
+    if(not numpeaks):
+        sys.exit("\nWARNING! No single raw peak is detected. Please try to decrease --meanmult parameter value.\nWARNING: If --meanmult was set lower than 3, then most probably there are no peaks in the given experiment")
     bandwidth = rawbandwidth*args.widthfactor
     sys.stderr.write("Raw bandwith:\t%1.2f\nAdjusted bandwith:\t%1.2f\nRaw peaks detected:\t%1.2f\n\n" % (rawbandwidth, bandwidth, numpeaks))
 

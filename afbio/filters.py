@@ -15,7 +15,7 @@ def gauss_second_kernel(sigma=1.0, truncate=4.0, steps=100000):
 
 
 def down_stair_kernel(up=1, down=-1, steps=1000):
-    return [up]*(steps//2) + [down]*(steps//2)
+    return [up]*(steps) + [down]*(steps)
 
 def up_stair_kernel(up=1, down=-1, steps=1000):
     return [down]*(steps//2) + [up]*(steps//2)

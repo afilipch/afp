@@ -9,11 +9,13 @@ def kernel2scale(kernel, peakwidth, takepeak):
     if(takepeak):
         bw = 0;
         km12 = max(kernel)/2.0;
+        #sys.stderr.write("bu" + "\n")
         for c, el in enumerate(kernel):
             if(el>km12):
                 bw = (0.5 - float(c)/len(kernel))*2;
+                #sys.stderr.write("%1.1f\n" % bw )
                 break;
-        
+        #sys.stderr.write("%1.1f\n" % peakwidth )
         flank_size = int(round(peakwidth/(bw*2)));
     else:
         flank_size = peakwidth//2;
