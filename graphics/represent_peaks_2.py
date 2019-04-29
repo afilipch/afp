@@ -133,7 +133,7 @@ regions = BedTool([Interval(x.chrom, max(0, x.start - args.flen), x.end + args.f
 
 annotation = BedTool(args.annotation)
 if(not args.custom):
-    annotation = [x for x in annotation if x in ['gene', 'pseudogene']]
+    annotation = [x for x in annotation if x[2] in ['gene', 'pseudogene']]
 
 
 

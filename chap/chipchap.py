@@ -51,6 +51,8 @@ parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, help = 
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
 args = parser.parse_args();
 
+#print(sys.argv)
+#sys.exit()
 
 #######################################################################################################################
 # Process input options
@@ -97,6 +99,10 @@ while(not args.only_makefile):
                     
                     
 
+#######################################################################################################################
+# Log project info
+with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
+    f.write("Project call: %s\n" % " ".join(sys.argv));
 
 
 
@@ -167,7 +173,7 @@ def makefile_local(m_input, coverage_mode, multi=False):
     
     # Annotate peaks
     if(not multi):
-        input_files = [filtered_path, output_files]
+        input_files = [filtered_path, normed_covpath]
         output_files = os.path.join('peaks', '%s.annotated.gff' % name)
         script = get_script('annotate.py', chap_package, arguments={'--maxshift': annotation_settings['maxshift'], '--flen': annotation_settings['flen'], '--coverage': input_files[1], '--genes': args.annotation}, inp = input_files[0], out = output_files)
         mlist.append(dependence(input_files, output_files, script)); 
