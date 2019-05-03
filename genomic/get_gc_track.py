@@ -1,5 +1,5 @@
 #! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
-'''Annotates the discovered peaks'''
+'''Calculates smoothed (averaged) GC content along the provided genome'''
 
 import argparse
 import sys
