@@ -132,7 +132,6 @@ def get_extensions(seq, start, length, maxgc, minat):
 
 upper_limit = 0;
 for seqrec in SeqIO.parse(args.path, 'fasta'):
-    chrom = seqrec.id
     seq = seqrec.seq.upper();
     for position, window in enumerate(sliding_window(seq, args.anchor)):
         if(position >= upper_limit and 'G' not in window and 'C' not in window):
@@ -142,7 +141,7 @@ for seqrec in SeqIO.parse(args.path, 'fasta'):
                 adend = end + upper_limit
                 upper_limit = adend;
                 lseq = seq[adstart:adend]
-                print( "%s\t%d\t%d\tr%d_%d\t%d\t+" % (chrom, adstart, adend, position, args.maxgc, lseq.count('G') + lseq.count('C')))
+                print( "%s\t%d\t%d\tr%d_%d\t%d\t+" % ('chr1', adstart, adend, adstart, adend, lseq.count('G') + lseq.count('C')))
 
 
 
