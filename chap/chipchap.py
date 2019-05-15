@@ -35,11 +35,11 @@ parser.add_argument('--genome', nargs = '?', type = os.path.abspath, help = "Pat
 #parser.add_argument('--genome', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
 
 parser.add_argument('--coverage', nargs = '+', type = os.path.abspath, help = "Path to the already generated coverage files. If provided, --reads argument is obsolete and ignored");
+parser.add_argument('--control', nargs = '+', type = str, help = "Path to the genomic control fasta files used for the adjustment of multiple dna copies. The order of the files must be the same as for --reads option. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places");
 
 #Options for the mapping result postprocessing
 parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collapsed with collapse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
 parser.add_argument('--paired', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed to be paired-end")
-
 #Options for the output control
 parser.add_argument('--only_makefile', nargs = '?', default = False, const = True, type = bool, help = "If set, a new makefile is created, but not folders");
 
@@ -56,7 +56,6 @@ args = parser.parse_args();
 
 #######################################################################################################################
 # Process input options
-
 
 if(args.reads):
     if(not (args.genome and args.index) ):
@@ -102,13 +101,13 @@ while(not args.only_makefile):
 #######################################################################################################################
 # Log project info
 with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
-    f.write("Project call: %s\n" % " ".join(sys.argv));
+    f.write("Project call: python %s\n" % " ".join(sys.argv));
 
 
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
-def makefile_local(m_input, coverage_mode, multi=False):
+def makefile_local(m_input, coverage_mode, control, multi=False):
     mlist=[];
     if(type(m_input) == str):
         name = os.path.basename(m_input).split(".")[0];
@@ -140,6 +139,35 @@ def makefile_local(m_input, coverage_mode, multi=False):
     else:
         covpath = m_input;
         output_files = m_input
+        
+    if(control):
+        # Processing of the left chimeric part bowite2 settings
+        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, control, "%s.control" % name)
+
+        # Map reads with bowtie2
+        input_files = control
+        output_files = os.path.join('sam', '%s.control.sam' % name)
+        script = bs_list
+        mlist.append(dependence(input_files, output_files, script))
+        
+        # Convert mappings into coverage
+        input_files = output_files;
+        output_files = [os.path.join('coverage', '%s.control.%s.bed' % (name, x)) for x in ['minus', 'plus']]
+        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': 'statistics', '--outcoverage': 'coverage'}, inp = input_files)
+        mlist.append(dependence(input_files, output_files, script));   
+        
+        # Merge coverages coming from different strands
+        input_files = output_files;
+        output_files = os.path.join('coverage', '%s.control.bed' % name)
+        script = get_script('merge_coverages.py', chap_package, inp = input_files, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));
+        
+        input_files = [covpath, output_files]
+        output_files = os.path.join('coverage', '%s.adjusted.bed' % name)
+        covpath = output_files
+        script = get_script('adjust_coverage_to_control.py', chap_package, inp = input_files[0], arguments={'--control': input_files[1]}, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));        
+        
     
     # Detect peaks
     input_files = output_files
@@ -196,8 +224,21 @@ if(args.reads):
     else:
         input_list = args.reads;
     coverage_mode = False
+    if(args.control):
+        if(len(args.control) != len(args.reads)):
+            sys.exit("Number of files provided to --reads and --control must be equal and files must correspond to each other. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places\n\n")
+        elif(args.paired):
+            control_list = [(args.control[2*x], args.control[2*x+1]) for x in range(int(len(args.control)/2))]
+            control_list = [None if x[0] == 'none' else (os.path.abspath(x[0]), os.path.abspath(x[1])) for x in control_list]
+        else:
+            control_list = [None if x == 'none' else os.path.abspath(x) for x in args.control]
+    else:
+        control_list = [None]*len(input_list);
+            
+            
 else:
     input_list = args.coverage;
+    control_list = [None]*len(input_list);
     coverage_mode = True
 
 #input_list = [x for x in input_list]
@@ -209,8 +250,8 @@ sample_names = [os.path.basename(x[0]).split(".") for x in input_list]
  
 mf_names = []
 all_outputs = []
-for m_input in input_list:
-    local_makefile, mname, local_output =  makefile_local(m_input, coverage_mode, args.multi)
+for m_input, control in zip(input_list, control_list):
+    local_makefile, mname, local_output =  makefile_local(m_input, coverage_mode, control,  args.multi)
     mname = 'makefile_%s' % mname
     mf_names.append(mname);
     all_outputs.append(local_output);

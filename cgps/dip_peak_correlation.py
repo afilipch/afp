@@ -5,6 +5,8 @@ import argparse
 import os
 import sys
 import numpy as np;
+from scipy.stats import spearmanr, pearsonr
+from collections import defaultdict;
 import pandas as pd;
 from pybedtools import BedTool, Interval
 from Bio import SeqIO
@@ -15,12 +17,13 @@ from Bio import SeqIO
 parser = argparse.ArgumentParser(description='Explores relation between GC drops and binding peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the binding peaks");
 parser.add_argument('--gcdrops', nargs = '?', required=True, type = str, help = "Path to the GC drops");
-parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output coverage plot");
+parser.add_argument('--genome', nargs = '?', type = str, help = "Path to the genome, fasta format");
 
 args = parser.parse_args();
 
-
+regions = BedTool(args.path);
+    
 motif = ("TAATAAA", "TAATTAA", "TATTAAA", "TATTTAA");
 def check_motif(interval, genome, motif):
     seq = str(genome[interval.start: interval.end])
@@ -30,26 +33,35 @@ def check_motif(interval, genome, motif):
     else:
         return False
 
+gcdrops_intervals = BedTool(gcdrops_intervals);
+if(args.genome):
+    genome = next(SeqIO.parse(args.genome, 'fasta')).seq;
+    gcdrops_intervals = BedTool([x for x in gcdrops_intervals if check_motif(x, genome, motif)])
 
-regions = BedTool(args.path);
-genome = next(SeqIO.parse(args.genome, 'fasta')).seq
-gcdrops_intervals = BedTool(args.gcdrops);        
+
+
+
 print(len(gcdrops_intervals))
+gcdrops_regions = gcdrops_intervals.intersect(regions, wo = True)
+print(len(gcdrops_regions))
 
-gcdrops_regions = gcdrops_intervals.intersect(regions, c = True)
+gcdrop2data = defaultdict(list);
+for interval in gcdrops_regions:
+    gcdrop2data[interval.name].append((len(interval), float(interval.score), float(interval[10])))
+    
+def data2pair(data):
+    length = data[0][0]
+    depth = data[0][1]
+    peak = max(x[2] for x in data)
+    return 1-depth, peak
 
+pairs = [data2pair(x) for x in gcdrop2data.values()]
+xvalues = [x[0] for x in pairs];
+yvalues = [x[1] for x in pairs];
+print (pearsonr(xvalues, yvalues))
 
-binding_motif_width = [len(x) for x in gcdrops_regions if x[6] != '0' and check_motif(x, genome, motif)]
-binding_motif_depth = [float(x.score) for x in gcdrops_regions if x[6] != '0' and check_motif(x, genome, motif)]
+sys.exit()
 
-binding_nonmotif_width = [len(x) for x in gcdrops_regions if x[6] != '0' and not check_motif(x, genome, motif)]
-binding_nonmotif_depth = [float(x.score) for x in gcdrops_regions if x[6] != '0' and not check_motif(x, genome, motif)]
-
-nonbinding_motif_width = [len(x) for x in gcdrops_regions if x[6] == '0' and check_motif(x, genome, motif)]
-nonbinding_motif_depth = [float(x.score) for x in gcdrops_regions if x[6] == '0' and check_motif(x, genome, motif)]
-
-nonbinding_nonmotif_width = [len(x) for x in gcdrops_regions if x[6] == '0' and not check_motif(x, genome, motif)]
-nonbinding_nonmotif_depth = [float(x.score) for x in gcdrops_regions if x[6] == '0' and not check_motif(x, genome, motif)]
 
 
 import matplotlib.pyplot as plt 
@@ -73,9 +85,3 @@ if(args.plot):
     plt.savefig(args.plot, format = _format)
 else:
     plt.show()
-    
-    
-
-
-
-

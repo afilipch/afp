@@ -14,13 +14,13 @@ from Bio import SeqIO
 
 parser = argparse.ArgumentParser(description='Explores relation between AT stretches and binding peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the binding peaks");
-parser.add_argument('--coverage', nargs = '?', required=True, type = str, help = "Path to the binding coverage track");
+#parser.add_argument('--coverage', nargs = '?', required=True, type = str, help = "Path to the binding coverage track");
 parser.add_argument('--atstretches', nargs = '?', required=True, type = str, help = "Path to the AT stretches, bed format");
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output coverage plot");
 
 args = parser.parse_args();
-coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "position", "coverage"]).coverage.values
+#coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "position", "coverage"]).coverage.values
 
 regions = BedTool(args.path);
 atstretches = BedTool(args.atstretches);
