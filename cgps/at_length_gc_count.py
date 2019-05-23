@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description='Explores relation between AT stret
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the binding peaks");
 #parser.add_argument('--coverage', nargs = '?', required=True, type = str, help = "Path to the binding coverage track");
 parser.add_argument('--atstretches', nargs = '?', required=True, type = str, help = "Path to the AT stretches, bed format");
-parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
+#parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output coverage plot");
 
 args = parser.parse_args();
@@ -40,8 +40,8 @@ cmatrix = np.zeros([len(l_division)-1, len(gc_division)])
 nummatrix = np.zeros([len(l_division)-1, len(gc_division)])
 for i, (l1, l2) in enumerate(zip(l_division, l_division[1:])):
     for j, gc in enumerate(gc_division):
-        bound = len([x for x in atstretches_regions if (x[6] != '0' and len(x) >= l1 and len(x) < l2 and int(x.score) == gc)])
-        unbound = len([x for x in atstretches_regions if (x[6] == '0' and len(x) >= l1 and len(x) < l2 and int(x.score) == gc)])
+        bound = len([x for x in atstretches_regions if (x[-1] != '0' and len(x) >= l1 and len(x) < l2 and int(x.score) == gc)])
+        unbound = len([x for x in atstretches_regions if (x[-1] == '0' and len(x) >= l1 and len(x) < l2 and int(x.score) == gc)])
         if(bound or unbound):
             cmatrix[i,j] = bound/(bound+unbound)
             nummatrix[i,j] = bound+unbound
