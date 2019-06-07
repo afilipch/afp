@@ -37,7 +37,7 @@ peaks_list = [BedTool(x) for x in args.path]
 # Processing
         
 def peaks2seeds(peaks, flank, zscore_threshold):
-    seeds = [(peak.chrom, int(peak.name)-flank, int(peak.name)+flank+1, peak.name, '0', peak.strand) for peak in peaks if float(peak.score)>zscore_threshold];
+    seeds = [(peak.chrom, max(0, int(peak.name)-flank), int(peak.name)+flank+1, peak.name, '0', peak.strand) for peak in peaks if float(peak.score)>zscore_threshold];
     return BedTool(seeds)
 
 
@@ -105,7 +105,7 @@ def region2gff(region, points, flank, covscores):
     peakpos = ",".join([x[3] if x else 'None' for x in points])
     zscores = ",".join([x[4] if x else 'None' for x in points])
     maxcov = ",".join(covscores);
-    return construct_gff_interval(region[0], int(region[2])-flank, int(region[2])+flank+1, 'consensus_region', score='0', strand=region[1], source='un', frame='.', attrs=[('Name', region[2]), ('peakpos', peakpos), ("zscores", zscores), ('maxcov', maxcov)])
+    return construct_gff_interval(region[0], max(0, int(region[2])-flank), int(region[2])+flank+1, 'consensus_region', score='0', strand=region[1], source='un', frame='.', attrs=[('Name', region[2]), ('peakpos', peakpos), ("zscores", zscores), ('maxcov', maxcov)])
 
 
 
@@ -114,7 +114,7 @@ def get_maxcov(coverages, points, peakflank):
     for an, coverage in zip(points, coverages):
         if(an):
             peakpos = int(an[3])
-            covscores.append("%1.3f" % max(coverage[peakpos-peakflank: peakpos+peakflank+1]))
+            covscores.append("%1.3f" % max(coverage[max(0, peakpos-peakflank): peakpos+peakflank+1]))
         else:
             covscores.append('None');
     return covscores;

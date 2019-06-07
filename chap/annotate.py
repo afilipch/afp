@@ -26,128 +26,129 @@ parser.add_argument('--custom', nargs = '?', default=False, const=True, type = b
 args = parser.parse_args();
 
 
+if(os.stat(args.path).st_size != 0):
 
 
-#################################################################################################################################################################
-### Read the input
+    #################################################################################################################################################################
+    ### Read the input
 
-genes = BedTool(args.genes);
-peaks = BedTool(args.path);
-offset = len(peaks[0].fields)
+    genes = BedTool(args.genes);
+    peaks = BedTool(args.path);
+    offset = len(peaks[0].fields)
 
-#################################################################################################################################################################
-### Convert NCBI genes the input
-if(not args.custom):
-    coding_genes = [];
-    
-    def genebox2coding(genebox):
-        name = genebox[0].name
-        function = genebox[1].attrs.get('Note', 'None').replace(';', ':');
-        annotation = genebox[1].attrs['product'].replace(';', ':')
-        return construct_gff_interval('chr1', genebox[0].start, genebox[0].end, 'protein_coding', score='0', strand=genebox[0].strand, source='.', frame='.', attrs=[ ('Name', name), ('function', function), ('annotation', annotation)])
-    
-    genebox = [];
-    for interval in genes:
-        if(interval[2] in ['gene', 'pseudogene']):
-            if(genebox):
-                if(len(genebox)==2):
-                    coding_genes.append(genebox2coding(genebox))
-                    #print([x[2] for x in genebox])
-            genebox = [interval]
-        elif(genebox):
-            genebox.append(interval)
-    else:
-        if(len(genebox)==2):
-            coding_genes.append(genebox2coding(genebox))
-            
-#for interval in coding_genes:
-    #print(interval)
-    genes = coding_genes;
-    
-
-genes2annotation = dict([ (x.name, (x.attrs['annotation'], x.attrs['function']) ) for x in genes])
-                        
-
-#################################################################################################################################################################
-### Get names of the overlapping genes
-
-  
-def get_gene_name(intersection, offset):
-    #print([x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
-    attrs = dict( [x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
-    return attrs['Name']
-
-peak2genenames = defaultdict(list);
-for el in peaks.intersect(genes, wo = True, f = args.overlap):
-    peak2genenames[el.name].append(get_gene_name(el, offset))
-    
-    
-if(peaks.file_type == 'gff'):
-    for interval in peaks:
-        interval.attrs['genes'] = ",".join(peak2genenames.get(interval.name, ['None']))
-else:
-    temp_peaks = []
-    for interval in peaks:
-        top = int(interval.name)
-        start = max((top-args.flen,0))
-        end = top+args.flen +1
-        anint = construct_gff_interval(interval.chrom, start, end, 'peak', score=interval.score, strand=interval.strand, source='af_peak_detection', frame='.', attrs=[ ('Name', interval.name), ('genes', ",".join(peak2genenames.get(interval.name, ['None'])))])
-        temp_peaks.append(anint)
-    peaks = temp_peaks;
+    #################################################################################################################################################################
+    ### Convert NCBI genes the input
+    if(not args.custom):
+        coding_genes = [];
         
-    
-    
+        def genebox2coding(genebox):
+            name = genebox[0].name
+            function = genebox[1].attrs.get('Note', 'None').replace(';', ':');
+            annotation = genebox[1].attrs['product'].replace(';', ':')
+            return construct_gff_interval('chr1', genebox[0].start, genebox[0].end, 'protein_coding', score='0', strand=genebox[0].strand, source='.', frame='.', attrs=[ ('Name', name), ('function', function), ('annotation', annotation)])
+        
+        genebox = [];
+        for interval in genes:
+            if(interval[2] in ['gene', 'pseudogene']):
+                if(genebox):
+                    if(len(genebox)==2):
+                        coding_genes.append(genebox2coding(genebox))
+                        #print([x[2] for x in genebox])
+                genebox = [interval]
+            elif(genebox):
+                genebox.append(interval)
+        else:
+            if(len(genebox)==2):
+                coding_genes.append(genebox2coding(genebox))
+                
+    #for interval in coding_genes:
+        #print(interval)
+        genes = coding_genes;
+        
+
+    genes2annotation = dict([ (x.name, (x.attrs['annotation'], x.attrs['function']) ) for x in genes])
+                            
+
+    #################################################################################################################################################################
+    ### Get names of the overlapping genes
 
     
-#################################################################################################################################################################
-### Get coverage annotation
-def annotate_coverage(interval, coverage, flen):
-    top = int(interval.name)
-    topcoverage = coverage[top]
-    
-    return topcoverage, start, end
- 
-if(args.coverage):
-    coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
-    #print(len(coverage))
+    def get_gene_name(intersection, offset):
+        #print([x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
+        attrs = dict( [x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
+        return attrs['Name']
 
-    for interval in peaks:
-        topcoverage, start, end = annotate_coverage(interval, coverage, args.flen)
-        interval.attrs['topcoverage'] =  "%1.3f" % topcoverage
-
-
-   
-#sys.exit()
-    
-
-  
-#################################################################################################################################################################    
-###Get closest genomic starts upstream to the dected peaks
-#plusstarts = [x.start for x in genes if gene.strand == '+']
-#minusstarts = [x.end-1 for x in genes if gene.strand == '-']
-
-genestarts = [ (x.start, x.strand, x.name) if x.strand == '+' else (x.end-1, x.strand, x.name) for x in genes]
-
-
-def findclosest(interval, genestarts, maxshift):
-    pos = int(interval.name)
-    raw_distances = [x[0]-pos if x[1] == '+' else pos-x[0] for x in genestarts];
-    distances = [abs(x) if x > -maxshift else 10**8 for x in raw_distances]
-    minindex = np.argmin(distances);
-    start, strand, name = genestarts[minindex];
-    return distances[minindex], name, strand
-    
-
+    peak2genenames = defaultdict(list);
+    for el in peaks.intersect(genes, wo = True, f = args.overlap):
+        peak2genenames[el.name].append(get_gene_name(el, offset))
+        
+        
+    if(peaks.file_type == 'gff'):
+        for interval in peaks:
+            interval.attrs['genes'] = ",".join(peak2genenames.get(interval.name, ['None']))
+    else:
+        temp_peaks = []
+        for interval in peaks:
+            top = int(interval.name)
+            start = max((top-args.flen,0))
+            end = top+args.flen +1
+            anint = construct_gff_interval(interval.chrom, start, end, 'peak', score=interval.score, strand=interval.strand, source='af_peak_detection', frame='.', attrs=[ ('Name', interval.name), ('genes', ",".join(peak2genenames.get(interval.name, ['None'])))])
+            temp_peaks.append(anint)
+        peaks = temp_peaks;
             
+        
+        
+
+        
+    #################################################################################################################################################################
+    ### Get coverage annotation
+    def annotate_coverage(interval, coverage, flen):
+        top = int(interval.name)
+        topcoverage = coverage[top]
+        
+        return topcoverage, start, end
     
-peak2genestarts = {}
-for interval in peaks:
-    ss_distance, ss_genename, ss_strand = findclosest(interval, genestarts, args.maxshift)
-    interval.attrs['start_gene'] = ss_genename
-    interval.attrs['start_gene_distance'] =  "%d" % ss_distance
-    interval.attrs['start_gene_strand'] = ss_strand
-    interval.attrs['start_annotation'], interval.attrs['start_function'] = genes2annotation[ss_genename]
-    sys.stdout.write(str(interval))
+    if(args.coverage):
+        coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
+        #print(len(coverage))
+
+        for interval in peaks:
+            topcoverage, start, end = annotate_coverage(interval, coverage, args.flen)
+            interval.attrs['topcoverage'] =  "%1.3f" % topcoverage
+
+
+    
+    #sys.exit()
+        
+
+    
+    #################################################################################################################################################################    
+    ###Get closest genomic starts upstream to the dected peaks
+    #plusstarts = [x.start for x in genes if gene.strand == '+']
+    #minusstarts = [x.end-1 for x in genes if gene.strand == '-']
+
+    genestarts = [ (x.start, x.strand, x.name) if x.strand == '+' else (x.end-1, x.strand, x.name) for x in genes]
+
+
+    def findclosest(interval, genestarts, maxshift):
+        pos = int(interval.name)
+        raw_distances = [x[0]-pos if x[1] == '+' else pos-x[0] for x in genestarts];
+        distances = [abs(x) if x > -maxshift else 10**8 for x in raw_distances]
+        minindex = np.argmin(distances);
+        start, strand, name = genestarts[minindex];
+        return distances[minindex], name, strand
+        
+
+                
+        
+    peak2genestarts = {}
+    for interval in peaks:
+        ss_distance, ss_genename, ss_strand = findclosest(interval, genestarts, args.maxshift)
+        interval.attrs['start_gene'] = ss_genename
+        interval.attrs['start_gene_distance'] =  "%d" % ss_distance
+        interval.attrs['start_gene_strand'] = ss_strand
+        interval.attrs['start_annotation'], interval.attrs['start_function'] = genes2annotation[ss_genename]
+        sys.stdout.write(str(interval))
 
 
 
