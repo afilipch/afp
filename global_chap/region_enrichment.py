@@ -31,9 +31,14 @@ def get_enrichment(peakfile, region, length):
     outside = [float(x.attrs['topcoverage']) for x in peaks.intersect(region, f = 0.5, v = True)]
     inside = [float(x.attrs['topcoverage']) for x in peaks.intersect(region, f = 0.5, u = True)]
     
-    normed_count = (len(inside)/ilen)/(len(outside)/olen)
-    normed_sum = (sum(inside)/ilen)/(sum(outside)/olen)
-    overrepresented = int(normed_count > 2 or normed_sum > 2)
+    if(len(outside)):
+        normed_count = (len(inside)/ilen)/(len(outside)/olen)
+        normed_sum = (sum(inside)/ilen)/(sum(outside)/olen)
+        overrepresented = int(normed_count > 2 or normed_sum > 2)
+    else:
+        normed_count = float('nan')
+        normed_sum = float('nan')
+        overrepresented = -1
     return "%s\t%d\t%d\t%1.1f\t%1.1f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d"  % (os.path.basename(peakfile).split(".")[0] , len(inside), len(outside), sum(inside), sum(outside), np.mean(inside), np.mean(outside), np.median(inside), np.median(outside), normed_count, normed_sum, overrepresented)
     #for interval in peaks.intersect(region, f = 0.5, u = True):
         #sys.stdout.write(str(interval))
