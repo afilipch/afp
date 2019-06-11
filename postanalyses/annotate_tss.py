@@ -36,7 +36,7 @@ if(os.stat(args.path).st_size != 0):
                 gene_starts[interval.strand].append(interval.start);
             gene_names[interval.strand].append(interval.attrs['gene_id']);
             
-    tss2gene_name = {};
+    tss2gene_name = {('none', '+'): 'none', ('none', '-'): 'none'};
     for strand, tss_starts in tss.items():
         curstarts = list(sorted(gene_starts[strand]))
         curnames = gene_names[strand]
@@ -56,18 +56,66 @@ if(os.stat(args.path).st_size != 0):
     ###Connect genomic regions to the closest tss;
     ###################################################################################################
     def find_tss(region, tss, strand):
-        center = (region.end + region.start)/2
+        center = (region.end + region.start)//2
         tss_starts = tss[strand]
         bpos = bisect_left(tss_starts, center)
-        tss_up = tss_starts[bpos-1]
-        tss_down = tss_starts[bpos]
-        if(strand == '+'):
-            return (tss_up, center - tss_up), (tss_down, tss_down - center)
+        if(bpos):
+            tss_up = tss_starts[bpos-1]
+            up_distance = center - tss_up
         else:
-            return (tss_down, tss_down - center), (tss_up, center - tss_up)
+            tss_up = 'none'
+            up_distance = 'none'
+        if(bpos < len(tss_starts)):
+            tss_down = tss_starts[bpos]
+            down_distance = tss_down - center
+        else:
+            tss_down = 'none'
+            down_distance = 'none'
+            
+        if(strand == '+'):
+            return tss_up, up_distance, tss_down, down_distance
+        else:
+            return tss_down, down_distance, tss_up, up_distance
+        
     
+    def annotate_stranded(region, tss, tss2gene_name):
+        tss_up, up_distance, tss_down, down_distance = find_tss(region, tss, region.strand);
+        gene_up = tss2gene_name[(tss_up, region.strand)]
+        gene_down = tss2gene_name[(tss_down, region.strand)]
+        region.attrs["tss_downstream_distance"] = str(down_distance)
+        region.attrs["tss_upstream_distance"] = str(up_distance)
+        region.attrs["tss_downstream_gene"] = gene_down;
+        region.attrs["tss_upstream_gene"] = gene_up;
+        print(region)
+        
+        
+    def annotate_unstranded(region, tss, tss2gene_name):
+        tss_up, up_distance, tss_down, down_distance = find_tss(region, tss, '+');
+        gene_up = tss2gene_name[(tss_up, '+')]
+        gene_down = tss2gene_name[(tss_down, '+')]
+        region.attrs["tss_downstream_plus_distance"] = str(down_distance)
+        region.attrs["tss_upstream_plus_distance"] = str(up_distance)
+        region.attrs["tss_downstream_plus_gene"] = gene_down;
+        region.attrs["tss_upstream_plus_gene"] = gene_up;
+        
+        tss_up, up_distance, tss_down, down_distance = find_tss(region, tss, '-');
+        gene_up = tss2gene_name[(tss_up, '-')]
+        gene_down = tss2gene_name[(tss_down, '-')]
+        region.attrs["tss_downstream_minus_distance"] = str(down_distance)
+        region.attrs["tss_upstream_minus_distance"] = str(up_distance)
+        region.attrs["tss_downstream_minus_gene"] = gene_down;
+        region.attrs["tss_upstream_minus_gene"] = gene_up;
+        
+        print(region)
+        
+        
+    if(args.stranded):
+        annotate_tss = annotate_stranded;
+    else:
+        annotate_tss = annotate_unstranded;
     
-    regions = BedTool(args.path)
+    for region in BedTool(args.path):
+        annotate_tss(region, tss, tss2gene_name);
     
     
     
