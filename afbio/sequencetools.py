@@ -184,6 +184,17 @@ def splitstring(s, size):
     return [s[x:x+size] for x in range(0, len(s), size)]
 
 
+def get_sub_lists(my_list, minlen=0, maxlen=None):
+    if(not maxlen):
+        maxlen = len(my_list)+1
+    sublists = []
+    for size in range(minlen, maxlen):
+        temp = [list(x) for x in combinations(my_list, size)]
+        if len(temp)>0:
+            sublists.extend(temp)
+    return sublists
+
+
 	
 		
 		
