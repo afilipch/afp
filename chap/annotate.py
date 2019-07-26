@@ -19,8 +19,9 @@ parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the detected peaks");
 parser.add_argument('--genes', nargs = '?', required=True, type = str, help = "Path to the gene annotation file");
 parser.add_argument('--coverage', nargs = '?', type = str, help = "Path to the coverage track, bed format");
-parser.add_argument('--overlap', nargs = '?', default=0.01, type = float, help = "Min overlap required overlap between a peak and genomic feature (as fraction of peak length)");
-parser.add_argument('--maxshift', nargs = '?', default=50, type = int, help = "Max allowed shift (in nucleotides) of the peak top position downstream to start of the gene, to be still counted as peak upstream the gene");
+parser.add_argument('--overlap', nargs = '?', default=0.5, type = float, help = "Min overlap required overlap between a peak and genomic feature (as fraction of peak length)");
+parser.add_argument('--maxshift', nargs = '?', default=1, type = int, help = "Max allowed shift (in nucleotides) of the peak top position downstream to start of the gene, to be still counted as peak upstream the gene");
+parser.add_argument('--promoter_distance', nargs = '?', default=700, type = int, help = "Max allowed distance to the gene start for the peak to be reported as promoter");
 parser.add_argument('--flen', nargs = '?', default=50, type = int, help = "Length of the peak\'s flanks to be included into analyses");
 parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
 args = parser.parse_args();
@@ -84,8 +85,11 @@ if(os.stat(args.path).st_size != 0):
         
         
     if(peaks.file_type == 'gff'):
+        temp_peaks = []
         for interval in peaks:
             interval.attrs['genes'] = ",".join(peak2genenames.get(interval.name, ['None']))
+            temp_peaks.append(interval)
+        peaks = temp_peaks;
     else:
         temp_peaks = []
         for interval in peaks:
@@ -137,6 +141,15 @@ if(os.stat(args.path).st_size != 0):
         minindex = np.argmin(distances);
         start, strand, name = genestarts[minindex];
         return distances[minindex], name, strand
+    
+    
+    def add_type(interval, maxdistance):
+        if(interval.attrs['genes'].split(",")[0] != 'None'):
+            return "Gene"
+        elif(int(interval.attrs['start_gene_distance']) <= maxdistance):
+            return "Promoter"
+        else:
+            return "Intergenic"
         
 
                 
@@ -148,6 +161,7 @@ if(os.stat(args.path).st_size != 0):
         interval.attrs['start_gene_distance'] =  "%d" % ss_distance
         interval.attrs['start_gene_strand'] = ss_strand
         interval.attrs['start_annotation'], interval.attrs['start_function'] = genes2annotation[ss_genename]
+        interval.attrs['type'] = add_type(interval, args.promoter_distance)
         sys.stdout.write(str(interval))
 
 
