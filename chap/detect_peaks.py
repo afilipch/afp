@@ -32,71 +32,73 @@ sys.stderr.write("Median coverage:\t%1.2f\nMean coverage:\t%1.2f\nCoverage stand
 
 
 ###Determine bandwidth of the potential peaks
-valid = True
+#valid = True
 if(args.peakwidth):
     bandwidth = args.peakwidth
     sys.stderr.write("Bandwidth was manually set up to:\t%1.2f\n\n" % bandwidth)
 else:
     rawbandwidth, numpeaks = estimate_bandwidth(coverage, args.meanmult)
-    if(not numpeaks):
+    if(numpeaks < 10):
         ##sys.stdout.write('');
-        sys.stderr.write("\nWARNING! No single raw peak is detected. Please try to decrease --meanmult parameter value.\nWARNING: If --meanmult was set lower than 3, then most probably there are no peaks in the given experiment\n\n")
-        valid = False
+        bandwidth = 120
+        sys.stderr.write("\nWARNING! Only %d peak(s) detected.\nBandwidth is set to the default value: %d\n\n" % (numpeaks, bandwidth))
+        #valid = False
     else:
         bandwidth = rawbandwidth*args.widthfactor
         sys.stderr.write("Raw bandwith:\t%1.2f\nAdjusted bandwith:\t%1.2f\nRaw peaks detected:\t%1.2f\n\n" % (rawbandwidth, bandwidth, numpeaks))
 
-if(valid):
-    ###Convolute coverage with a given kernel
-    exec("from afbio.filters import %s as kernelfunc" % args.kernel)
-    kernel = kernelfunc(truncate = 4.0);
-    convolution = np.array(convolute(coverage, kernel, bandwidth, threads=4))
+#if(valid):
+
+###Convolute coverage with a given kernel
+exec("from afbio.filters import %s as kernelfunc" % args.kernel)
+kernel = kernelfunc(truncate = 4.0);
+convolution = np.array(convolute(coverage, kernel, bandwidth, threads=8))
 
 
-    ###Detect peaks for convolved coverage
-    peaks = detect_peaks(convolution);
-        
-    ###Outut the detected peaks
-    #sys.stdout.write("start\ttop\tend\tscore\n");
-    for pk in peaks:
-        sys.stdout.write("%s\t%d\t%d\t%d\t%1.2f\t%s\n" % ('chr1', pk[0], pk[2], pk[1], pk[3], '+'));
+###Detect peaks for convolved coverage
+peaks = detect_peaks(convolution);
     
-    
-    
-    ###Output basic statistics of the detected peaks
-    sys.stderr.write("\nRaw peaks detected with a kernel:\t%d\n\n" % len(peaks))
-    
-    ###Output convolution track
-    if(args.convolution):
-        with open(args.convolution, 'w') as f:
-            for c, el in enumerate(convolution):
-                f.write("chr1\t%d\t%d\n" % (c+1, el)); 
-    
-    ###Plot coverage vs convolution
-    if(args.plot):
-        import matplotlib.pyplot as plt
+###Outut the detected peaks
+#sys.stdout.write("start\ttop\tend\tscore\n");
+for pk in peaks:
+    sys.stdout.write("%s\t%d\t%d\t%d\t%1.2f\t%s\n" % ('chr1', pk[0], pk[2], pk[1], pk[3], '+'));
 
-        fig, ax1 = plt.subplots()
 
-        ax1.plot(coverage, 'b-')
-        ax1.set_xlabel("position (nt)")
-        ax1.set_ylabel('coverage', color='b')
-        ax1.tick_params('y', colors='b')
-        
-        convolution = [max(0,x) for x in convolution]
-        ax2 = ax1.twinx()
-        ax2.plot(convolution, 'r-')
-        ax2.set_ylabel("convolution", color='r')
-        ax2.tick_params('y', colors='r')
-        
-        ax1.spines['right'].set_visible(False)
-        ax1.spines['top'].set_visible(False) 
 
-        fig.tight_layout()
-        
-        _format = args.plot.split(".")[-1]
-        plt.savefig(args.plot, format = _format)
-        #plt.show()
+###Output basic statistics of the detected peaks
+sys.stderr.write("\nRaw peaks detected with a kernel:\t%d\n\n" % len(peaks))
+
+###Output convolution track
+if(args.convolution):
+    with open(args.convolution, 'w') as f:
+        for c, el in enumerate(convolution):
+            f.write("chr1\t%d\t%d\n" % (c+1, el)); 
+
+###Plot coverage vs convolution
+if(args.plot):
+    import matplotlib.pyplot as plt
+
+    fig, ax1 = plt.subplots()
+
+    ax1.plot(coverage, 'b-')
+    ax1.set_xlabel("position (nt)")
+    ax1.set_ylabel('coverage', color='b')
+    ax1.tick_params('y', colors='b')
     
+    convolution = [max(0,x) for x in convolution]
+    ax2 = ax1.twinx()
+    ax2.plot(convolution, 'r-')
+    ax2.set_ylabel("convolution", color='r')
+    ax2.tick_params('y', colors='r')
+    
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['top'].set_visible(False) 
+
+    fig.tight_layout()
+    
+    _format = args.plot.split(".")[-1]
+    plt.savefig(args.plot, format = _format)
+    #plt.show()
+
     
         

@@ -22,7 +22,7 @@ def load_config(configuration):
         p = configuration;
 
     with open(p, 'r') as f:
-        d = yaml.load(f)
+        d = yaml.load(f, Loader=yaml.FullLoader)
     if(isinstance(d, dict)):
         return d;
     else:
@@ -36,4 +36,4 @@ def save_config(obj, path):
 
 
 if (__name__=='__main__'):
-    print(load(sys.argv[1]))
+    print(load(sys.argv[1]), Loader=yaml.FullLoader)

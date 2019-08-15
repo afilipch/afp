@@ -243,7 +243,7 @@ else:
 
 #input_list = [x for x in input_list]
 #sys.stderr.write("%s\n" % input_list)
-sample_names = [os.path.basename(x[0]).split(".") for x in input_list]
+sample_names = [os.path.basename(x[0]).split(".")[0] for x in input_list]
 
 
 
@@ -287,6 +287,7 @@ if(args.multi):
     input_files = output_files
     output_files = os.path.join('statistics', 'peaks.correlation.png')
     global_output.append(output_files)
+    #sys.stderr.write("%s\n" % str(sample_names));
     script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));
     

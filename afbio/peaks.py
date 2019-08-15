@@ -1,6 +1,6 @@
 import numpy as np;
 from afbio.sequencetools import sliding_window
-from multiprocessing.dummy import Pool
+from multiprocessing import Pool
 import sys;
 
 
@@ -32,21 +32,30 @@ def kernel2scale(kernel, peakwidth, takepeak):
     return np.array(scaled);
 
 
-def convolute(arr, kernel, peakwidth, threads = 4, takepeak=True):
-    scaled = kernel2scale(kernel, peakwidth, takepeak);
-    def _local_convolution(window):
-        return sum(window*scaled) 
+def local_convolution(alist):
+    return sum(alist[0]*alist[1]) 
 
+def local_generator(extended, wsize, scaled):
+    for window in sliding_window(extended, wsize):
+        yield (window, scaled);
+
+def convolute(arr, kernel, peakwidth, threads, takepeak=True):
+    scaled = kernel2scale(kernel, peakwidth, takepeak);
     
     wsize = len(scaled)
     tail = np.zeros((wsize-1)//2)
     extended = np.concatenate((tail, arr, tail))
-    pool = Pool(threads)
-    #windows = [np.array(x) for x in sliding_window(extended, wsize)]
-    #sys.stderr.write('f\n')
     
-    return [_local_convolution(np.array(x)) for x in sliding_window(extended, wsize)]
-    #return pool.imap(_local_convolution, sliding_window(extended, wsize))
+    pool = Pool(threads)
+    sys.stderr.write('\ntssdfadf\n')
+    sys.stderr.write('\ntssdfadf\n')
+    result = [];
+    with Pool(threads) as p:
+        for pos, c in enumerate(p.imap(local_convolution, local_generator(extended, wsize, scaled), chunksize = threads*10)):
+            if(pos  and pos % 100000 == 0):
+                sys.stderr.write("%d nucleotides are already processed\n" % pos)
+            result.append(c)
+    return result
 
 
 def detect_peaks(signal):
