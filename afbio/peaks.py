@@ -46,14 +46,11 @@ def convolute(arr, kernel, peakwidth, threads, takepeak=True):
     tail = np.zeros((wsize-1)//2)
     extended = np.concatenate((tail, arr, tail))
     
-    pool = Pool(threads)
-    sys.stderr.write('\ntssdfadf\n')
-    sys.stderr.write('\ntssdfadf\n')
     result = [];
     with Pool(threads) as p:
         for pos, c in enumerate(p.imap(local_convolution, local_generator(extended, wsize, scaled), chunksize = threads*10)):
-            if(pos  and pos % 100000 == 0):
-                sys.stderr.write("%d nucleotides are already processed\n" % pos)
+            #if(pos  and pos % 100000 == 0):
+                #sys.stderr.write("%d nucleotides are already processed\n" % pos)
             result.append(c)
     return result
 

@@ -1,4 +1,4 @@
-#! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
+#! /usr/local/anaconda3/bin/python
 '''Converts sam records with multimappers into bedfile'''
 
 import argparse
@@ -14,12 +14,6 @@ from afbio.generators import generator_doublesam
 
 parser = argparse.ArgumentParser(description='Converts sam records with multimappers into bedfile');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the sam file");
-#parser.add_argument('--zscore', nargs = '?', default=3.0, type = float, help = "Z-score of the filtered peaks regarding to the fitted gaussian distribution");
-#parser.add_argument('--pcut', nargs = '?', default=99.0, type = float, help = "Percentile cuttof apllied to the peak scores prior fitting them to gaussian distribution");
-#parser.add_argument('--coverage', nargs = '?', default='', type = str, help = "Path to the coverage file, if provided peaks are filtered according to --minmedian option");
-#parser.add_argument('--minmedian', nargs = '?', default=3.0, type = float, help = "Minimal required height of the detected peaks, this filter is applied when --coverage is provided");
-
-#parser.add_argument('-ap', '--assignedpeaks', nargs = '?', default='', type = str, help = "If set, all the peaks with the assigned z-score are written to the given destination");
 parser.add_argument('--multimappers', nargs = '?', default='', type = str, help = "Path to store multimapped reads. If not set, multimapped reads are discrarded");
 args = parser.parse_args();
 

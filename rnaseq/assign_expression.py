@@ -89,7 +89,7 @@ if(args.plot):
     
     variations = [x[4] for x in statistics if x[0]]
     #sys.stderr.write("%s\n" % variations)
-    plt.hist(variations, color='coral', bins=50, normed=True)
+    plt.hist(variations, color='coral', bins=50, density=True)
     plt.xlabel('coverage coefficient of variation')
     plt.ylabel('fraction of genes')
     plt.savefig(varpath, format='png');
@@ -98,7 +98,7 @@ if(args.plot):
     #plt.xscale('log', basex=10)
     #ax = plt.axes()
     #ax = plt.axes()
-    stub1, bins, stub2 = plt.hist([math.log(x,10) for x in tpms], color='coral', bins=50, normed=True)
+    stub1, bins, stub2 = plt.hist([math.log(x,10) for x in tpms], color='coral', bins=50, density=True)
     plt.xlabel('log10 TPM')
     plt.ylabel('fraction of genes')
     #sys.stderr.write("%s\n" % bins)
