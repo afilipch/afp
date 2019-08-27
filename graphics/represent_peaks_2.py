@@ -18,6 +18,7 @@ parser.add_argument('--annotation', nargs = '?', required=True, type = str, help
 parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
 
 parser.add_argument('--flen', nargs = '?', default=40, type = int, help = "Length of the peak\'s flanks to be drawn");
+parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--overlap', nargs = '?', default=0.5, type = float, help = "Minimal reciprocal overlap fraction required for the peaks to be considered as the same peak");
 parser.add_argument('--normalize', nargs = '?', default=False, const=True, type = str, help = "If set, normalized coverage is output");
 args = parser.parse_args();
@@ -120,15 +121,15 @@ def getplot(signal_noise_local, size, start, end, path, fignum, locan, zscore):
     
     fig.text(0.5, 0.01, 'genomic position (nt)', ha='center', fontsize='xx-large')
     fig.text(0.005, 0.5, ylabel, va='center', rotation='vertical', fontsize='xx-large')
-    plt.savefig(path, format='png')
+    plt.savefig(path, format=args.format)
     #plt.show()
     plt.close()
     
 ##########################################################################################################################
 
 
+#regions = BedTool([Interval(x.chrom, max(0, x.start - args.flen), x.end + args.flen, name=x.name, score=x.attrs['zscores'] , strand=x.strand) for x in regions])
 regions = BedTool([Interval(x.chrom, max(0, x.start - args.flen), x.end + args.flen, name=x.name, score=x.attrs['zscores'] , strand=x.strand) for x in regions])
-
 
 
 annotation = BedTool(args.annotation)
@@ -158,7 +159,7 @@ for c, (region, snl) in enumerate(zip(regions, signal_noise_sets)):
     locan.sort(key=lambda x: x[3]);
     #sys.stdout.write(str(region))
     os.path.join(args.outdir, "peak%d" % (c+1))
-    getplot(snl, size, region.start, region.end, os.path.join(args.outdir, "peak%d.png" % (c+1)), c+1, locan, max([float(x) for x in region.score.split(",") if x != 'None']))
+    getplot(snl, size, region.start, region.end, os.path.join(args.outdir, "peak%d.%s" % (c+1, args.format)), c+1, locan, max([float(x) for x in region.score.split(",") if x != 'None']))
     if(not (c+1) % 10):
         sys.stderr.write("%d peaks are processed\n" % (c+1))
     #sys.exit()

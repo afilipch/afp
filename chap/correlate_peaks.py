@@ -23,6 +23,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--names', nargs = '+', required=True, type = str, help = "Names of the provided samples, must be of the same order as values in \'zscores\' attribute of the provided consensus regions");
 parser.add_argument('--min-zscore', nargs = '?', default=1, type = float, help = "Minimum required zscore for both peaks to calculate correlation between them");
 parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Path to the output directory for the plots");
+parser.add_argument('--selection', nargs = '+', default=None, type = int, help = "If set only the selected (by number starting from one) sets of peak will be correlated");
 #parser.add_argument('--genes', nargs = '?', default='', type = str, help = "Path to the selected genes to check for correlation, tsv format");
 args = parser.parse_args();
 
@@ -45,6 +46,11 @@ def get_local_coverages(region, min_zscore):
 
 
 maxcovs = np.array([get_local_coverages(region, min_zscore) for region in regions])
+if(args.selection):
+    selection = [x-1 for x in args.selection]
+    maxcovs = maxcovs[:,selection]
+    
+
 #print(maxcovs[:,0])
 
 

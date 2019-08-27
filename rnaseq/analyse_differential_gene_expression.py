@@ -21,7 +21,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--minexpr', nargs = '?', default=0.001, type = float, help = "Minimum required expression for the differential analysis");
 parser.add_argument('--fdr', nargs = '?', default=0.05, type = float, help = "Threshold for the local empirical false discovery rate");
 parser.add_argument('--plot', nargs = '?', required=True, type = str, help = "Output directory for the plots");
-parser.add_argument('--labelnames', nargs = '?' , type = str, help = "Path to the dile with gene names to be labeled on loglog plot");
+parser.add_argument('--labelnames', nargs = '?' , type = str, help = "Path to the file with gene names to be labeled on loglog plot");
 args = parser.parse_args();
 
 

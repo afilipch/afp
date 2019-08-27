@@ -17,7 +17,8 @@ parser.add_argument('--annotation', nargs = '?', required=True, type = str, help
 parser.add_argument('--multi', nargs = '?', default='', type = str, help = "Path to the multimappers");
 parser.add_argument('--stranded', nargs = '?', default=False, const = True, type = str, help = "If set the RNA-seq data are supposed to be stranded");
 
-parser.add_argument('--plot', nargs = '?', type = str, help = "Output destination for the plot");
+parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args();
 
 def parse_intersection(interval, offset):
@@ -114,11 +115,11 @@ plt.figure(figsize=(12,9))
 plt.pie(sizes, explode=None, labels=labels, colors=colors,
     autopct='%1.1f%%', shadow=False, startangle=30, pctdistance=0.8)
 plt.axis('equal')
-if(args.plot):
-    plt.title("experiment: %s\ntotal reads mapped: %d" % (os.path.basename(args.plot), norm))
-    _format = os.path.basename(args.plot).split(".")[-1]
-    plt.savefig(args.plot, format=_format)
-else:
-    plt.show()
+
+
+name = os.path.basename(args.path).split(".")[0]
+plt.title("experiment: %s\ntotal reads mapped: %d" % (name, norm))
+plt.savefig(os.path.join(args.outdir, "%s.annotation.%s" % (name, args.format)), format=args.format)
+
 
 
