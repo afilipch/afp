@@ -73,7 +73,7 @@ ax.tick_params(axis='both', labelsize='x-large')
 
 distance =  np.mean(weights)*0.05
 for boundary, weight, text in zip(boundaries, weights, numpeaks):
-    ax.text(boundary + 0.9, weight + distance, text, fontsize='x-large');
+    ax.text(boundary + 0.9, weight + distance, text, fontsize='xx-large');
 
 
 if(args.plot):

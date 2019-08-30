@@ -65,30 +65,35 @@ print(ko)
 
 xdata1 = [0,1,2,3]
 xdata2 = [0,1,3]
+fontsize = 38
+linewidth = 5
+markersize = 15
 
 for symbol in args.genes:
     
     fig, ax1 = plt.subplots(figsize=(16,9))
+    
+    plt.tight_layout(rect=[0.1, 0.1, 0.85, 0.9])
     ax2 = ax1.twinx()
 
-    ax1.set_xlabel('Time (h)', fontsize='x-large')
-    ax1.set_ylabel('Max peak intensity', fontsize='x-large')
-    ax2.set_ylabel('mRNA level (TPM)', fontsize='x-large')
+    ax1.set_xlabel('Time (h)', fontsize=fontsize)
+    ax1.set_ylabel('Max peak intensity', fontsize=fontsize)
+    ax2.set_ylabel('mRNA level (TPM)', fontsize=fontsize)
     
-    ax1.tick_params(axis='both', labelsize='x-large', top=False, right=False)
-    ax2.tick_params(axis='both', labelsize='x-large', top=False, right=False)
+    ax1.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax2.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
     
     ax1.spines['top'].set_visible(False)
-    #ax1.spines['right'].set_visible(False)
     ax2.spines['top'].set_visible(False)
-    #ax2.spines['right'].set_visible(False)
-    plt.xticks(xdata1, ['0h', '0.5h', '2h', '4h'], fontsize= 'x-large')
-    #ax1.set_xticklabels(['0h', '0.5h', '2h', '4h'], fontsize = 'x-large')
+    plt.xticks(xdata1, ['0h', '0.5h', '2h', '4h'], fontsize= fontsize)
+    for axis in ['bottom','left','right']:
+        ax1.spines[axis].set_linewidth(linewidth)
+        ax2.spines[axis].set_linewidth(linewidth)
 
-    ax1.plot(xdata1, chap[symbol], color = 'red', linestyle='dashed', linewidth=3, label='HrrA binding', marker='o', markersize = 10)
-    ax2.plot(xdata2, wt[symbol], color = 'lightblue',linewidth=3, label='WT', marker='o', markersize = 10)
-    ax2.plot(xdata2, ko[symbol], color = 'darkblue', linewidth=3, label='HrrA KO', marker='o', markersize = 10)
-    fig.legend(loc=(0.15, 0.8), frameon=False, fontsize='x-large')
+    ax1.plot(xdata1, chap[symbol], color = 'red', linestyle='dashed', linewidth=linewidth, label='HrrA binding', marker='o', markersize = markersize)
+    ax2.plot(xdata2, wt[symbol], color = 'lightblue',linewidth=linewidth, label='WT', marker='o', markersize = markersize)
+    ax2.plot(xdata2, ko[symbol], color = 'darkblue', linewidth=linewidth, label='HrrA KO', marker='o', markersize = markersize)
+    fig.legend(loc=(0.07, 0.86), frameon=False, fontsize=fontsize, ncol = 3)
 
 
 

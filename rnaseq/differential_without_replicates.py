@@ -43,15 +43,15 @@ genes2expr = [x for x in genes2expr if x[3] > args.minexpr and x[4] > args.minex
 genes2expr.sort(key= lambda x: x[3], reverse=True)
 
 #print(genes2expr)
-header = "gene_id\t%s\t%s\tlog2(%s/%s)\tnormed_fold" % (args.labels[0], args.labels[1], args.labels[0], args.labels[1]);
+header = "gene_id\t%s\t%s\tlog2(%s/%s)\tnormed_fold" % (args.labels[0], args.labels[1], args.labels[1], args.labels[0]);
 print(header)
 for gene, tpm1, tpm2, e1, e2 in genes2expr:
-    print('%s\t%s\t%s\t%1.3f\t%1.3f' % (gene, ";".join([str(x) for x in tpm1]), ";".join([str(x) for x in tpm2]), math.log2(e1/e2), (e1-e2)/(e1+e2)  ))
+    print('%s\t%s\t%s\t%1.3f\t%1.3f' % (gene, ";".join([str(x) for x in tpm1]), ";".join([str(x) for x in tpm2]), math.log2(e2/e1), (e2-e1)/(e1+e2)  ))
     
     
     
 ###generate loglog plot
-scatter = np.array([ (math.log2(x[3]+x[4]), math.log2(x[3]/x[4])) for x in genes2expr]);
+scatter = np.array([ (math.log2(x[3]+x[4]), math.log2(x[4]/x[3])) for x in genes2expr]);
 
 
 fig, ax = plt.subplots(figsize=(16, 9))
