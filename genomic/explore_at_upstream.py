@@ -104,7 +104,7 @@ def get_2d_tables(sequences, max_distance, length_range):
 def _local_score(n1, n2, total):
     spec = (n1)/(n1+n2)
     sens = n1/total
-    return (spec**3)*(sens**2)
+    return spec*sens
 
 def separation_score(l1, l2):
     total = len(l1);
@@ -112,6 +112,7 @@ def separation_score(l1, l2):
     #print(len([x for x in l2 if x >=800]))
     res = [ (x[0], _local_score(x[1][0], x[1][1], total), x[1][0], x[1][1]) for x in thr_dict.items() ]
     return max(res, key=lambda x: x[1]);
+    return sum([x[1] for x in res])
     #for r in res:
         #print(r)
     
