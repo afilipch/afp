@@ -8,15 +8,16 @@ from collections import defaultdict
 import matplotlib.pyplot as plt;
 import numpy as np;
 
-from pybedtools import BedTool
-from Bio import SeqIO
+from Bio import SeqIO;
+from pybedtools import BedTool;
 
-from afbio.sequencetools import sliding_window
-from afbio.pybedtools_af import interval2seq
+from afbio.sequencetools import transcript_upstream, upstream_content, transcript_content
+from afbio.numerictools import CDF
 
 
 
-parser = argparse.ArgumentParser(description='Annotates the provided genomic regions with the distances to the closest transcription start sites');
+
+parser = argparse.ArgumentParser(description='Analyses AT content relative to the transcripts and phages positions on a genome');
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta file");
 parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts coordinates, bed/gff file");
 parser.add_argument('--phages', nargs = '?', required=True, type = str, help = "Path to the phages coordinates, bed file");
@@ -29,51 +30,21 @@ parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "
 #parser.add_argument('--stranded', nargs = '?', const=True, default=False, type = bool, help = "If set, the data considered to be stranded");
 args = parser.parse_args();
 
-genome = record_dict = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
+genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
 transcripts = BedTool(args.transcripts);
 phages = BedTool(args.phages);
-
-def get_at_content(seq):
-    return (seq.count('A') + seq.count('T'))/len(seq)
-
-def transcript_upstream(interval, genome, length, lookup):
-    if(interval.strand == '+'):
-        total_seq = str(genome[interval.chrom][interval.start-lookup:interval.start].seq.upper())
-    elif(interval.strand == '-'):
-        total_seq = str(genome[interval.chrom][interval.stop: interval.stop+lookup].seq.reverse_complement().upper())
-        
-    res = [get_at_content(x) for x in sliding_window(total_seq, length)]
-    
-    if(len(res) == lookup - length + 1):
-        return res
-    else:
-        return None
-    
-def upstream_content(transcripts, genome, length, lookup):
-    upstream_content = [transcript_upstream(x, genome, args.length, args.lookup) for x in transcripts];
-    upstream_content = np.array([x for x in upstream_content if x])
-    return np.mean(upstream_content, axis=0)
-
-    
-def transcript_content(interval, genome):
-    #print(type(interval.start))
-    if(interval.strand == '+'):
-        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.upper())
-    elif(interval.strand == '-'):
-        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())  
-        
-    return get_at_content(seq);
 
 
 phaged_transcripts = [transcripts.intersect(b=phages, u =True, f = 0.5), transcripts.intersect(b=phages, v =True, f = 0.5)]
 transcript_cdf = []
 at_content_list = []
+
 for ptr in phaged_transcripts:
-    at_content = [transcript_content(x, genome) for x in ptr]
-    at_content.sort();
-    xvals, yvals = np.unique(at_content, return_index=True)
-    yvals = yvals/max(yvals);
-    transcript_cdf.append((xvals, yvals))
+    temp_dict = defaultdict(list);
+    for transcript in ptr:
+        temp_dict[transcript.name].append(transcript_content(transcript, genome))
+    at_content = [np.mean(x) for x in temp_dict.values()]
+    transcript_cdf.append(CDF(at_content, zerovalue=0))
     at_content_list.append(np.array(at_content))
     
     
@@ -81,12 +52,9 @@ for ptr in phaged_transcripts:
 
 upstream_cdf = [];
 for ptr in phaged_transcripts:
-    at_content = [transcript_upstream(x, genome, 50, 50) for x in ptr];
-    at_content = [x[0] for x in at_content if x]
-    at_content.sort();
-    xvals, yvals = np.unique(at_content, return_index=True)
-    yvals = yvals/max(yvals);
-    upstream_cdf.append((xvals, yvals))
+    at_content = [transcript_upstream(x, genome, 20, 60) for x in ptr];
+    at_content = [max(x) for x in at_content if x]
+    upstream_cdf.append(CDF(at_content, zerovalue=0))
     at_content_list.append(np.array(at_content))
     
 print("type of regions", "num of regions", "mean AT[%]", "median AT[%]", "std AT[%]")

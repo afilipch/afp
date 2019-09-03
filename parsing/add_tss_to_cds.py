@@ -10,6 +10,8 @@ import numpy as np;
 from pybedtools import BedTool
 import matplotlib.pyplot as plt;
 
+from afbio.numerictools import CDF
+
 
 parser = argparse.ArgumentParser(description='Annotates the provided genomic regions with the distances to the closest transcription start sites');
 parser.add_argument('--tss', nargs = '?', required=True, type = str, help = "Path to the TSS annotation file, custom format");
@@ -80,14 +82,7 @@ for kv in tss_per_gene:
 step = 1000
 distances = [x[4] for x in valid_tss + orphans_distance]
 distances = [x if x<step else step for x in distances]
-distances.sort();
-xvals, yvals = np.unique(distances, return_index=True)
-#sys.stderr.write("%s\n" % distances[:5])
-#sys.stderr.write("%s\n" % xvals)
-xvals = np.array([0] +list(xvals))
-yvals = np.array(list(yvals) + [len(distances)])
-yvals = yvals/len(distances);
-#sys.stderr.write("%s\n" % yvals)
+xvals, yvals = CDF(distances, zerovalue=0)
 
 fontsize, linewidth = 28, 5
 

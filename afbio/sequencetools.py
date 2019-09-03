@@ -4,8 +4,14 @@ import re;
 import sys;
 from itertools import islice;
 from collections import defaultdict, Counter;
-from afbio.numerictools import dict2entropy
 from itertools import combinations, product
+
+import numpy as np;
+from pybedtools import BedTool
+from Bio import SeqIO
+
+from afbio.pybedtools_af import interval2seq
+from afbio.numerictools import dict2entropy
 
 RevComplDict = {'G': 'C', 'C': 'G', 'A': 'T', 'T': 'A'}
 NUCLEOTIDES = set("ACTG")
@@ -193,6 +199,39 @@ def get_sub_lists(my_list, minlen=0, maxlen=None):
         if len(temp)>0:
             sublists.extend(temp)
     return sublists
+
+############################################################################################################################
+### AT-content section 
+def get_at_content(seq):
+    return (seq.count('A') + seq.count('T'))/len(seq)
+
+def transcript_upstream(interval, genome, length, lookup):
+    if(interval.strand == '+'):
+        total_seq = str(genome[interval.chrom][interval.start-lookup:interval.start].seq.upper())
+    elif(interval.strand == '-'):
+        total_seq = str(genome[interval.chrom][interval.stop: interval.stop+lookup].seq.reverse_complement().upper())
+        
+    res = [get_at_content(x) for x in sliding_window(total_seq, length)]
+    
+    if(len(res) == lookup - length + 1):
+        return res
+    else:
+        return None
+    
+def upstream_content(transcripts, genome, length, lookup):
+    upstream_content = [transcript_upstream(x, genome, args.length, args.lookup) for x in transcripts];
+    upstream_content = np.array([x for x in upstream_content if x])
+    return np.mean(upstream_content, axis=0)
+
+    
+def transcript_content(interval, genome):
+    #print(type(interval.start))
+    if(interval.strand == '+'):
+        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.upper())
+    elif(interval.strand == '-'):
+        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())  
+        
+    return get_at_content(seq);
 
 
 	

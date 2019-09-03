@@ -208,12 +208,89 @@ def hamming(s1, s2):
     """Calculate the Hamming distance between two strings"""
     assert len(s1) == len(s2)
     return sum(c1 != c2 for c1, c2 in zip(s1, s2))
+
+
+def CDF(mylist, zerovalue=None):
+    '''Creates CDF (cumulative distribution function) representation on basis of the provided iterable of floats/integers
+    
+        mylist list: element is float or tuple
+        zerovalue int: if set this value will correspond to the CDF=0;
+        
+        Returns tuple: two elements: first is X-values of CDF, Second is Y-values of CDF 
+    '''
+    mylist.sort();
+    norma = len(mylist)
+    xvals, yvals = np.unique(mylist, return_index=True)
+    if(zerovalue is None):
+        yvals = np.array(list(yvals)[1:] + [norma])
+    else:
+        xvals = np.array([zerovalue] +list(xvals))
+        yvals = np.array(list(yvals) + [norma])
+    yvals = yvals/norma;
+    return xvals, yvals
+
+
+def lists2thresholds(l1, l2, reverse=False):
+    '''For the two provided lists creates the dictionary, where the keys are all unique values in l1 and l2; and values are the numbers of l1 and l2 items which pass the threshold: item<=key (or item>=key if reverse==True);
+    
+        l1 list: elements are numbers
+        l2 list: elements are numbers
+        reverse bool: if set to True the logic changes to item>=key;
+        
+        Returns dictionary: keys are all unique values in l1 and l2; values 2-tuple: 1st is number of l1 items which pass the threshold: item<=key (or item>=key if reverse==True), 2nd is number of l1 items which pass the threshold: item<=key (or item>=key if reverse==True)
+    '''
+        
+    l1.sort()
+    l2.sort()
+    x1, y1 = np.unique(l1, return_index=True)
+    x2, y2 = np.unique(l2, return_index=True)
+    norma1 = len(l1)
+    norma2 = len(l2)
+    y1 = np.append(y1[1:], norma1)
+    y2 = np.append(y2[1:], norma2)
+    d1 = dict(zip(x1, y1))
+    d2 = dict(zip(x2, y2))
+    uvals = np.append(x1, x2)
+    uvals.sort()
+    uvals = np.unique(uvals)
+    
+    res = {};
+    cur1, cur2 = 0, 0;
+    
+    if(reverse):
+        for threshold in uvals:
+            res[threshold] = (norma1-cur1, norma2-cur2);
+            cur1 = d1.get(threshold, cur1)
+            cur2 = d2.get(threshold, cur2)
+            
+    else:
+        for threshold in uvals:
+            cur1 = d1.get(threshold, cur1)
+            cur2 = d2.get(threshold, cur2)
+            res[threshold] = (cur1, cur2);
+        
+    return res
+        
+        
+        
+        
+        
+        
+    
+    
+    
+    
+    
+    
+    
+
+
 	
 	
 #testing section
 if(__name__ == "__main__"):
-    elements = 'abcdef'
-    probs = [15, 25, 30, 5, 10, 15]
-    print(select_by_probability(elements, probs));
+    a = [1,1,1,4,5,6,7,7, 9]
+    b = [1,2,3,3,5,7,8,10]
+    print(lists2thresholds(a, b, True));
 	
 	
