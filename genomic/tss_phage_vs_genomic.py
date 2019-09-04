@@ -25,6 +25,7 @@ parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--length', nargs = '?',   default= 30, type = int, help = "Length of the segment right upstream");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
+parser.add_argument('--ylim', nargs = '?', default=False, const=True, type = bool, help = "If set, plots will be cut from the bottom up to the lowest bar");
 args = parser.parse_args();
 
 transcripts = BedTool(args.transcripts);
@@ -48,8 +49,8 @@ for ptr in phaged_transcripts:
     tss_counts = [tss_counts[x]/norma for x in range(1, 6)]
     tss_counts_list.append(tss_counts);
     
-for x in zip(range(1, 6), tss_counts_list[0], tss_counts_list[1]):
-    print("%d\t%1.3f\t%1.3f" % x)
+#for x in zip(range(1, 6), tss_counts_list[0], tss_counts_list[1]):
+    #print("%d\t%1.3f\t%1.3f" % x)
 
  
 ############################################################################################################
@@ -163,17 +164,18 @@ for ptr in phaged_transcripts:
             
             
     for at_contents in temp_dict.values():
-        variants2variations[len(at_contents)].append(max(at_contents) - min(at_contents))
-        variants2means[len(at_contents)].append(np.mean(at_contents))
-        variants2maxes[len(at_contents)].append(max(at_contents))
-        variants2mins[len(at_contents)].append(min(at_contents))
+        variants = min(len(at_contents), 4)
+        variants2variations[variants].append(max(at_contents) - min(at_contents))
+        variants2means[variants].append(np.mean(at_contents))
+        variants2maxes[variants].append(max(at_contents))
+        variants2mins[variants].append(min(at_contents))
     tss_at_variations.append(variants2variations);
     tss_at_means.append(variants2means);
     tss_at_maxes.append(variants2maxes);
     tss_at_mins.append(variants2mins);
 
     
-print("\nVariation\ntranscripts per gene\tnum genes phage\tnum genes non-phage\tnum genes random\tmean AT phage\tmean AT non-phage\tmean AT random\tvariation phage\tvariation non-phage\tvariation random\tmax AT phage\tmax AT non-phage\tmax AT random\tmin AT phage\tmin AT non-phage\tmin AT random");
+print("transcripts per gene\tnum genes phage\tnum genes non-phage\tnum genes random\tmean AT phage\tmean AT non-phage\tmean AT random\tvariation phage\tvariation non-phage\tvariation random\tmax AT phage\tmax AT non-phage\tmax AT random\tmin AT phage\tmin AT non-phage\tmin AT random");
 for i in range(1, 5):
     a = tuple([i] + [len(x[i]) for x in tss_at_variations] + [np.mean(x[i]) for x in tss_at_means] + [np.mean(x[i]) for x in tss_at_variations] + [np.mean(x[i]) for x in tss_at_maxes] + [np.mean(x[i]) for x in tss_at_mins])
     print("%d\t%d\t%d\t%d\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f\t%1.2f" %  a)
@@ -183,12 +185,70 @@ for i in range(1, 5):
 #for i in range(1, 5):
     #a = tuple([i] + [len(x[i]) for x in tss_at_means] + [np.mean(x[i]) for x in tss_at_means])
     #print("%d\t%d\t%d\t%d\t%1.2f\t%1.2f\t%1.2f" %  a)
-        
+    
+
+#print(tss_at_variations)
+    
+def draw_barplot(data, name, length, fontsize=28, linewidth = 5, width = 0.25, ylim=False):
+    arrsize = len(data[0])
+    means = [[],[],[]]
+    yerr_list = [[],[],[]]
+    for j, d in enumerate(data):
+        for i in range(1, 1+arrsize):
+            mean = np.mean(d[i])
+            means[j].append(mean)
+            yerr_list[j].append(( mean - np.percentile(d[i], 25), np.percentile(d[i], 75) - mean ))
+            #print (j, i, np.percentile(d[i], 25), mean, mean - np.percentile(d[i], 25))
+    yerr_list = [np.array(x).transpose() for x in yerr_list]
+    #print(means);
+    #print()
+    
+    
+
+    labels = [str(x) for x in range(1, 1+arrsize)]
+    x = np.arange(arrsize)
+    barlabels = ['phage', 'non-phage', 'conrol']
+    barcolors = ['darkblue', 'lightblue', 'gray']
+
+
+    fig, ax = plt.subplots(figsize=(16,9))
+    plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+
+    ax.set_xlabel('Number of TSS per gene', fontsize=fontsize)
+    ax.set_ylabel('%s of AT %dnt upstream' % (name, length), fontsize=fontsize)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for axis in ['bottom','left','right']:
+        ax.spines[axis].set_linewidth(linewidth)
+    if(ylim):
+        bottom = min([min(x) for x in means])
+        ax.set_ylim(bottom=bottom);
+    
+    for adj, yvals, yerr, label, color in zip( [-width, 0, width], means, yerr_list, barlabels, barcolors):
+        #print(yerr)
+        ax.bar(x + adj, yvals, width, label=label, color = color)
+        plt.errorbar(x + adj, yvals, yerr=yerr, linestyle='', capsize=12, linewidth=linewidth/2, capthick=linewidth/2, color='black')
+    #print()
+    
+    fig.legend(loc=(0.2, 0.9), frameon=False, fontsize=fontsize, ncol = 3)
+    if(ylim):
+        plt.savefig(os.path.join(args.outdir, "tss_at_%s_length_%d_ylim.%s"  % (name, length, args.format)) , format = args.format)
+    else:
+        plt.savefig(os.path.join(args.outdir, "tss_at_%s_length_%d.%s"  % (name, length, args.format)) , format = args.format)
+    plt.clf()
 
 
 
+all_data = [tss_at_variations, tss_at_means, tss_at_maxes, tss_at_mins]
+names = ["Variation", "Average", "Max", "Min"]
 
-
+for data, name in zip(all_data, names):
+    draw_barplot(data, name, args.length, fontsize=28, linewidth = 5, width = 0.2, ylim=args.ylim)
+    #break;
+    
 
 
 

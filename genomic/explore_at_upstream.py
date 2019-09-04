@@ -22,7 +22,8 @@ parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "
 parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts coordinates, bed/gff file");
 parser.add_argument('--phages', nargs = '?', required=True, type = str, help = "Path to the phages coordinates, bed file");
 parser.add_argument('--length', nargs = 2, default=(10, 50), type = int, help = "Length range of the segments upstream");
-parser.add_argument('--distance', nargs = 2, default=(0, 70), type = int, help = "Distance (to the transcript start) range of the segments upstream");
+parser.add_argument('--exact_distance', nargs = '?', default= 70, type = int, help = "Distance (to the transcript start) of the segments upstream for the exact search");
+parser.add_argument('--distances', nargs = 2, default=(0, 70), type = int, help = "Distances (min and max distance) of the segments upstream for the max search");
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 
@@ -48,45 +49,17 @@ def transcript2upstream(interval, genome,  distance, length):
     return seq
 
 
-def get_at_tables(sequences, distance_range, length_range):
+def exact_at_mindistance_length(sequences, maxdistance, length_range):
     #Distance is row, length is column
-    arr = np.zeros((len(list(distance_range)), len(list(length_range))))
-    for i, distance in enumerate(distance_range):
+    arr = np.zeros((maxdistance, len(list(length_range))))
+    for i, distance in enumerate(range(maxdistance)):
         for j, length in enumerate(length_range):
-            cur_at = np.mean([get_at_content(x[distance: distance+length]) for x in sequences])
-            arr[i, j] = cur_at;
+            arr[i, j] = np.mean([get_at_content(x[distance: distance+length]) for x in sequences])
     return arr;
 
-def length_dependence(sequences, min_distance, max_distance, length_range):
-    local_sequences = [x[min_distance:max_distance] for x in sequences]
-    arr = []
-    for length in length_range:
-        temp_list =  []
-        for seq in local_sequences:
-            temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
-        arr.append(np.mean(temp_list))
-    return np.array(arr)
 
-
-def get_3d_tables(sequences, min_distance, max_distance, length_range):
-    tail = (max_distance-min_distance-max(length_range)-1)//2
-    print(tail)
-    d1_range = range(min_distance, min_distance+tail);
-    d2_range = range(max_distance-tail, max_distance);
-    arr = np.zeros((   len(list(d1_range)), len(list(d2_range)), len(list(length_range))   ))
-                   
-    for i, d1 in enumerate(d1_range):
-        for j, d2 in enumerate(d2_range):
-            local_sequences = [x[d1:d2] for x in sequences]
-            for k, length in enumerate(length_range):
-                temp_list =  []
-                for seq in local_sequences:
-                    temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
-                arr[i,j,k] = np.mean(temp_list)
-    return arr
-
-
-def get_2d_tables(sequences, max_distance, length_range):
+def max_at_maxdistance_length(sequences, max_distance, length_range):
+    
     tail = max(length_range) + 1
     d_range = range(tail, max_distance);
     arr = np.zeros((   len(list(d_range)), len(list(length_range))   ))
@@ -99,6 +72,55 @@ def get_2d_tables(sequences, max_distance, length_range):
                 temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
             arr[i,j] = np.mean(temp_list)
     return arr
+
+
+def max_at_mindistance_length(sequences, max_distance, length_range):
+    
+    tail = max(length_range)
+    d_range = range(0, max_distance-tail);
+    arr = np.zeros((   len(list(d_range)), len(list(length_range))   ))
+                   
+    for i, d in enumerate(d_range):
+        local_sequences = [x[d:] for x in sequences]
+        for j, length in enumerate(length_range):
+            temp_list =  []
+            for seq in local_sequences:
+                temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
+            arr[i,j] = np.mean(temp_list)
+    return arr
+
+
+
+
+#def length_dependence(sequences, min_distance, max_distance, length_range):
+    #local_sequences = [x[min_distance:max_distance] for x in sequences]
+    #arr = []
+    #for length in length_range:
+        #temp_list =  []
+        #for seq in local_sequences:
+            #temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
+        #arr.append(np.mean(temp_list))
+    #return np.array(arr)
+
+
+#def get_3d_tables(sequences, min_distance, max_distance, length_range):
+    #tail = (max_distance-min_distance-max(length_range)-1)//2
+    #print(tail)
+    #d1_range = range(min_distance, min_distance+tail);
+    #d2_range = range(max_distance-tail, max_distance);
+    #arr = np.zeros((   len(list(d1_range)), len(list(d2_range)), len(list(length_range))   ))
+                   
+    #for i, d1 in enumerate(d1_range):
+        #for j, d2 in enumerate(d2_range):
+            #local_sequences = [x[d1:d2] for x in sequences]
+            #for k, length in enumerate(length_range):
+                #temp_list =  []
+                #for seq in local_sequences:
+                    #temp_list.append(max([get_at_content(x) for x in sliding_window(seq, length)]))
+                #arr[i,j,k] = np.mean(temp_list)
+    #return arr
+
+
 
 
 def _local_score(n1, n2, total):
@@ -152,7 +174,6 @@ def get_2d_best_separation(sequences1, sequences2, max_distance, length_range):
     
 
 
-distance_range = range(*args.distance)
 length_range = range(*args.length)
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
 transcripts = BedTool(args.transcripts);
@@ -160,33 +181,96 @@ phages = BedTool(args.phages);
 
 
 phaged_transcripts = [transcripts.intersect(b=phages, u =True, f = 0.5), transcripts.intersect(b=phages, v =True, f = 0.5)]
+list_exact_mindistance_length, list_max_maxdistance_length, list_max_mindistance_length = [], [], []
 seq_list = [];
 for ptr in phaged_transcripts:
-    sequences = [transcript2upstream(x, genome, args.distance[1], args.length[1]) for x in ptr]
+    sequences = [transcript2upstream(x, genome, args.distances[1], args.length[1]) for x in ptr]
     sequences = [x for x in sequences if x]
-    seq_list.append(sequences)
-get_2d_best_separation(seq_list[0], seq_list[1], args.distance[1], length_range)
+    list_exact_mindistance_length.append(exact_at_mindistance_length(sequences, args.exact_distance, length_range))
+    list_max_maxdistance_length.append(max_at_maxdistance_length(sequences, args.distances[1], length_range))
+    list_max_mindistance_length.append(max_at_mindistance_length(sequences, args.distances[1], length_range))
+    
 
+    
+    
+    
+ 
+def get_labels_ticks(arr, d_starts, step):
+    res = []
+    for d, shape in zip(d_starts, arr.shape):
+        q, r = divmod(d, step);
+        if(r):
+            q += 1;
+            r = step -r
+        ticks = range(r, shape+1, step);
+        labels =[(q+x)*step for x in range(len(ticks))]
+        res.append((ticks, labels));
+    return res;
+ 
+    
+def plot_heatmap(cmatrix, d_starts, name, arrtype, tick_step=5, fontsize=12):
+    cmap="RdPu"
+    
+    aspect = [x/sum(cmatrix.shape) for x in cmatrix.shape]
+    aspect = [x*20 for x in aspect[::-1]]
+    aspect[0] = aspect[0] + 5;
+    
+    fig, ax = plt.subplots(figsize=aspect)
+    plt.tight_layout(rect=[0, 0, 0.8, 0.9])
+    im = ax.imshow(cmatrix, cmap=cmap)
+    cbar = ax.figure.colorbar(im, ax=ax, cmap=cmap)
+    cbar.ax.set_ylabel("AT content %s" % arrtype, rotation=-90, va="bottom", fontsize=fontsize)
+    cbar.ax.tick_params(labelsize=fontsize)
+    
+    (yticks, ylabels), (xticks, xlabels) = get_labels_ticks(cmatrix, d_starts, tick_step)
+    ax.set_xticks(xticks)
+    ax.set_yticks(yticks)
+    ax.set_xticklabels(xlabels, fontsize=fontsize)
+    ax.set_yticklabels(ylabels, fontsize=fontsize)
+    ax.set_ylabel("distance", fontsize=fontsize)
+    ax.set_xlabel("length", fontsize=fontsize)
+    ax.xaxis.set_label_position('top') 
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
+    for edge, spine in ax.spines.items():
+        spine.set_visible(False)
+    ax.tick_params(which="minor", bottom=False, left=False)
+    plt.title("%s: %s" % (arrtype, name), fontsize=fontsize*1.3)
 
-
-#at_tables = [];
-#for ptr in phaged_transcripts:
-    #sequences = [transcript2upstream(x, genome, args.distance[1], args.length[1]) for x in ptr]
-    #sequences = [x for x in sequences if x]
-    ##at_tables.append(get_at_tables(sequences, distance_range, length_range))
-    ##at_tables.append(length_dependence(sequences, args.distance[0], args.distance[1], length_range))
-    ##at_tables.append(get_3d_tables(sequences, args.distance[0], args.distance[1], length_range))
-    #at_tables.append(get_2d_tables(sequences, args.distance[1], length_range))
+    plt.savefig(os.path.join(args.outdir, "%s_%s_at.%s"  %  (name, arrtype, args.format)) , format = args.format)
+    plt.clf()
     
     
 
+absolute_list = [list_exact_mindistance_length, list_max_maxdistance_length, list_max_mindistance_length]
+names = ["exact_mindistance_length", "max_maxdistance_length", "max_mindistance_length"]
+adjustments = [(0, args.length[0]), (args.length[1], args.length[0]), (0, args.length[0])]
+arrtypes = ['phage', 'non-phage', 'difference']
 
-##print(at_tables)
-#at_tables.append(at_tables[0] - at_tables[1]);
-#max_indices = [np.unravel_index(np.argmax(x, axis=None), x.shape) for x in at_tables];
-#print(max_indices)
-#maxes = [x[0][x[1]] for x in zip(at_tables, max_indices)]
-#print(maxes);
+for arr_list, name, adj in zip(absolute_list, names, adjustments):
+    
+    arr_list.append(arr_list[0] - arr_list[1]);
+    max_indices = [np.unravel_index(np.argmax(x, axis=None), x.shape) for x in arr_list];
+    maxes = [x[0][x[1]] for x in zip(arr_list, max_indices)]
+    
+    print("Best parameters for the scenario: %s" % name.upper())
+    for max_index, maxval in zip(max_indices, maxes):
+        print("%d\t%d\t%1.2f" % (max_index[0] + adj[0], max_index[1] + adj[1], maxval))
+    print()
+    
+    for cmatrix, arrtype in zip(arr_list, arrtypes):
+        plot_heatmap(cmatrix, adj, name, arrtype, tick_step=5, fontsize=20)
+        
+
+#get_labels_ticks(list_exact_mindistance_length[2], (0, args.length[0]), 5)    
+#plot_heatmap(list_exact_mindistance_length[2], "AT content difference", (0, args.length[0]), tick_step=5, fontsize=16)
+    
+    
+    
+    
+#get_2d_best_separation(seq_list[0], seq_list[1], args.distance[1], length_range)
+
+
+
 
 
     
