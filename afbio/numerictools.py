@@ -273,6 +273,39 @@ def lists2thresholds(l1, l2, reverse=False):
         
         
         
+def evaluate_increasing_trend(mylist, penalty):
+    '''Evaluates how strong and stable is the increasing trend in the given list
+        mylist list: list of numbers
+        penalty float: if mylist[i+1] < mylist[i], the (mylist[i] - mylist[i+1])*penalty will be subtracted from the score. Must be bigger than 1.
+        
+        Returns float: evaluated score
+    '''
+    scores = [x[1]-x[0] for x in zip(mylist, mylist[1:])]
+    return sum([x if x>0 else penalty*x for x in scores])
+
+
+def evaluate_dereasing_trend(mylist, penalty):
+    '''Evaluates how strong and stable is the increasing trend in the given list
+        mylist list: list of numbers
+        penalty float: if mylist[i+1] > mylist[i], the (mylist[i+1] - mylist[i])*penalty will be subtracted from the score. Must be bigger than 1.
+        
+        Returns float: evaluated score
+    '''
+    scores = [x[0]-x[1] for x in zip(mylist, mylist[1:])]
+    return sum([x if x>0 else penalty*x for x in scores])
+
+
+def find_best_trend(array2d, axis, penalty, increasing=True):
+    if(increasing):
+        evaluate = evaluate_increasing_trend
+    else:
+        evaluate = evaluate_dereasing_trend
+    bestindex = np.argmax(np.apply_along_axis(evaluate, axis, array2d, penalty));
+    if(axis == 0):
+        return array2d[:,bestindex], bestindex
+    else:
+        return array2d[bestindex,:], bestindex
+    
         
         
         
@@ -289,8 +322,16 @@ def lists2thresholds(l1, l2, reverse=False):
 	
 #testing section
 if(__name__ == "__main__"):
-    a = [1,1,1,4,5,6,7,7, 9]
-    b = [1,2,3,3,5,7,8,10]
-    print(lists2thresholds(a, b, True));
+    #a = [1,1,1,4,5,6,7,7, 9]
+    #b = [1,2,3,3,5,7,8,10]
+    #print(lists2thresholds(a, b, True));
+    a = [1,2,4,3,5]
+    b = [1,3,5,11,7]
+    arr = np.array((a,b))
+    best = find_best_trend(arr, 0, 5)
+    print(arr[:,best])
+    
+    
+    
 	
 	
