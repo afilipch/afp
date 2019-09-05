@@ -11,7 +11,7 @@ import numpy as np;
 from Bio import SeqIO;
 from pybedtools import BedTool;
 
-from afbio.sequencetools import get_at_content, sliding_window, transcript_upstream
+from afbio.sequencetools import get_at_content, sliding_window
 from afbio.numerictools import CDF, lists2thresholds, find_best_trend
 
 
@@ -101,7 +101,7 @@ def max_at_mindistance_length(sequences, max_distance, length_range):
 def _local_score(n1, n2, total):
     spec = (n1)/(n1+n2)
     sens = n1/total
-    return spec*sens
+    return (spec**3)*(sens**2)
 
 def separation_score(l1, l2):
     total = len(l1);
@@ -136,8 +136,9 @@ def get_2d_best_separation(sequences1, sequences2, max_distance, length_range):
             
                 
             #arr[i,j] = np.mean(temp_list)
-    max_indices = np.unravel_index(np.argmax(arr, axis=None), arr.shape)
-    print(data[max_indices])
+    return arr, data
+    #max_indices = np.unravel_index(np.argmax(arr, axis=None), arr.shape)
+    #print(data[max_indices])
             
             
             
@@ -188,16 +189,10 @@ def plot_heatmap(cmatrix, d_starts, name, arrtype, tick_step=5, fontsize=12):
     plt.savefig(os.path.join(args.outdir, "%s_%s_at.%s"  %  (name, arrtype, args.format)) , format = args.format)
     plt.clf()
     
-    
-#def get_length_trend(arr, penalty):
-    #best, bestindex = find_best_trend(arr, 1, penalty, False)
-    #return best, bestindex
-
-#def get_distance_trend(arr, adjustment, penalty)
 
 
-def plot_length_trend(arr_list, length_range, name, penalty, fontsize=20, linewidth=5):
-    data = [find_best_trend(x, 1, penalty, False)[0] for x in arr_list]
+def plot_length_trend(arr_list, length_range, name, distance, fontsize=20, linewidth=5):
+    data = [x[distance,:] for x in arr_list]
     labels = ['phage', 'non-phage', 'difference']
     colors = ['darkblue', 'lightblue', 'gray']
     
@@ -217,13 +212,39 @@ def plot_length_trend(arr_list, length_range, name, penalty, fontsize=20, linewi
     for mylist, color, label in zip(data, colors, labels):
         ax.plot(length_range, mylist, color = color, linewidth=linewidth, label=label)
 
-    fig.legend(loc=(0.15, 0.86), frameon=False, fontsize=fontsize, ncol = 3)
+    fig.legend(loc=(0.15, 0.86), frameon=False, fontsize=fontsize, ncol = 2)
     plt.savefig(os.path.join(args.outdir, "trend_length_%s.%s"  %  (name, args.format)) , format = args.format)
     plt.clf()
     
     
-def plot_distance_trend(arr_list, adj, name, penalty, fontsize=20, linewidth=5):
-    data = [find_best_trend(x, 0, penalty, False)[0] for x in arr_list]
+    
+def plot_length_trend_difference(arr, length_range, name, distance, fontsize=20, linewidth=5):
+    mylist =  arr[distance,:]
+    label = 'difference'
+    color = 'gray'
+    
+    
+    
+    fig, ax = plt.subplots(figsize=(16,9))
+    plt.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])
+
+    ax.set_xlabel('Length of a motif', fontsize=fontsize)
+    ax.set_ylabel('AT-content difference', fontsize=fontsize)
+    ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for axis in ['bottom','left','right']:
+        ax.spines[axis].set_linewidth(linewidth)
+    
+    ax.plot(length_range, mylist, color = color, linewidth=linewidth, label=label)
+    ax.text(0.8, 0.8, "Distance=%d" % distance, fontsize=fontsize, transform=ax.transAxes)
+    
+    plt.savefig(os.path.join(args.outdir, "trend_length_difference_%s.%s"  %  (name, args.format)) , format = args.format)
+    plt.clf()
+    
+    
+def plot_distance_trend(arr_list, adj, name, length, fontsize=20, linewidth=5):
+    data = [x[:,length] for x in arr_list]
     x_range = range(adj, adj+len(data[0]))
     labels = ['phage', 'non-phage', 'difference']
     colors = ['darkblue', 'lightblue', 'gray']
@@ -244,8 +265,35 @@ def plot_distance_trend(arr_list, adj, name, penalty, fontsize=20, linewidth=5):
     for mylist, color, label in zip(data, colors, labels):
         ax.plot(x_range, mylist, color = color, linewidth=linewidth, label=label)
 
-    fig.legend(loc=(0.15, 0.86), frameon=False, fontsize=fontsize, ncol = 3)
+    fig.legend(loc=(0.15, 0.86), frameon=False, fontsize=fontsize, ncol = 2)
     plt.savefig(os.path.join(args.outdir, "trend_distance_%s.%s"  %  (name, args.format)) , format = args.format)
+    plt.clf()
+    
+    
+def plot_distance_difference(arr, adj, name, length, fontsize=20, linewidth=5):
+    mylist = arr[:,length]
+    x_range = range(adj, adj+len(mylist))
+    label = 'difference'
+    color = 'gray'
+    
+    
+    
+    fig, ax = plt.subplots(figsize=(16,9))
+    plt.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])
+
+    ax.set_xlabel('Distance to TSS', fontsize=fontsize)
+    ax.set_ylabel('AT-content difference', fontsize=fontsize)
+    ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for axis in ['bottom','left','right']:
+        ax.spines[axis].set_linewidth(linewidth)
+    
+    ax.plot(x_range, mylist, color = color, linewidth=linewidth, label=label)
+    ax.text(0.8, 0.8, "Length=%d" % length, fontsize=fontsize, transform=ax.transAxes)
+
+    plt.savefig(os.path.join(args.outdir, "trend_distance_difference_%s.%s"  %  (name, args.format)) , format = args.format)
+    plt.cla()
     plt.clf()
     
     
@@ -271,10 +319,12 @@ seq_list = [];
 for ptr in phaged_transcripts:
     sequences = [transcript2upstream(x, genome, args.max_distance, args.length[1]) for x in ptr]
     sequences = [x for x in sequences if x]
+    seq_list.append(sequences)
     list_exact_mindistance_length.append(exact_at_mindistance_length(sequences, args.exact_distance, length_range))
     list_max_maxdistance_length.append(max_at_maxdistance_length(sequences, args.max_distance, length_range))
     list_max_mindistance_length.append(max_at_mindistance_length(sequences, args.max_distance, length_range))    
     
+
 
 ##################################################################################################
 ### Output of the results
@@ -284,15 +334,30 @@ names = ["exact_mindistance_length", "max_maxdistance_length", "max_mindistance_
 adjustments = [(0, args.length[0]), (args.length[1], args.length[0]), (0, args.length[0])]
 arrtypes = ['phage', 'non-phage', 'difference']
 
+separation_arr, separation_data = get_2d_best_separation(seq_list[0], seq_list[1], args.max_distance, length_range);
+max_index = np.unravel_index(np.argmax(separation_arr, axis=None), separation_arr.shape)
+maxval = separation_arr[max_index]
+sep_d, sep_length, sep_threshold, sep_passed1, sep_passed2 = separation_data[max_index]
+print("Best parameters for the scenario: SEPARATION")
+print( "\t".join(("distance", "length", "score", "threshold", "passed phage", "passed non-phage")) )
+print("%d\t%d\t%1.2f\t%1.2f\t%d\t%d\n" % (sep_d, sep_length, maxval, sep_threshold, sep_passed1, sep_passed2))
+
+plot_heatmap(separation_arr, adjustments[1], 'separation', 'separation', tick_step=5, fontsize=20);
+
 for arr_list, name, adj in zip(absolute_list, names, adjustments):
-    plot_length_trend(arr_list, length_range, name, 4, fontsize=20, linewidth=5)
-    plot_distance_trend(arr_list, adj[0], name, 4, fontsize=20, linewidth=5)
+    plot_length_trend(arr_list, length_range, name, 0, fontsize=20, linewidth=5)
+    plot_distance_trend(arr_list, adj[0], name, 20, fontsize=20, linewidth=5)
     
     arr_list.append(arr_list[0] - arr_list[1]);
+    plot_length_trend_difference(arr_list[2], length_range, name, 0, fontsize=20, linewidth=5)
+    plot_distance_difference(arr_list[2], adj[0], name, 20, fontsize=20, linewidth=5)
+    
+    
     max_indices = [np.unravel_index(np.argmax(x, axis=None), x.shape) for x in arr_list];
     maxes = [x[0][x[1]] for x in zip(arr_list, max_indices)]
     
     print("Best parameters for the scenario: %s" % name.upper())
+    print( "\t".join(("distance", "length", "max value")) )
     for max_index, maxval in zip(max_indices, maxes):
         print("%d\t%d\t%1.2f" % (max_index[0] + adj[0], max_index[1] + adj[1], maxval))
     print()
@@ -300,15 +365,10 @@ for arr_list, name, adj in zip(absolute_list, names, adjustments):
     
     for cmatrix, arrtype in zip(arr_list, arrtypes):
         plot_heatmap(cmatrix, adj, name, arrtype, tick_step=5, fontsize=20)
-        
+    
+    
 
-#get_labels_ticks(list_exact_mindistance_length[2], (0, args.length[0]), 5)    
-#plot_heatmap(list_exact_mindistance_length[2], "AT content difference", (0, args.length[0]), tick_step=5, fontsize=16)
-    
-    
-    
-    
-#get_2d_best_separation(seq_list[0], seq_list[1], args.max_distance, length_range)
+
 
 
 

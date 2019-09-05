@@ -200,45 +200,36 @@ def get_sub_lists(my_list, minlen=0, maxlen=None):
             sublists.extend(temp)
     return sublists
 
+
+def array2fixed_length(arr1d, length):
+    temp = np.concatenate([[x]*length for x in arr1d]);
+    return [np.mean(x) for x in np.split(temp, length)]
+    
+    
+
+
 ############################################################################################################################
 ### AT-content section 
 def get_at_content(seq):
     return (seq.count('A') + seq.count('T'))/len(seq)
 
-def transcript_upstream(interval, genome, length, lookup):
-    if(interval.strand == '+'):
-        total_seq = str(genome[interval.chrom][interval.start-lookup:interval.start].seq.upper())
-    elif(interval.strand == '-'):
-        total_seq = str(genome[interval.chrom][interval.stop: interval.stop+lookup].seq.reverse_complement().upper())
-        
-    res = [get_at_content(x) for x in sliding_window(total_seq, length)]
-    
-    if(len(res) == lookup - length + 1):
-        return res
-    else:
-        return None
-    
-def upstream_content(transcripts, genome, length, lookup):
-    upstream_content = [transcript_upstream(x, genome, args.length, args.lookup) for x in transcripts];
-    upstream_content = np.array([x for x in upstream_content if x])
-    return np.mean(upstream_content, axis=0)
 
     
-def transcript_content(interval, genome):
-    #print(type(interval.start))
-    if(interval.strand == '+'):
-        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.upper())
-    elif(interval.strand == '-'):
-        seq = str(genome[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())  
-        
-    return get_at_content(seq);
+#def upstream_content(transcripts, genome, length, lookup):
+    #upstream_content = [transcript_upstream(x, genome, args.length, args.lookup) for x in transcripts];
+    #upstream_content = np.array([x for x in upstream_content if x])
+    #return np.mean(upstream_content, axis=0)
+
+    
+
 
 
 	
 		
 		
 if(__name__ == "__main__"):
-    pass;
+    a = range(55);
+    print(array2fixed_length(a, 10));
 			
 			
 			
