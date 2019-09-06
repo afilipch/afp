@@ -6,6 +6,7 @@ from itertools import islice;
 from collections import defaultdict, Counter;
 from itertools import combinations, product
 
+import pandas as pd;
 import numpy as np;
 from pybedtools import BedTool
 from Bio import SeqIO
@@ -204,6 +205,15 @@ def get_sub_lists(my_list, minlen=0, maxlen=None):
 def array2fixed_length(arr1d, length):
     temp = np.concatenate([[x]*length for x in arr1d]);
     return [np.mean(x) for x in np.split(temp, length)]
+
+
+def coverage2dict(coverage):
+    d = {};
+    data = pd.read_csv(coverage,sep="\t", header = None, names = ['chr', 'pos', 'coverage'])
+    for key, val in data.groupby(['chr']):
+        d[key] = np.array(val['coverage'])
+    return d;
+        
     
     
 
@@ -228,8 +238,9 @@ def get_at_content(seq):
 		
 		
 if(__name__ == "__main__"):
-    a = range(55);
-    print(array2fixed_length(a, 10));
+    #a = range(55);
+    #print(array2fixed_length(a, 10));
+    coverage2dict(sys.argv[1])
 			
 			
 			
