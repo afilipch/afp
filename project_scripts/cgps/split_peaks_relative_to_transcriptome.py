@@ -6,6 +6,7 @@ from collections import defaultdict
 from pybedtools import BedTool, Interval
 from Bio import SeqIO
 import matplotlib.pyplot as plt;
+import copy
 
 from afbio.sequencetools import get_at_content, sliding_window, array2fixed_length, coverage2dict
 
@@ -68,11 +69,12 @@ already_discovered = set()
 transcriptome_region_dict = defaultdict(list);
 ph_names = ['phage', 'non-phage']
 tr_names = ['upstream', 'transcript', 'downstream']
+tr_fractions = [0.2, 0.2, 0.2]
 tr_intervals = [upstreams, transcripts, downstreams]
 
 for ph_name, ptr in zip(ph_names, phaged_regions):
-    for tr_name, intervals in zip(tr_names, tr_intervals):
-        for region in ptr.intersect(b=intervals, f=0.5, u=True):
+    for tr_name, tr_fraction, intervals in zip(tr_names, tr_fractions, tr_intervals):
+        for region in ptr.intersect(b=intervals, f=tr_fraction, u=True):
             if(region.name not in already_discovered):
                 transcriptome_region_dict[(ph_name, tr_name)].append(region);
             already_discovered.add(region.name)
@@ -91,24 +93,20 @@ for k, v in transcriptome_region_dict.items():
 ### transcript profile
 
 
-def get_transcript_profile(regions, transcripts, coverage):
+def get_transcript_profile(regions, transcripts, coverage, fraction):
     temp_dict = defaultdict(list);
     profiles = [];
     
-    for region in regions.intersect(b=transcripts, f=0.5, wb=True):
-        cds_name = dict([ x.split("=") for x in region[OFFSET+8].split(";") if x]) ['ID']
-        temp_dict[cds_name].append(region);
+    for transcript in transcripts.intersect(b=regions, F=fraction, u=True):
+        temp_dict[transcript.name].append(transcript);
         
-    for temp_regions in temp_dict.values():
+    for temp_transcripts in temp_dict.values():
         local_profiles = []
-        for region in temp_regions:
-            tr_start = int(region[OFFSET+3])-1
-            tr_end = int(region[OFFSET+4])
-            arr = coverage[region[OFFSET]][tr_start: tr_end]
-            if(region[OFFSET+6] == '-'):
+        for transcript in temp_transcripts:
+            arr = coverage[transcript.chrom][transcript.start: transcript.stop]
+            if(transcript.strand == '-'):
                 arr = arr[::-1]
             local_profiles.append(array2fixed_length(arr, 100))
-            
         local_profiles = np.array(local_profiles)
         profiles.append(local_profiles.mean(axis=0));
     
@@ -146,7 +144,7 @@ if(args.full):
     #transcript_profiles_weighted = [];
     for k, v in transcriptome_region_dict.items():
         if(k[1] == "transcript"):
-            transcript_profiles.append(get_transcript_profile(v, transcripts, coverage))
+            transcript_profiles.append(get_transcript_profile(v, transcripts, coverage, fraction=tr_fractions[1]))
             #transcript_profiles_weighted.append(get_transcript_profile(v, transcripts, weighted=True))
     draw_transcript_profiles(transcript_profiles, fontsize=28, linewidth=5);
         
@@ -156,24 +154,23 @@ if(args.full):
 ###################################################################################################
 ### upstream profile
 
-def get_upstream_profile(regions, upstreams, coverage):
+def get_upstream_profile(regions, upstreams, coverage, fraction, plain=False):
     profiles = [];
-    
-    for region in regions.intersect(b=upstreams, f=0.5, wb=True):
-            
-        tr_start = int(region[OFFSET+1]) - 1
-        tr_end = int(region[OFFSET+2])
-        arr = coverage[region[OFFSET]][tr_start: tr_end]
-        if(region[OFFSET+5] == '+'):
+    for upstream in upstreams.intersect(b=regions, F=fraction, u=True):
+        arr = coverage[upstream.chrom][upstream.start: upstream.end]
+        if(plain):
+            norma = max(arr)
+            arr = [x/norma for x in arr]
+        if(upstream.strand == '+'):
             arr = arr[::-1]
-        profiles.append(arr);
+        profiles.append(copy.copy(arr));
         
     profiles = np.array(profiles);
     return profiles.mean(axis=0);
 
 
 
-def draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5):
+def draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5, plain=False):
     labels = ['phage', 'non-phage']
     colors = ['darkblue', 'lightblue']
     x_range = range(len(upstream_profiles[0]));
@@ -182,7 +179,10 @@ def draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5):
     plt.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])
 
     ax.set_xlabel("distance from CDS [nt]", fontsize=fontsize)
-    ax.set_ylabel('Peak coverage', fontsize=fontsize)
+    if(plain):
+        ax.set_ylabel('Peak density', fontsize=fontsize)
+    else:
+        ax.set_ylabel('Peak coverage', fontsize=fontsize)
     ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -193,7 +193,10 @@ def draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5):
         ax.plot(x_range, profile, color = color, linewidth=linewidth, label=label)
 
     fig.legend(loc=(0.15, 0.86), frameon=False, fontsize=fontsize, ncol = 2)
-    plt.savefig(os.path.join(args.outdir, "upstream_profile.%s"  %  args.format) , format = args.format) 
+    if(plain):
+        plt.savefig(os.path.join(args.outdir, "upstream_profile_plain.%s"  %  args.format) , format = args.format)
+    else:
+        plt.savefig(os.path.join(args.outdir, "upstream_profile.%s"  %  args.format) , format = args.format)
     plt.clf()
 
 
@@ -202,12 +205,16 @@ def draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5):
 
 if(args.full):
     upstream_profiles = [];
+    upstream_profiles_plain = [];
     for k, v in transcriptome_region_dict.items():
         if(k[1] == "upstream"):
-            upstream_profiles.append(get_upstream_profile(v, upstreams, coverage))
+            upstream_profiles.append(get_upstream_profile(v, upstreams, coverage, fraction=tr_fractions[0], plain=False))
+            upstream_profiles_plain.append(get_upstream_profile(v, upstreams, coverage, fraction=tr_fractions[0], plain=True))
 
 
-    draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5);
+    draw_upstream_profiles(upstream_profiles, fontsize=28, linewidth=5, plain=False);
+    draw_upstream_profiles(upstream_profiles_plain, fontsize=28, linewidth=5, plain=True)
+    
         
         
         

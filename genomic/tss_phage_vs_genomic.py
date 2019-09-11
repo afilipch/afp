@@ -249,7 +249,35 @@ for data, name in zip(all_data, names):
     draw_barplot(data, name, args.length, fontsize=28, linewidth = 5, width = 0.2, ylim=args.ylim)
     #break;
     
+    
+    
+########################################################################################################################
+###Check whether shorter transcripts have higher AT content than longer transcripts. Or vice versa.
+    
 
+shorter_longer_list = [[], []];
+for i, ptr in enumerate(phaged_transcripts[:2]):
+    temp_dict = defaultdict(list);
+    
+    for transcript in ptr:
+        at_content = transcript2upstream(transcript, genome, args.length)
+        if(at_content):
+            temp_dict[transcript.name].append((len(transcript), at_content))
+    
+            
+            
+    for v in temp_dict.values():
+        if(len(v)==2):
+            shorter = min(v, key= lambda x: x[0])[1]
+            longer = max(v, key= lambda x: x[0])[1]
+            shorter_longer_list[i].append((shorter, longer));
+        
+
+print("\ntype\tnumber of transcripts\tshorter AT\tLonger AT");
+shorter_longer_list = [np.array(x) for x in shorter_longer_list]
+for x, ttype in zip(shorter_longer_list, ['phage', 'non-phage']):
+    print("%s\t%d\t%1.2f\t%1.2f" %  tuple([ttype, x.shape[0]] + list(x.mean(axis=0))) )
+        
 
 
 
