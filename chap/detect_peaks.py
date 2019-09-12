@@ -17,6 +17,7 @@ parser.add_argument('--kernel', nargs = '?', choices = ['ndg', 'square'], defaul
 parser.add_argument('--peakwidth', nargs = '?', default=0, type = int, help = "Expected width of the peaks, if not set peakwidth is estimated automatically");
 parser.add_argument('--widthfactor', nargs = '?', default=1, type = float, help = "Multiplier for the eastimated peakwidth, so peakwidth=estimated_peakwidth*widthfactor");
 parser.add_argument('--meanmult', nargs = '?', default=6.0, type = float, help = "Minimum required peak height (denoted in median coverage) for the peakwidth estimation");
+parser.add_argument('--threads', nargs = '?', default=8, type = int, help = "Number of threads");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output coverage plot");
 parser.add_argument('--convolution', nargs = '?', default='', type = str, help = "If set, the convolution track is written to the provided file");
 args = parser.parse_args();
@@ -52,7 +53,7 @@ else:
 ###Convolute coverage with a given kernel
 exec("from afbio.filters import %s as kernelfunc" % args.kernel)
 kernel = kernelfunc(truncate = 4.0);
-convolution = np.array(convolute(coverage, kernel, bandwidth, threads=8))
+convolution = np.array(convolute(coverage, kernel, bandwidth, threads=args.threads))
 
 
 ###Detect peaks for convolved coverage

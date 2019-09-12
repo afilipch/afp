@@ -8,7 +8,8 @@ import numpy as np;
 from Bio import SeqIO
 from collections import Counter;
 
-from afbio.sequencetools import sliding_window
+from afbio.sequencetools import sliding_window, get_at_content
+
 
 parser = argparse.ArgumentParser(description='Calculates smoothed (averaged) GC content along the provided genome');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genome, fasta format");
@@ -27,9 +28,6 @@ def get_flanks_backward(window):
     for c in range(int(len(window)/2)):
         yield window[c*2+2:];        
 
-def get_content(window):
-    counter = Counter(window);
-    return (counter['G'] + counter['C'])/float(len(window));
 
 for seqrec in SeqIO.parse(args.path, 'fasta'):
     chrom = seqrec.id
@@ -38,13 +36,12 @@ for seqrec in SeqIO.parse(args.path, 'fasta'):
     for count, window in enumerate(sliding_window(seq, wlen)):
         if(count == 0):
             for flank in get_flanks(window):
-                sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_content(flank)))
+                sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_at_content(flank)))
                 position += 1;
-        sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_content(window)))
+        sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_at_content(window)))
         position += 1;
     else:
-        #sys.stderr.write("%s\n" % (window,))
         for flank in get_flanks_backward(window):
-            sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_content(flank)))
+            sys.stdout.write("%s\t%d\t%1.5f\n" % (chrom, position, get_at_content(flank)))
             position += 1;
         

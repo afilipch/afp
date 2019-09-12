@@ -10,28 +10,17 @@ import pandas as pd;
 
 from afbio.filters import dsk, usk, trk;
 from afbio.peaks import convolute
+from afbio.sequencetools import coverage2dict;
 
 
 parser = argparse.ArgumentParser(description='Detects  GC drops along the provided GC content track');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the GC content file, bed3 format");
-#parser.add_argument('--kernel', nargs = '?', choices = ['ndg', 'square'], default='ndg', type = str, help = "Kernel to use for the fitering");
-#parser.add_argument('--peakwidth', nargs = '?', default=0, type = int, help = "Expected width of the peaks, if not set peakwidth is estimated automatically");
-#parser.add_argument('--widthfactor', nargs = '?', default=1, type = float, help = "Multiplier for the eastimated peakwidth, so peakwidth=estimated_peakwidth*widthfactor");
 parser.add_argument('--lookup', nargs = '?', default=10, type = int, help = "Size of an area for finding local extrema in convolution track");
 parser.add_argument('--bandwidth', nargs = '?', default=60, type = int, help = "Assumed mininmal length of a dip");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output coverage plot");
-#parser.add_argument('--convolution', nargs = '?', default='', type = str, help = "If set, the convolution track is written to the provided file");
+parser.add_argument('--threads', nargs = '?', default=8, type = int, help = "Number of threads");
 args = parser.parse_args();
 
-###Read Coverage
-gc_content = pd.read_csv(args.path, sep="\t" , names = ["chr", "position", "gc"]).gc.values
-
-
-dkernel = dsk(up=1, down=-1)
-ukernel = usk(up=1, down=-1)
-#kernel = trk(steps=1001);
-coverage = gc_content[:]#[1]*100 + [1/x for x in range(1, 101)] + [1]*100
-#print(ukernel)
 
 def find_local_extrema(convolution, lookup):
     extrema = [];
@@ -50,20 +39,20 @@ def find_local_minima(convolution, lookup):
             minima.append((pos, c));
     return minima;
 
+#kernel = dsk(up=1, down=-1)
+kernel = usk(up=1, down=-1)
+
+gc_content_dict = coverage2dict(args.path)
 
 
-#sys.stderr.write("bb\n")
-convolution_down = np.array(convolute(coverage, dkernel, args.bandwidth, threads=8, takepeak=False))
-extrema = find_local_extrema(convolution_down, args.lookup);
+for chrom, gc_content in gc_content_dict.items():
+    convolution_down = np.array(convolute(gc_content, kernel, args.bandwidth, threads=args.threads, takepeak=False))
+    extrema = find_local_extrema(convolution_down, args.lookup);
+    for e in extrema:
+        print("%s\t%d\t%1.4f\t%s" % tuple([chrom] + list(e)));
 
-for e in extrema:
-    print("chr\t%d\t%1.4f\t%s" % e);
 
 
-#print(maxima)
-
-#print(coverage)
-#convolution_up = np.array(convolute(coverage, ukernel, bandwidth, threads=8, takepeak=False))
 
 
 
