@@ -42,11 +42,11 @@ def find_local_minima(convolution, lookup):
 #kernel = dsk(up=1, down=-1)
 kernel = usk(up=1, down=-1)
 
-gc_content_dict = coverage2dict(args.path)
+at_content_dict = coverage2dict(args.path)
 
 
-for chrom, gc_content in gc_content_dict.items():
-    convolution_down = np.array(convolute(gc_content, kernel, args.bandwidth, threads=args.threads, takepeak=False))
+for chrom, at_content in at_content_dict.items():
+    convolution_down = np.array(convolute(at_content, kernel, args.bandwidth, threads=args.threads, takepeak=False))
     extrema = find_local_extrema(convolution_down, args.lookup);
     for e in extrema:
         print("%s\t%d\t%1.4f\t%s" % tuple([chrom] + list(e)));
@@ -94,26 +94,26 @@ if(args.plot):
 
 
 
-#limit = gc_content.mean()*0.9
+#limit = at_content.mean()*0.9
 #sys.stderr.write("limit is set to %1.5f\n\n" % limit);
 
 #drops = [];
 
 #indrop = False
-#for pos, gcc in enumerate(gc_content):
-    #if(gcc < limit and not indrop):
+#for pos, atc in enumerate(at_content):
+    #if(atc < limit and not indrop):
         #indrop = True;
         #start = pos;
-    #elif(gcc >= limit and indrop):
+    #elif(atc >= limit and indrop):
         #indrop = False
         #end = pos;
         #drops.append((start, end));
 #else:
     #if(indrop):
-        #drops.append((start, len(gc_content)));
+        #drops.append((start, len(at_content)));
         
 #for s, e in drops[:20]:
-    #print("%d\t%d\t%s" % (s, e, gc_content[s-1: e+1]));
+    #print("%d\t%d\t%s" % (s, e, at_content[s-1: e+1]));
     
     
 #print(np.percentile([x[1]-x[0] for x in drops], range(101)))

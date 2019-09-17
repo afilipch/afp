@@ -32,18 +32,24 @@ def parse_closest(interval, offset):
         return [None, interval.start, interval.strand, score, 0]
     else:
         name = dict([x.split("=") for x in annotation.split(";")])['ID']
-        distance = int(interval[-1]);
-        return [name, interval.start, interval.strand, score, distance]
+        cds_start = int(interval[OFFSET+3])
+        cds_stop = int(interval[OFFSET+4])
+        if(interval.strand == '-'):
+            distance = interval.stop - cds_stop;
+        else:
+            distance = cds_start - interval.stop
+        return name, interval.start, interval.strand, score, distance
     
     
 
 annotated_tss = [];
-for interval in tss_list.closest(b=cds_list, s = True, iu = True, D='a', io=True):
+for interval in tss_list.closest(b=cds_list, s = True, iu = True, D='a'):
     annotated_tss.append(parse_closest(interval, OFFSET))
 
 orphans = [x for x in annotated_tss if not x[0]]
 orphans_distance = [x for x in annotated_tss if x[0] and x[4] > args.distance]
-valid_tss = [x for x in annotated_tss if x[0] and x[4] <= args.distance]
+orphans_inside = [x for x in annotated_tss if x[0] and x[4] < 0]
+valid_tss = [x for x in annotated_tss if x[0] and x[4] <= args.distance and x[4]>=0]
 
 geneid2tss = defaultdict(list);
 for vtss in valid_tss:
@@ -52,7 +58,6 @@ for vtss in valid_tss:
 for cds in cds_list:
     tss_vars = geneid2tss.get(cds.name)
     if(tss_vars):
-        #sys.stdout.write(str(cds))
         cds.attrs['tss_variants'] = str(len(tss_vars)) 
         for tss in tss_vars:
             if(cds.strand == '+'):
@@ -60,16 +65,13 @@ for cds in cds_list:
             else:
                 cds.stop = tss;
             sys.stdout.write(str(cds))
-        #print()
-        #print("_"*180)
-        #print()
     else:
         cds.attrs['tss_variants'] = '1'
         sys.stdout.write(str(cds))
         
     
     
-sys.stderr.write("\nOrphans tss: %d\nOrphans distance tss: %d\nValid tss: %d\n"  % tuple([len(x) for x in [orphans, orphans_distance, valid_tss]  ]) )
+sys.stderr.write("\nOrphans tss: %d\nLong distance tss: %d\nInside gene tss: %d\nValid tss: %d\n"  % tuple([len(x) for x in [orphans, orphans_distance, orphans_inside, valid_tss]  ]) )
 sys.stderr.write("\nnum_tss_per_cds\tnum_of_cds\n")
 tss_per_gene = list(sorted(Counter([len(x) for x in geneid2tss.values()]).items(), key = lambda x: x[0]))
 for kv in tss_per_gene:
@@ -98,6 +100,7 @@ for axis in ['bottom','left','right']:
 
 ax.plot(xvals, yvals, color = 'darkblue', linewidth=linewidth)
 plt.savefig(os.path.join(args.outdir, "utr5_length.%s"  %  args.format) , format = args.format)
+#plt.show()
 
     
     

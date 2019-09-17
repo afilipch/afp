@@ -66,13 +66,15 @@ print("chap timepoint\trnaseq timepoint\tcorrelation for upregulated\tcorrelatio
 
 intensity2diff = {};
 for i1, i2 in product(range(ldiff), range(lint)):
-    up_int, down_int, up_diff, down_diff = [], [], [], []
+    up_int, down_int, common_int, up_diff, down_diff, common_diff = [], [], [], [], [], []
     for genename, intensity in names2intensities.items():
         s_int = intensity[i2];
         if(s_int):
             diff = names2diff.get(genename, None);
             if(diff):
                 s_diff = diff[i1];
+                common_int.append(s_int)
+                common_diff.append(abs(s_diff))
                 if(s_diff>0):
                     up_int.append(s_int);
                     up_diff.append(s_diff);
@@ -89,33 +91,40 @@ for i1, i2 in product(range(ldiff), range(lint)):
     else:
         down_rcoeff = 0;
         
-    intensity2diff[(i2, i1)] = up_rcoeff, down_rcoeff
-    print("%s\t%s\t%.3f\t%.3f\t%d\t%d" % (int2timepoints[i2], diff2timepoints[i1], up_rcoeff, down_rcoeff, len(up_int), len(down_diff)));
+    #common_int = up_int + down_int
+    #common_diff = up_diff + down_diff
+    if(len(common_int)>5):
+        common_rcoeff = pearsonr(common_int, common_diff)[0];
+    else:
+        common_rcoeff = 0;
+    
+    
+        
+    intensity2diff[(i2, i1)] = up_rcoeff, down_rcoeff, common_rcoeff
+    print("%s\t%s\t%.3f\t%.3f\t%.3f\t%d\t%d\t%d" % (int2timepoints[i2], diff2timepoints[i1], up_rcoeff, down_rcoeff, common_rcoeff,  len(up_int), len(down_int), len(common_int))   );
     
     
     
-###PLOT 
+###PLOT
 selection = [(0,0), (0,1), (2,1), (0,2), (2,2), (4,2)]
-upvals = [intensity2diff[x][0] for x in selection];
-downvals = [intensity2diff[x][1] for x in selection];
+commonvals = [intensity2diff[x][0] for x in selection];
 
 ind = np.arange(len(selection))  # the x locations for the groups
-width = 0.35       # the width of the bars
+width = 0.7       # the width of the bars
 
 fig, ax = plt.subplots(figsize = (16, 9))
-plt.tight_layout(rect=[0.04, 0.1, 1, 1])
+plt.tight_layout(rect=[0.08, 0.14, 1, 1])
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-rects1 = ax.bar(ind, upvals, width, color='darkblue')
-rects2 = ax.bar(ind + width, downvals, width, color='lightblue')
+ax.bar(ind, commonvals, width, color='coral')
 
 # add some text for labels, title and axes ticks
 ax.set_ylabel('R coefficient')
 #ax.set_title('')
-ax.set_xticks(ind + width / 2)
+ax.set_xticks(ind)
 sep = '~'
-fontsize = 18;
-ax.legend((rects1[0], rects2[0]), ('Repression', 'Activation'), frameon=False, fontsize=fontsize, loc ='upper left')
+fontsize = 26;
+#ax.legend((rects1[0], rects2[0]), ('Repression', 'Activation'), frameon=False, fontsize=fontsize, loc ='upper left')
 ax.set_xticklabels(('0h%s0h' % sep, '0h%s0.5h' % sep, '0.5h%s0.5h' % sep, '0h%s4h' % sep, '0.5h%s4h' % sep, '4h%s4h' % sep), rotation = 45)
 for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
     item.set_fontsize(fontsize)
@@ -124,6 +133,37 @@ if(args.plot):
     plt.savefig(args.plot, format = os.path.basename(args.plot).split(".")[-1])
 else:
     plt.show()
+
+
+#selection = [(0,0), (0,1), (2,1), (0,2), (2,2), (4,2)]
+#upvals = [intensity2diff[x][0] for x in selection];
+#downvals = [intensity2diff[x][1] for x in selection];
+
+#ind = np.arange(len(selection))  # the x locations for the groups
+#width = 0.35       # the width of the bars
+
+#fig, ax = plt.subplots(figsize = (16, 9))
+#plt.tight_layout(rect=[0.04, 0.1, 1, 1])
+#ax.spines['top'].set_visible(False)
+#ax.spines['right'].set_visible(False)
+#rects1 = ax.bar(ind, upvals, width, color='darkblue')
+#rects2 = ax.bar(ind + width, downvals, width, color='lightblue')
+
+## add some text for labels, title and axes ticks
+#ax.set_ylabel('R coefficient')
+##ax.set_title('')
+#ax.set_xticks(ind + width / 2)
+#sep = '~'
+#fontsize = 18;
+#ax.legend((rects1[0], rects2[0]), ('Repression', 'Activation'), frameon=False, fontsize=fontsize, loc ='upper left')
+#ax.set_xticklabels(('0h%s0h' % sep, '0h%s0.5h' % sep, '0.5h%s0.5h' % sep, '0h%s4h' % sep, '0.5h%s4h' % sep, '4h%s4h' % sep), rotation = 45)
+#for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
+    #item.set_fontsize(fontsize)
+
+#if(args.plot):
+    #plt.savefig(args.plot, format = os.path.basename(args.plot).split(".")[-1])
+#else:
+    #plt.show()
 
 
 
