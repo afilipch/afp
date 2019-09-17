@@ -46,7 +46,7 @@ with doc.head:
 with doc:
     p(strong("lets try "))
     p("to learn a bit")
-    input(type="text", id="myInput", onkeyup="my_search(4)", placeholder="Search for genes..")
+    input(type="text", id="myInput", onkeyup="my_search(5)", placeholder="Search for genes..")
     with table(id = "myTable") as _table:
         _tr = tr()
         _tr.add([ th(x[1][0], onclick='sortTable(%d, %d)' % (x[0], x[1][1])) for x in enumerate(zip(headers, dtypes))  ])
