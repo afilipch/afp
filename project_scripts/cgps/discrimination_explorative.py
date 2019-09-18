@@ -10,6 +10,7 @@ from Bio import SeqIO
 import matplotlib.pyplot as plt;
 
 from afbio.sequencetools import get_at_content, sliding_window, coverage2dict
+from afbio.numerictools import lists2thresholds
 
 #from afbio.sequencetools import get_at_content, sliding_window, array2fixed_length, coverage2dict
 
@@ -17,7 +18,7 @@ from afbio.sequencetools import get_at_content, sliding_window, coverage2dict
 
 
 parser = argparse.ArgumentParser(description='Checks the AT content along the regions');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the binding peaks, gff format");
+parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to the binding peaks, gff format");
 parser.add_argument('--windows', nargs = 2, default=(5,20), type = int, help = "Range of the windows sizes (flanks around a particular genomic position) to look for an AT content");
 parser.add_argument('--pflank', nargs = '?', default=60, type = int, help = "Length of the flank around a peak center to look for the maximum AT content");
 parser.add_argument('--mask', nargs = '?', default=200, type = int, help = "Tails of the chromosomes will be masked with the provided length, mask must be higher than window");
@@ -25,6 +26,7 @@ parser.add_argument('--clear', nargs = '?', default=100, type = int, help = "Add
 parser.add_argument('--at_flank', nargs = '?', default=1000, type = int, help = "Flank length to calculate AT around the peaks");
 
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta file");
+parser.add_argument('--names', nargs = '+', required=True, type = str, help = "Name of the dataset");
 
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory")
@@ -36,10 +38,7 @@ def convert_region(region, pflank):
 
 
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
-regions = BedTool(args.path)
-regions = [convert_region(x, args.pflank) for x in regions]
-#regions = BedTool([x for x in regions if float(x.score)>args.zscore])
-regions_dict = dict([ (x.name, x) for x in regions ])
+
 
 def get_at_dict(genome, window, mask):
     at_dict = {};
@@ -77,27 +76,6 @@ def convert_outside(hollow_at_dict, pflank):
     return res;
 
 
-
-def compare_inside_outside(inside, outside):
-    percentiles = [0, 10, 20, 30, 40, 50, 60, 70]
-    percentiles = [40, 50, 60]
-    inside_maxes = [float(x.score) for x in inside]
-    #inside_maxes.sort();
-    outside_maxes = [float(x.score) for x in outside]
-    #outside_maxes.sort();
-    #print(inside_maxes)
-    ##print(outside_maxes[-60:])
-    
-    res = []
-    for p in percentiles:
-        at_threshold = np.percentile(inside_maxes, p) - 0.0001;
-        res.append((p, at_threshold*100, len([x for x in inside_maxes if x>=at_threshold]), len([x for x in outside_maxes if x>=at_threshold])*2))
-    return res
-        
-        #at_threshold_1 = np.percentile(outside_maxes, p);
-        #print(p, at_threshold, at_threshold_1)
-        
-        
 def get_at_flanks(interval, genome, flank):
     f1 = get_at_content(genome[interval.chrom][interval.start-flank:interval.start-100].seq)
     f2 = get_at_content(genome[interval.chrom][interval.stop+100:interval.stop+flank].seq)
@@ -108,22 +86,97 @@ def get_at_flanks_max(interval, genome, flank, window):
     f1 = max([ get_at_content(x) for x in sliding_window(genome[interval.chrom][interval.start-flank:interval.start].seq, size) ])
     f2 = max([ get_at_content(x) for x in sliding_window(genome[interval.chrom][interval.stop:interval.stop+flank].seq, size) ])
     return (f1+f2)/2
+
+
+
+def compare_inside_outside(inside, outside):
+    percentiles = [0, 10, 20, 30, 40, 50, 60, 70]
+    percentiles = [40, 50, 60]
+    inside_maxes = [float(x.score) for x in inside]
+    outside_maxes = [float(x.score) for x in outside]
+    
+    res = []
+    for p in percentiles:
+        at_threshold = np.percentile(inside_maxes, p) - 0.0001;
+        res.append((p, at_threshold*100, len([x for x in inside_maxes if x>=at_threshold]), len([x for x in outside_maxes if x>=at_threshold])*2))
+    return res
+
+def separation_score(true_positive, false_positive, total_positive):
+    sensitivity = true_positive/total_positive
+    specificity = true_positive/(false_positive+true_positive)
+    return (specificity**1.5)*sensitivity
+    
+  
+def best_separation(inside, outside):
+    inside_maxes = [float(x.score) for x in inside]
+    outside_maxes = [float(x.score) for x in outside]
+    s_dict = lists2thresholds(inside_maxes, outside_maxes, reverse=True)
+    slist = [ (x[0], separation_score(x[1][0], x[1][1], len(inside_maxes))) for x in s_dict.items() ];
+    at, score = max(slist, key = lambda x: x[1])
+    return at*100, score*100,  len(inside_maxes), len([x for x in inside_maxes if x+0.0001>at]), len([x for x in outside_maxes if x+0.0001>at])
+
+  
         
         
+        
+################################################################################################
+### PLOTTING SET UP ###
+
+fontsize, linewidth = 28, 5
+
+fig, ax = plt.subplots(figsize=(16,9))
+colors = ['darkblue', 'lightblue', 'blue']
+plt.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])
+ax.set_xlabel('AT length', fontsize=fontsize)
+ax.set_ylabel('separation score', fontsize=fontsize)
+ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+for axis in ['bottom','left','right']:
+    ax.spines[axis].set_linewidth(linewidth)        
         
 
+################################################################################################
+### ANALYSIS ###
+
+for name, path, color in zip(args.names, args.path, colors):
+    xvals = [];
+    yvals = [];
+    tvals = []
+    for window in range(*args.windows):
+        regions = BedTool(path)
+        regions = [convert_region(x, args.pflank) for x in regions]
+        regions_dict = dict([ (x.name, x) for x in regions ])    
         
-for window in range(*args.windows):
-    at_dict = get_at_dict(genome, window, args.mask)
-    inside, hollow_at_dict = split_at_track(at_dict, regions, args.clear);
-    outside = convert_outside(hollow_at_dict, args.pflank)
-    separation = compare_inside_outside(inside, outside)
-    print("#"*180)
-    print("AT motif length %d" % (window*2+1))
-    for st in separation:
-        print("%d\t%1.1f\t%d\t%d" % st)
-    print()
-    sys.stderr.write("AT motif of length %d has been processed\n" % (window*2+1))
+        at_dict = get_at_dict(genome, window, args.mask)
+        inside, hollow_at_dict = split_at_track(at_dict, regions, args.clear);
+        outside = convert_outside(hollow_at_dict, args.pflank)
+        at_t, s_score, total_positive, true_positive, false_positive = best_separation(inside, outside)
+        print("%d\t%d\t%d\t%d\t%1.1f\t%1.1f" % (window*2+1, total_positive, true_positive, false_positive , at_t, s_score) )
+        xvals.append(window*2+1);
+        yvals.append(s_score)
+        tvals.append(at_t)
+    ax.plot(xvals, yvals, color = color, linewidth=linewidth, label=name)
+        
+
+
+fig.legend(loc=(0.15, 0.8), frameon=False, fontsize=fontsize, ncol = 1)
+plt.savefig(os.path.join(args.outdir, "at_length_separation.%s"  % args.format) , format = args.format)   
+    
+    
+    
+    
+    
+    
+    
+    
+    #separation = compare_inside_outside(inside, outside)
+    #print("#"*180)
+    #print("AT motif length %d" % (window*2+1))
+    #for st in separation:
+        #print("%d\t%1.1f\t%d\t%d" % st)
+    #print()
+    #sys.stderr.write("AT motif of length %d has been processed\n" % (window*2+1))
     
     #flank_at_list = []
     #for oreg in [x for x in inside if float(x.score)>0.65]:
@@ -142,6 +195,12 @@ for window in range(*args.windows):
         #sys.stdout.write("%s\t%1.3f\n" % (str(oreg).strip(), flank_at));
     #print(np.percentile(flank_at_list, 25))
     #print(np.percentile(flank_at_list, 75))
+    
+    
+
+
+ax.plot(xvals, yvals, color = 'darkblue', linewidth=linewidth)
+plt.savefig(os.path.join(args.outdir, "%s.at_length_separation.%s"  % (name, args.format)) , format = args.format)
     
     
     

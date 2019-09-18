@@ -33,6 +33,15 @@ parser.add_argument('--format', nargs = '?', default='png', type = str, help = "
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory")
 args = parser.parse_args();
 
+
+def get_upstream_fraction(areas):
+    n = len([x for x in areas if x.attrs['upstream']=='True'])
+    l = len(areas)
+    if(l):
+        return n/l*100
+    else:
+        return 0
+
 def num_intersected_peaks(center_dict, areas, distance):
     count = 0
     local_dict = defaultdict(list)
@@ -159,7 +168,7 @@ for area in areas.intersect(b=upstreams, f=0.5, v=True):
 areas = [];
 for area in temp_areas:
     c_area, distance = find_closest_area(area, temp_areas)
-    area.attrs['at_flank'] = str(get_at_flanks(area, genome, args.long_flank, 200))
+    area.attrs['at_flank'] = str(get_at_flanks(area, genome, args.long_flank, 50))
     area.attrs['c_area'] = c_area.name
     area.attrs['c_area_distance'] = str(distance);
     areas.append(area)
@@ -167,17 +176,101 @@ for area in temp_areas:
 areas.sort(key=lambda x: float(x.score));
 areas = BedTool(areas)
 
-for at_flank_thresh in np.linspace(0.42, 0.50, 9):
-    areas = BedTool([x for x in areas if float(x.attrs['at_flank'])>=at_flank_thresh])
+areas_in = BedTool([x for x in areas if x.attrs['type']=='in'])
+areas_out = BedTool([x for x in areas if x.attrs['type']=='out'])
+areas_unk = BedTool([x for x in areas if x.attrs['type']=='unk'])
+
+
+#############################################################################################################
+##################################### DRAW UPSTREAM BARPLOT #################################################
+fontsize, linewidth, width = 28, 5, 0.2
+arrsize = 1
+
+means = [[get_upstream_fraction(x)] for x in (areas_in, areas_unk, areas_out)]
+x = np.arange(arrsize)
+barlabels = ['inside peak (%d)' % len(areas_in), 'close to peak (%d)' % len(areas_unk), 'far from peak (%d)' % len(areas_out)]
+barcolors = ['darkblue', 'lightblue', 'gray']
+
+fig, ax = plt.subplots(figsize=(16,9))
+plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+
+
+ax.set_ylabel("fraction of peaks in upstream region", fontsize=fontsize)
+ax.set_ylim(bottom=0, top=100);
+ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False, bottom=False)
+ax.set_xticklabels([])
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+for axis in ['bottom','left','right']:
+    ax.spines[axis].set_linewidth(linewidth)
+
+
+for adj, yvals, label, color in zip( [-width, 0,  width], means, barlabels, barcolors):
+    ax.bar(x + adj, yvals, width, label=label, color = color)
+
+fig.legend(loc=(0.15, 0.85), frameon=False, fontsize=fontsize, ncol = 2)
+plt.savefig(os.path.join(args.outdir, "at_areas_upstream.%s"  %  args.format) , format = args.format)
+
+
+
+#############################################################################################################
+##################################### DRAW AT FLANKS BARPLOT #################################################
+fontsize, linewidth, width = 28, 5, 0.2
+arrsize = 1
+
+means = []
+yerr_list = []
+for c_area in (areas_in, areas_unk, areas_out):
+    arr = [float(x.attrs['at_flank'])*100 for x in c_area]
+    mean = np.mean(arr)
+    means.append([mean])
+    yerr_list.append([( mean - np.percentile(arr, 25), np.percentile(arr, 75) - mean )])
+yerr_list = [np.array(x).transpose() for x in yerr_list]
+
+x = np.arange(arrsize)
+barlabels = ['inside peak (%d)' % len(areas_in), 'close to peak (%d)' % len(areas_unk), 'far from peak (%d)' % len(areas_out)]
+barcolors = ['darkblue', 'lightblue', 'gray']
+
+fig, ax = plt.subplots(figsize=(16,9))
+plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+
+
+ax.set_ylabel("fraction of AT in flnaking %dbp sequences" % args.long_flank,  fontsize=fontsize)
+ax.set_ylim(bottom=40, top=60);
+ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False, bottom=False)
+ax.set_xticklabels([])
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+for axis in ['bottom','left','right']:
+    ax.spines[axis].set_linewidth(linewidth)
+
+
+for adj, yvals, label, color, yerr in zip( [-width, 0,  width], means, barlabels, barcolors, yerr_list):
+    ax.bar(x + adj, yvals, width, label=label, color = color)
+    #print(yerr)
+    plt.errorbar(x + adj, yvals, yerr=yerr, linestyle='', capsize=12, linewidth=linewidth/2, capthick=linewidth/2, color='black')
+
+fig.legend(loc=(0.15, 0.85), frameon=False, fontsize=fontsize, ncol = 2)
+plt.savefig(os.path.join(args.outdir, "at_areas_flanks.%s"  %  args.format) , format = args.format)
+
+
+
+
+
+
+
+
+#for at_flank_thresh in np.linspace(0.42, 0.50, 9):
+    #areas = BedTool([x for x in areas if float(x.attrs['at_flank'])>=at_flank_thresh])
     
-    print(at_flank_thresh)
-    print()
-    areas_in = BedTool([x for x in areas if x.attrs['type']=='in'])
-    areas_out = BedTool([x for x in areas if x.attrs['type']=='out'])
-    areas_unk = BedTool([x for x in areas if x.attrs['type']=='unk'])
-    print("\nTotal peaks: %d\nPeaks overlapping long AT areas: %d\n" % (len(regions), num_intersected_peaks(center_dict, areas, args.pflank) ) )
-    print("Total AT long areas: %d\nAT areas inside peaks: %d\nAT areas away from peaks: %d\nAT areas close to peaks: %d\n" % tuple([len(x) for x in (areas, areas_in, areas_out, areas_unk)]))
-    print("#"*140)
+    #print(at_flank_thresh)
+    #print()
+    #areas_in = BedTool([x for x in areas if x.attrs['type']=='in'])
+    #areas_out = BedTool([x for x in areas if x.attrs['type']=='out'])
+    #areas_unk = BedTool([x for x in areas if x.attrs['type']=='unk'])
+    #print("\nTotal peaks: %d\nPeaks overlapping long AT areas: %d\n" % (len(regions), num_intersected_peaks(center_dict, areas, args.pflank) ) )
+    #print("Total AT long areas: %d\nAT areas inside peaks: %d\nAT areas away from peaks: %d\nAT areas close to peaks: %d\n" % tuple([len(x) for x in (areas, areas_in, areas_out, areas_unk)]))
+    #print("#"*140)
 
 
 
@@ -185,7 +278,7 @@ for at_flank_thresh in np.linspace(0.42, 0.50, 9):
 
 
 
-sys.exit()
+
 #############################################################################################################
 #############################################################################################################
 
@@ -194,35 +287,35 @@ sys.exit()
 
 
 ### UPSTREAM REGIONS PART
-def get_upstream_fraction(areas):
-    n = len([x for x in areas if x.attrs['upstream']=='True'])
-    l = len(areas)
-    if(l):
-        return n/l*100
-    else:
-        return 0
+#def get_upstream_fraction(areas):
+    #n = len([x for x in areas if x.attrs['upstream']=='True'])
+    #l = len(areas)
+    #if(l):
+        #return n/l*100
+    #else:
+        #return 0
 
 
-print("Inside peaks AT areas upstream fraction: %1.1f%%\nAway from peak AT areas upstream fraction: %1.1f%%\nClose to peaks AT areas upstream fraction: %1.1f%%\n" %  tuple([get_upstream_fraction(x) for x in (areas_in, areas_out, areas_unk)]))
+#print("Inside peaks AT areas upstream fraction: %1.1f%%\nAway from peak AT areas upstream fraction: %1.1f%%\nClose to peaks AT areas upstream fraction: %1.1f%%\n" %  tuple([get_upstream_fraction(x) for x in (areas_in, areas_out, areas_unk)]))
 
 
-distance_thresholds = [100, 200, 500, 1000, 2000, 5000, 10000]
-('Distance\tInside peaks\tClose to peaks\tAway from peaks')
-for dt in distance_thresholds:
-    a = [dt];
-    for t_areas in (areas_in, areas_out, areas_unk):
-        a.append(len([x for x in t_areas if int(x.attrs['c_area_distance'])<dt])/len(t_areas)*100)
-    print('<%d\t%1.1f%%\t%1.1f%%\t%1.1f%%' % tuple(a))
-print()    
+#distance_thresholds = [100, 200, 500, 1000, 2000, 5000, 10000]
+#('Distance\tInside peaks\tClose to peaks\tAway from peaks')
+#for dt in distance_thresholds:
+    #a = [dt];
+    #for t_areas in (areas_in, areas_out, areas_unk):
+        #a.append(len([x for x in t_areas if int(x.attrs['c_area_distance'])<dt])/len(t_areas)*100)
+    #print('<%d\t%1.1f%%\t%1.1f%%\t%1.1f%%' % tuple(a))
+#print()    
     
     
-distance_thresholds = [0, 100, 200, 500, 1000, 2000, 5000, 10000, 1000000]
-('Distance Range\tFraction of Areas\tUpstream of them')
-for dt1, dt2 in zip(distance_thresholds[:-1], distance_thresholds[1:]):
-    passed_areas = [x for x in areas_out if int(x.attrs['c_area_distance'])>=dt1 and  int(x.attrs['c_area_distance'])<dt2 ]
-    a = dt1, dt2, len(passed_areas), get_upstream_fraction(passed_areas)
+#distance_thresholds = [0, 100, 200, 500, 1000, 2000, 5000, 10000, 1000000]
+#('Distance Range\tFraction of Areas\tUpstream of them')
+#for dt1, dt2 in zip(distance_thresholds[:-1], distance_thresholds[1:]):
+    #passed_areas = [x for x in areas_out if int(x.attrs['c_area_distance'])>=dt1 and  int(x.attrs['c_area_distance'])<dt2 ]
+    #a = dt1, dt2, len(passed_areas), get_upstream_fraction(passed_areas)
 
-    print('%d~%d\t%d\t%1.1f%%' % a)
+    #print('%d~%d\t%d\t%1.1f%%' % a)
     
     
 #percentiles = [10, 20, 30, 40, 50, 60, 70, 80, 90]

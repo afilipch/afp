@@ -63,7 +63,7 @@ for cds in cds_list:
             if(cds.strand == '+'):
                 cds.start = tss;
             else:
-                cds.stop = tss;
+                cds.stop = tss+1;
             sys.stdout.write(str(cds))
     else:
         cds.attrs['tss_variants'] = '1'
