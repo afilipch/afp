@@ -173,8 +173,11 @@ for area in temp_areas:
     area.attrs['c_area_distance'] = str(distance);
     areas.append(area)
 
-areas.sort(key=lambda x: float(x.score));
+#areas.sort(key=lambda x: float(x.score));
 areas = BedTool(areas)
+for area in areas:
+    sys.stdout.write(str(area))
+
 
 areas_in = BedTool([x for x in areas if x.attrs['type']=='in'])
 areas_out = BedTool([x for x in areas if x.attrs['type']=='out'])

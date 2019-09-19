@@ -86,7 +86,7 @@ if(os.stat(args.path).st_size != 0):
         region.attrs["tss_upstream_distance"] = str(up_distance)
         region.attrs["tss_downstream_gene"] = gene_down;
         region.attrs["tss_upstream_gene"] = gene_up;
-        print(region)
+        sys.stdout.write(str(region))
         
         
     def annotate_unstranded(region, tss, tss2gene_name):
@@ -106,7 +106,7 @@ if(os.stat(args.path).st_size != 0):
         region.attrs["tss_downstream_minus_gene"] = gene_down;
         region.attrs["tss_upstream_minus_gene"] = gene_up;
         
-        print(region)
+        sys.stdout.write(str(region))
         
         
     if(args.stranded):
