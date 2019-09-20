@@ -26,7 +26,7 @@ parser.add_argument('--diffnames', nargs = 3, required=True, type = str, help = 
 args = parser.parse_args();
 
 
-header = ["Gene ID",    "Gene symbol", "Distance ATG", "Distance to TSS"] + ["ChAP T=%s" % x for x in args.chapnames] + ["mRNA wt T=%s" % x for x in args.diffnames] + ["mRNA DhrrA T=%s" % x for x in args.diffnames] + ["Log2 DhrrA/WT T=%s" % x for x in args.diffnames] + ["Predicted Function", "Annotation"]
+header = ["Chrom", "Start", "Stop", "Gene ID", "Gene symbol", "Distance ATG", "Distance to TSS"] + ["ChAP T=%s" % x for x in args.chapnames] + ["mRNA wt T=%s" % x for x in args.diffnames] + ["mRNA DhrrA T=%s" % x for x in args.diffnames] + ["Log2 DhrrA/WT T=%s" % x for x in args.diffnames] + ["Predicted Function", "Annotation"]
 
 gene2diff = defaultdict(list)
 for path in args.diff:
@@ -50,7 +50,7 @@ ll = [];
 for region in regions:
     curdiff = gene2diff[region.attrs['gene']]
     if(len(curdiff) == 3):
-        a = [region.attrs['gene'],  region.attrs['genesymbol'], region.attrs['atg'], region.attrs['tss']] + ["%1.3f" % float(x) if x != "None" else "None" for x in region.attrs['maxcov'].split(",")] + ["%1.1f" % x[0] for x in curdiff] + ["%1.1f" % x[1] for x in curdiff] + ["%1.3f" % x[2] for x in curdiff] + [region.attrs['function'],  region.attrs['annotation']]
+        a = [region.chrom, str(region.start), str(region.stop), region.attrs['gene'],  region.attrs['genesymbol'], region.attrs['atg'], region.attrs['tss']] + ["%1.3f" % float(x) if x != "None" else "None" for x in region.attrs['maxcov'].split(",")] + ["%1.1f" % x[0] for x in curdiff] + ["%1.1f" % x[1] for x in curdiff] + ["%1.3f" % x[2] for x in curdiff] + [region.attrs['function'],  region.attrs['annotation']]
         print("\t".join(a))
     
     ll.append(len(curdiff))
