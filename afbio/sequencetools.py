@@ -9,7 +9,7 @@ from itertools import combinations, product
 import pandas as pd;
 import numpy as np;
 from pybedtools import BedTool
-from Bio import SeqIO
+#from Bio import SeqIO
 
 from afbio.pybedtools_af import interval2seq
 from afbio.numerictools import dict2entropy

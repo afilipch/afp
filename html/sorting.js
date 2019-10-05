@@ -83,3 +83,26 @@ function my_search(n) {
     }
   }
 }
+
+
+function my_filter_greater(n) {
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById("myInputGreater");
+  filter = Number(input.value)
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[n];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (Number(txtValue) > filter) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
