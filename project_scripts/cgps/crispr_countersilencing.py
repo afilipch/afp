@@ -33,8 +33,8 @@ def get_pams_around_peak(center, strand, pam_plus, pam_minus, flank, length):
     local_minus = pam_minus[start:stop];
 
 
-    sense = [x[0] + 2 + length - flank for x in enumerate(local_plus) if x[1]==1]
-    antisense = [flank - x[0] - 2 + length for x in enumerate(local_minus) if x[1]==1]
+    sense = [x[0] + 3 + length - flank for x in enumerate(local_plus) if x[1]==1]
+    antisense = [flank - x[0] + 2 + length for x in enumerate(local_minus) if x[1]==1]
     sense.append(flank*2)
     antisense.append(flank*2)
     if(strand == '-'):

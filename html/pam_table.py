@@ -28,12 +28,12 @@ def split_sequence(peak, genome, flank):
 
     sense, antisense = [seq], [seq]
     
-    sense_start = flank + int(peak.attrs['pam_sense']) - HALF_PAM - 2
+    sense_start = flank + int(peak.attrs['pam_sense']) - HALF_PAM - 3
     sense_stop = sense_start + PAM_LENGTH + 2
     if(sense_start>=0 and sense_stop<=flank*2):
         sense = [seq[:sense_start], seq[sense_start:sense_start+3], seq[sense_start+3:sense_stop], seq[sense_stop:]]
     
-    antisense_start = flank - int(peak.attrs['pam_antisense']) - HALF_PAM - 1
+    antisense_start = flank - int(peak.attrs['pam_antisense']) - HALF_PAM 
     antisense_stop = antisense_start + PAM_LENGTH + 2
     if(antisense_start>=0 and antisense_stop<=flank*2):
         antisense = [seq[:antisense_start], seq[antisense_start:antisense_stop-3], seq[antisense_stop-3:antisense_stop], seq[antisense_stop:] ] 
