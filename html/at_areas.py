@@ -6,6 +6,8 @@ from dominate.tags import *
 from pybedtools import BedTool
 from dominate.util import raw
 
+from afbio.html import add_ucsc
+
 parser = argparse.ArgumentParser(description='Filters the detected peaks based on the distribution of their scores');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the AT-rich areas, gff format");
 parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
@@ -17,9 +19,7 @@ args = parser.parse_args();
 
 
 
-def add_ucsc(interval, session):
-    ucsc_link = 'https://genome.ucsc.edu/s/%s?position=chr1:%d-%d' % (session, interval.start-25, interval.stop+25)
-    return ucsc_link
+
 
 
 
@@ -59,7 +59,7 @@ with doc:
         _tr.add([ th(x[1][0], onclick='sortTable(%d, %d)' % (x[0], x[1][1])) for x in enumerate(zip(headers, dtypes))  ])
         for interval in peaks:
             with tr():
-                td(raw('<a href=%s target="_blank">ucsc_link</a>' % add_ucsc(interval, args.ucsc)) )
+                td(raw('<a href=%s target="_blank">ucsc_link</a>' % add_ucsc(interval, args.ucsc, flank=25)) )
                 td(interval.chrom)
                 td(interval.start-25)
                 td(interval.stop+25)
