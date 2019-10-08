@@ -18,7 +18,7 @@ args = parser.parse_args();
 PAM_LENGTH = 21
 
 
-def get_pam_sequences(seqrecord):
+def get_pam_sequences(seqrecord, chrname):
     minstart = PAM_LENGTH
     lseq = len(seqrecord)
     
@@ -37,6 +37,10 @@ def get_pam_sequences(seqrecord):
         if(dn == pam):
             start = pos
             stop = start + 2 + PAM_LENGTH
+            seq = str(seqrecord[start:stop])
+            if(len(seq) == PAM_LENGTH+2):
+                #sys.stderr.write("%s\n" % seq)
+                print(">%s|%d|%d|+\n%s" % (chrname, start, stop, seq))
             #print(seqrecord[start:stop])
             
     #reverse
@@ -45,10 +49,12 @@ def get_pam_sequences(seqrecord):
         if(dn == pam):
             start = lseq - pos - 2 - PAM_LENGTH
             stop = start + 2 + PAM_LENGTH
-            print(seqrecord[start:stop])
+            seq = str(seqrecord[start:stop].reverse_complement())
+            if(len(seq) == PAM_LENGTH+2):
+                print(">%s|%d|%d|-\n%s" % (chrname, start, stop, seq))
 
     
                 
                 
-seqrecord = next(SeqIO.parse(args.path, 'fasta')).seq.upper()
-get_pam_sequences(seqrecord);
+for seqrecord in SeqIO.parse(args.path, 'fasta'):
+    get_pam_sequences(seqrecord.seq.upper(), seqrecord.name);

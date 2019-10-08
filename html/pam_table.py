@@ -21,6 +21,9 @@ args = parser.parse_args();
 
 PAM_LENGTH = 21;
 HALF_PAM = 10;
+PAM_OFFSET = 3;
+
+
 
 
 def split_sequence(peak, genome, flank):
@@ -28,12 +31,12 @@ def split_sequence(peak, genome, flank):
 
     sense, antisense = [seq], [seq]
     
-    sense_start = flank + int(peak.attrs['pam_sense']) - HALF_PAM - 3
+    sense_start = flank - int(peak.attrs['pam_sense']) - HALF_PAM - PAM_OFFSET
     sense_stop = sense_start + PAM_LENGTH + 2
     if(sense_start>=0 and sense_stop<=flank*2):
         sense = [seq[:sense_start], seq[sense_start:sense_start+3], seq[sense_start+3:sense_stop], seq[sense_stop:]]
     
-    antisense_start = flank - int(peak.attrs['pam_antisense']) - HALF_PAM 
+    antisense_start = flank + int(peak.attrs['pam_antisense']) - HALF_PAM 
     antisense_stop = antisense_start + PAM_LENGTH + 2
     if(antisense_start>=0 and antisense_stop<=flank*2):
         antisense = [seq[:antisense_start], seq[antisense_start:antisense_stop-3], seq[antisense_stop-3:antisense_stop], seq[antisense_stop:] ] 
@@ -94,7 +97,8 @@ antisense_colors = ['black', 'purple', 'red', 'black']
 tip_colors = ['gray', 'black', 'gray']
 
 
-doc = dominate.document(title='CgpS peaks candidates for dCas9 countersilencing')
+_title = 'CgpS peaks candidates for dCas9 countersilencing; experiment: %s' % os.path.basename(args.path)
+doc = dominate.document(title=_title)
 
 with open(args.css) as f:
     _style = f.read()
@@ -109,7 +113,7 @@ with doc.head:
 
 
 with doc:
-    p(strong("CgpS peaks candidates for dCas9 countersilencing"))
+    p(strong(_title))
     input(type="text", id="myInput", onkeyup="my_search(5)", placeholder="Search for a gene ...")
     #input(type="number", id="myInputGreater", onkeyup="my_filter_greater(6)", placeholder="Filter AT content greater than..")
     with table(id = "myTable") as _table:
