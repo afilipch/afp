@@ -24,6 +24,8 @@ parser.add_argument('-ap', '--assignedpeaks', nargs = '?', default='', type = st
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output plot (convolution scores distribution and filtering)");
 args = parser.parse_args();
 
+sys.stderr.write("###filter_peaks\n")
+
 if(os.stat(args.path).st_size == 0):
     open(args.assignedpeaks, 'a').close()
     
@@ -36,7 +38,7 @@ else:
     scores = [float(x.score) for x in peaks] 
 
     ### Output basic statistics of the read peaks
-    sys.stderr.write("%s\nfile is processed:\t%s\n\n" % ("_"*140, os.path.abspath(args.path)))
+    #sys.stderr.write("%s\nfile is processed:\t%s\n\n" % ("_"*140, os.path.abspath(args.path)))
     sys.stderr.write("median:\t%1.2f\nmean:\t%1.2f\nstd:\t%1.2f\n\n" % (np.median(scores), np.mean(scores), np.std(scores)))
 
 

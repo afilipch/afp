@@ -10,7 +10,7 @@ import sys
 #chiflex_package = r'~/nrlbio/chiflex'
 
 
-def get_script(script, package, arguments={}, inp = '', out = None):
+def get_script(script, package, arguments={}, inp = '', out = None, log=''):
     '''Example: get_script(something.py, {'--a': 7}, 'inp.txt', 'out.txt') will output: ('python [chiflex_package]/something.py'), 'inp.txt', '--a', '7', '>', 'out.txt')'''
     if(isinstance(inp, str)):
         input_files = inp
@@ -32,6 +32,8 @@ def get_script(script, package, arguments={}, inp = '', out = None):
     if(out):
         l.append(">")
         l.append(out)
+    if(log):
+        l.append('2>> >(tee -a %s>&2)' % log)
     return l
             
 
@@ -68,7 +70,7 @@ def get_header(output_files, phonyfiles=[]):
 
 
 
-def get_bowtie_call(settings, arguments, reference, reads, project_name):
+def get_bowtie_call(settings, arguments, reference, reads, project_name, threads=1):
     for bo in arguments:
         try:
             name, value = bo.split("=");
@@ -89,7 +91,8 @@ def get_bowtie_call(settings, arguments, reference, reads, project_name):
         settings['2'] = reads[1], '-'
         
 
-
+    settings['p'] = threads, '-';
+    
     bs_list = ['bowtie2'];
     for k, v in settings.items():
         if(v[0]=='True'):

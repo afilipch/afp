@@ -28,6 +28,7 @@ for path in args.path[1:]:
     coverage += pd.read_csv(path, sep="\t" , names = ["chr", "position", "coverage"]).coverage.values
 
 ###Output basic coverage statistics
+sys.stderr.write("###detect_peaks\n")
 sys.stderr.write("Median coverage:\t%1.2f\nMean coverage:\t%1.2f\nCoverage standard deviation:\t%1.2f\nMax coverage:\t%1.2f\n\n" % (np.median(coverage), np.mean(coverage), np.std(coverage), max(coverage)))
 
 

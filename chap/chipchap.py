@@ -29,11 +29,6 @@ parser.add_argument('--package', nargs = '?', type = os.path.abspath, required =
 parser.add_argument('--reads', nargs = '+', type = os.path.abspath, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
 parser.add_argument('--index', nargs = '?', type = os.path.abspath, help = "Path to the mapping reference bowtie2 indices");
 parser.add_argument('--genome', nargs = '?', type = os.path.abspath, help = "Path to the mapping references in fasta format");
-
-#parser.add_argument('--reads', nargs = '+', type = os.path.abspath, required = True, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
-#parser.add_argument('--index', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping reference bowtie2 indices");
-#parser.add_argument('--genome', nargs = '?', type = os.path.abspath, required = True, help = "Path to the mapping references in fasta format. If set, the sequences will be assigned to resulting interactions as well as energy and binding pattern(pattern of paired nucleotides on a left chimeric part)");
-
 parser.add_argument('--coverage', nargs = '+', type = os.path.abspath, help = "Path to the already generated coverage files. If provided, --reads argument is obsolete and ignored");
 parser.add_argument('--control', nargs = '+', type = str, help = "Path to the genomic control fasta files used for the adjustment of multiple dna copies. The order of the files must be the same as for --reads option. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places");
 
@@ -49,6 +44,10 @@ parser.add_argument('--annotation', nargs = '?', type = os.path.abspath, help = 
 
 #bowtie2 options
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
+
+#Performance option
+parser.add_argument('--threads', nargs = '?', default = 1, type = int, help = "Number of threads to use");
+
 args = parser.parse_args();
 
 #print(sys.argv)
@@ -113,15 +112,19 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
         name = os.path.basename(m_input).split(".")[0];
     else:
         name = os.path.basename(m_input[0]).split(".")[0];
-
+    
+    log_file = os.path.join('log', "%s.txt" % name)
+    
     if(not coverage_mode):
-        # Processing of the left chimeric part bowite2 settings
-        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name)
+        # Processing bowite2 settings
+        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads)
+        bs_list = ['echo', '\'###bowtie\'', '>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
 
         # Map reads with bowtie2
         input_files = m_input
         output_files = os.path.join('sam', '%s.sam' % name)
         script = bs_list
+        #print(script)
         mlist.append(dependence(input_files, output_files, script))
         
         # Convert mappings into coverage
@@ -172,14 +175,14 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
     # Detect peaks
     input_files = output_files
     output_files = [os.path.join('peaks', '%s.raw.bed' % name), os.path.join('log', '%s.convolution.bed' % name), os.path.join('log', '%s.convolution.png' % name)]
-    script = get_script('detect_peaks.py', chap_package, arguments={'--widthfactor': peak_detection_settings['widthfactor'], '--meanmult': peak_detection_settings['meanmult'], '--convolution': output_files[1] , '--plot': output_files[2]}, inp = input_files, out = output_files[0])
+    script = get_script('detect_peaks.py', chap_package, arguments={'--threads': args.threads, '--widthfactor': peak_detection_settings['widthfactor'], '--meanmult': peak_detection_settings['meanmult'], '--convolution': output_files[1] , '--plot': output_files[2]}, inp = input_files, out = output_files[0], log=log_file)
     mlist.append(dependence(input_files, output_files, script));  
     
     # Filter peaks
     input_files = output_files[0]
     output_files = [os.path.join('peaks', '%s.filtered.bed' % name), os.path.join('log', '%s.assigned.tsv' % name), os.path.join('statistics', '%s.filtering.png' % name)]
     filtered_path = output_files[0]
-    script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_detection_settings['zscore'], '--minmedian': peak_detection_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0])
+    script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_detection_settings['zscore'], '--minmedian': peak_detection_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0], log=log_file)
     mlist.append(dependence(input_files, output_files, script));
     
     # Normalize coverage

@@ -35,7 +35,8 @@ temp = copy.copy(coverage)
 for peak in peaks:
     temp[peak.start:peak.end] = [0]*len(peak)
     length = length - len(peak);
-    
+ 
+sys.stderr.write("###normalize_coverage\n")
 sys.stderr.write("%s\nFile %s is processed\n\nSignal fraction of the coverage:%1.3f\t\nNoise fraction of the coverage:%1.3f\t\n\n" % ("_"*120, args.path, 1-sum(temp)/sum(coverage), sum(temp)/sum(coverage)))
 
 

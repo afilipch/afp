@@ -7,7 +7,7 @@ from pybedtools import BedTool
 from dominate.util import raw
 from Bio import SeqIO
 
-from afbio.html import add_ucsc
+from afbio.html.methods import add_ucsc
 from math import log
 
 parser = argparse.ArgumentParser(description='Filters the detected peaks based on the distribution of their scores');
