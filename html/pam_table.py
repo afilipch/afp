@@ -6,6 +6,7 @@ from dominate.tags import *
 from pybedtools import BedTool
 from dominate.util import raw
 from Bio import SeqIO
+from Bio.Seq import reverse_complement
 
 from afbio.html.methods import add_ucsc
 from math import log
@@ -90,8 +91,8 @@ peaks = sorted(newpeaks, key=lambda x: float(x.attrs['pam_score']), reverse=True
 
 
 cgps_dict = {'in': 'in', 'unk': 'close', 'out': 'out'}
-headers = ['ucsc', 'start', 'end', 'strand', 'gene', 'TSS distance', 'peak score', 'pam distance', 'pam score', 'sequence 5->3']
-dtypes = [0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0]
+headers = ['ucsc', 'start', 'end', 'top', 'strand', 'gene', 'TSS distance', 'peak score', 'pam distance', 'pam score', 'sequence 5->3', "PAM motif"]
+dtypes = [0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0]
 sense_colors = ['black', 'red', 'purple', 'black']
 antisense_colors = ['black', 'purple', 'red', 'black']
 tip_colors = ['gray', 'black', 'gray']
@@ -127,12 +128,14 @@ with doc:
                 td(raw('<a href=%s target="_blank">ucsc_link</a>' % add_ucsc(interval, args.ucsc)) )
                 td(center-args.flank)
                 td(center+args.flank)
+                td(center)
                 td(interval.strand)
                 td(interval.attrs['gene'])
                 td(interval.attrs['tss'])
                 td(interval.score)
                 td(interval.attrs['pam_min'])
                 td(interval.attrs['pam_score'])
+                #print(sense)
                 with td(__pretty=False, style= 'font-family:monospace; font-size: 12pt'):
                     for seq, color in zip(sense, sense_colors):
                         span(seq, style="color:%s" % color)
@@ -140,6 +143,25 @@ with doc:
                         span(seq, style="color:%s" % color)
                     for seq, color in zip(antisense, antisense_colors):
                         span(seq, style="color:%s" % color)
+                with td(__pretty=False, style= 'font-family:monospace; font-size: 12pt'):
+                    if(len(sense)>1):
+                        color = sense_colors[2];
+                        seq = reverse_complement(sense[2]);
+                    else:
+                        color = sense_colors[0];
+                        seq = "-"*20                        
+                    span("%s\n" % seq, style="color:%s" % color)
+                    
+                    span("%s\n" % ("*"*20), style="color:gray")
+                    
+                    if(len(antisense)>1):
+                        color = antisense_colors[1];
+                        seq = antisense[1];
+                    else:
+                        color = antisense_colors[0];
+                        seq = "-"*20 
+                    span("%s\n" % seq, style="color:%s" % color)
+                        
                 #td(antisense[0]);
                 
     _script = script(type='text/javascript')

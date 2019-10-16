@@ -145,7 +145,7 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
         
     if(control):
         # Processing of the left chimeric part bowite2 settings
-        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, control, "%s.control" % name)
+        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, control, "%s.control" % name, threads=args.threads)
 
         # Map reads with bowtie2
         input_files = control
