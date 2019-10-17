@@ -1,0 +1,21 @@
+# Analyses of CHAP time-series
+
+
+#CHAP analyses 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019
+
+python /home/IBT/filipchyk/afp/chap/chipchap.py projects/selected --package /home/IBT/filipchyk/afp/ --index /home/IBT/filipchyk/genomic/coryne/nc_003450_3/index/NC_003450_3 --genome /home/IBT/filipchyk/genomic/coryne/nc_003450_3/genome.fasta --annotation /home/IBT/filipchyk/genomic/coryne/nc_003450_3/annotation.gff3 --multi --paired --reads fastq/trial_3/time_pre.1.fastq fastq/trial_3/time_pre.2.fastq fastq/trial_1/time_0h.1.fastq fastq/trial_1/time_0h.2.fastq fastq/trial_1/time_05h.1.fastq fastq/trial_1/time_05h.2.fastq fastq/trial_1/time_2h.1.fastq fastq/trial_1/time_2h.2.fastq fastq/trial_1/time_4h.1.fastq fastq/trial_1/time_4h.2.fastq fastq/trial_1/time_9h.1.fastq fastq/trial_1/time_9h.2.fastq fastq/trial_1/time_24h.1.fastq fastq/trial_1/time_24h.2.fastq
+
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
+
+make 
+
+
+#Peak correlation plots
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
+ 
+python /home/IBT/filipchyk/afp/chap/correlate_peaks.py regions/regions.gff --min-zscore 2 --names 0h 05h 2h 4h --selection 2 3 4 5 --plot  ~/mypapers/marc_hrra/august2019_figures/fig2/correlation_part.eps 
+python /home/IBT/filipchyk/afp/chap/correlate_peaks.py regions/regions.gff --min-zscore 2 --names pre 0h 05h 2h 4h 9h 24h --plot ~/mypapers/marc_hrra/august2019_figures/fig2/correlation_full.eps
+
+
+ 

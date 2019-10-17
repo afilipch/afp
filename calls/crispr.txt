@@ -1,0 +1,33 @@
+Describes the discovery, filtering and scoring of the potential targets for (d)Cas9 silencing
+
+
+#Discovery of the PAM motifs amd filtering based on a search for off-targets
+FOLDER: /home/IBT/filipchyk/genomic/coryne/nc_003450_3
+
+python ~/afp/genomic/get_pam_sequences.py genome.fasta > crispr/pam.raw.fasta
+python ~/afp/genomic/pam_offset_targets.py  crispr/pam.raw.fasta --length 12 > crispr/pam.filtered.12.fasta
+python ~/afp/genomic/pam_offset_targets.py  crispr/pam.raw.fasta --length 20 > crispr/pam.filtered.20.fasta
+
+
+
+#Scoring of the discovered CgpS peaks based on the presence of PAM motifs inside them
+FOLDER: /home/IBT/filipchyk/genomic/coryne/nc_003450_3
+
+python ~/afp/project_scripts/cgps/crispr_countersilencing.py ~/projects/cgps/projects/main/confident/without_mmc_3.filtered.bed  --transcripts transcripts.undisputed.gff --pam crispr/pam.filtered.12.fasta --inside 150 --maxd 600 > ../../../projects/cgps/crispr/without_mmc_3.12nt_off_targets.gff
+python ~/afp/project_scripts/cgps/crispr_countersilencing.py ~/projects/cgps/projects/main/confident/without_mmc_3.filtered.bed  --transcripts transcripts.undisputed.gff --pam crispr/pam.filtered.20.fasta --inside 150 --maxd 600 > ../../../projects/cgps/crispr/without_mmc_3.20nt_off_targets.gff
+
+
+# HTML representation of the candidates for silencing
+FOLDER: /home/IBT/filipchyk/projects/cgps/crispr
+
+python ~/afp/html/pam_table.py without_mmc_3.12nt_off_targets.gff --js ~/afp/afbio/html/table.js --css ~/afp/afbio/html/table.css --ucsc philipchick/cgps --genome ~/genomic/coryne/nc_003450_3/genome.fasta --flank 40 > without_mmc_3.12nt_off_targets.html
+python ~/afp/html/pam_table.py without_mmc_3.20nt_off_targets.gff --js ~/afp/afbio/html/table.js --css ~/afp/afbio/html/table.css --ucsc philipchick/cgps --genome ~/genomic/coryne/nc_003450_3/genome.fasta --flank 40 > without_mmc_3.20nt_off_targets.html
+
+
+
+
+
+
+
+
+

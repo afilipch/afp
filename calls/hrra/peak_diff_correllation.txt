@@ -1,0 +1,4 @@
+#Correlation between peak intensities and expression changes upon HrrA KO (figure 3d)
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/differential
+
+python ~/afp/project_scripts/hrra/correlate2expression.py  ~/projects/hrra_august2019/projects/selected/regions/regions.annotated.gff  --diff time_0h.assigned.tsv time_30m.assigned.tsv time_4h.assigned.tsv  --distance 350 --plot ~/mypapers/marc_hrra/fig3/fig3d.pdf > ~/mypapers/marc_hrra/fig3/fig3d.tsv

@@ -36,7 +36,7 @@ for n in range(1, args.number+1):
     strand = random.choice(strands[chrom])
     length = random.choice(lengths[chrom])
     start = random.randint(starts[chrom], stops[chrom])
-    sys.stdout.write(str(Interval(chrom, start, start+length, name = "random_%d" % n, score='0', strand=strand)))
+    sys.stdout.write(str(Interval(chrom, start, start+length, name = "%d" % (start+length/2), score='0', strand=strand)))
     
     
 

@@ -1,0 +1,12 @@
+#Binding evolution plot (figure 2a)
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019
+
+python ~/afp/project_scripts/hrra/global_binding_evolution.py projects/trial_1/regions/regions.annotated.gff --zscore 3 --labels 0h 30m 2h 4h 9h 24h --total  --plot mailbox/trial1.binding.total.svg
+python ~/afp/project_scripts/hrra/global_binding_evolution.py projects/trial_1/regions/regions.annotated.gff --zscore 3 --labels 0h 30m 2h 4h 9h 24h  --plot mailbox/trial1.binding.averaged.svg
+python ~/afp/project_scripts/hrra/global_binding_evolution.py projects/trial_3/regions/regions.annotated.gff --zscore 3 --labels pre 0h 2m 30m 2h 4h 8h 24h  --plot mailbox/trial3.binding.averaged.svg
+python ~/afp/project_scripts/hrra/global_binding_evolution.py projects/trial_3/regions/regions.annotated.gff --zscore 3 --labels pre 0h 2m 30m 2h 4h 8h 24h --total --plot mailbox/trial3.binding.total.svg
+
+### ACTUAL FINAL CALL ###
+python ~/afp/project_scripts/hrra/global_binding_evolution.py projects/selected/regions/regions.annotated.gff --zscore 3 --labels pre 0h 30m 2h 4h 9h 24h --plot ~/mypapers/marc_hrra/august2019_figures/fig2/evolution.png  > mailbox/fig_2a.tsv
+
+

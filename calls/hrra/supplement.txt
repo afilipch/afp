@@ -1,0 +1,32 @@
+Collection of calls to generate figures for the supplement section.
+
+
+#Draw figures 6 and 10  
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/genomic_coverage
+
+time python ~/afp/project_scripts/hrra/rnaseq_chap_altogether_plot.py --regions ~/mypapers/marc_hrra/data/suppl_figs_6_10.bed --chap ~/projects/hrra_august2019/projects/selected/coverage/time_pre.normalized.bed ~/projects/hrra_august2019/projects/selected/coverage/time_05h.normalized.bed ~/projects/hrra_august2019/projects/selected/coverage/time_4h.normalized.bed    --wt time_0h.wt.normed.bed time_30m.wt.normed.bed time_4h.wt.normed.bed   --ko time_0h.ko.normed.bed time_30m.ko.normed.bed time_4h.ko.normed.bed --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3 --outdir ~/mypapers/marc_hrra/august2019_figures/supplement/ --format pdf
+
+
+#Draw figure 1
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected/coverage
+
+python ~/afp/project_scripts/hrra/global_binding_pattern_s1.py time_pre.normalized.bed time_05h.normalized.bed time_2h.normalized.bed time_4h.normalized.bed time_9h.normalized.bed time_24h.normalized.bed --log --plot ~/mypapers/marc_hrra/august2019_figures/supplement/s1.log.svg
+python ~/afp/project_scripts/hrra/global_binding_pattern_s1.py time_pre.normalized.bed time_05h.normalized.bed time_2h.normalized.bed time_4h.normalized.bed time_9h.normalized.bed time_24h.normalized.bed --plot ~/mypapers/marc_hrra/august2019_figures/supplement/s1.plain.svg
+
+
+#Draw figure 2
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected/
+
+python ~/afp/postanalyses/reannotate_according_tss.py regions/regions.annotated.gff --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3  --inside 200 --maxd 80000 > regions/regions.all_tss.gff
+python ~/afp/genomic/randomize_intervals.py regions/regions.all_tss.gff --number 5000 > regions/random.5000.bed
+python ~/afp/postanalyses/reannotate_according_tss.py regions/random.5000.bed --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3  --inside 200 --maxd 80000 > regions/random.5000.all_tss.gff
+python ~/afp/project_scripts/hrra/peak_to_tss_distance_distribution_s2.py regions/regions.all_tss.gff --control regions/random.5000.all_tss.gff --plot  ~/mypapers/marc_hrra/august2019_figures/supplement/s2.svg
+
+
+
+
+
+
+
+
+

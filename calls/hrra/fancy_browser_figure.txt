@@ -1,0 +1,38 @@
+# Prepares genome-browser-like figure for diff RNAseq and CHAP experiments altogether (figure 4) 
+
+
+#Genomic RNA-seq coverage processing
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/sam
+
+for file in *; do ~/afp/mapping/get_sam_stat_paired.py $file --genome ~/genomic/coryne/nc_003450_3/genome.fasta --outstat ../statistics/ --outcoverage ../genomic_coverage/; done 
+
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/genomic_coverage
+
+python ~/afp/bin/merge_pileups.py  time_0h.wt.rep1.minus.bed  time_0h.wt.rep1.plus.bed   time_0h.wt.rep2.minus.bed  time_0h.wt.rep2.plus.bed > time_0h.wt.bed
+python ~/afp/bin/merge_pileups.py  time_30m.wt.rep1.minus.bed  time_30m.wt.rep1.plus.bed   time_30m.wt.rep2.minus.bed  time_30m.wt.rep2.plus.bed > time_30m.wt.bed
+python ~/afp/bin/merge_pileups.py  time_4h.wt.rep1.minus.bed  time_4h.wt.rep1.plus.bed   time_4h.wt.rep2.minus.bed  time_4h.wt.rep2.plus.bed > time_4h.wt.bed
+python ~/afp/bin/merge_pileups.py  time_0h.ko.rep1.minus.bed  time_0h.ko.rep1.plus.bed   time_0h.ko.rep2.minus.bed  time_0h.ko.rep2.plus.bed > time_0h.ko.bed
+python ~/afp/bin/merge_pileups.py  time_30m.ko.rep1.minus.bed  time_30m.ko.rep1.plus.bed   time_30m.ko.rep2.minus.bed  time_30m.ko.rep2.plus.bed > time_30m.ko.bed
+python ~/afp/bin/merge_pileups.py  time_4h.ko.rep1.minus.bed  time_4h.ko.rep1.plus.bed   time_4h.ko.rep2.minus.bed  time_4h.ko.rep2.plus.bed > time_4h.ko.bed
+find . -name '*us*' -type f -exec rm -f {} +
+for file in *; do python ~/afp/bin/normalize_pileup.py $file --outdir . ; done
+find . ! -name '*normed*' -type f -exec rm -f {} +
+
+
+#Draw the figure 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/genomic_coverage
+
+time python ~/afp/project_scripts/hrra/rnaseq_chap_altogether_plot.py --regions ~/mypapers/marc_hrra/data/regions_fig4.bed --chap ~/projects/hrra_august2019/projects/selected/coverage/time_pre.normalized.bed ~/projects/hrra_august2019/projects/selected/coverage/time_05h.normalized.bed ~/projects/hrra_august2019/projects/selected/coverage/time_4h.normalized.bed    --wt time_0h.wt.normed.bed time_30m.wt.normed.bed time_4h.wt.normed.bed   --ko time_0h.ko.normed.bed time_30m.ko.normed.bed time_4h.ko.normed.bed --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3 --outdir ~/mypapers/marc_hrra/august2019_figures/fig4/ --format pdf
+
+#Draw the the figures for some selected genes 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
+
+python ~/afp/project_scripts/hrra/figure_4_genes.py regions/regions.annotated.gff --table ~/genomic/coryne/improved_annotation_2017.csv --genes ctaE sigC cydA --expression ../../rnaseq/project/differential/time_0h.tsv ../../rnaseq/project/differential/time_30m.tsv ../../rnaseq/project/differential/time_4h.tsv --outdir ~/mypapers/marc_hrra/august2019_figures/fig4 --format svg
+
+
+
+
+
+
+
+

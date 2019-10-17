@@ -1,0 +1,76 @@
+# Differential (WT vs HrrA KO) RNA-seq mappings for the plasmid-integrated HrrA for the time points: 0h, 30m, 4h
+
+
+#Mapping
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project
+
+bowtie2 -1 ../reads/time_0h.wt.rep1.1.fastq -2 ../reads/time_0h.wt.rep1.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_0h.wt.rep1.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_0h.wt.rep2.1.fastq -2 ../reads/time_0h.wt.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_0h.wt.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_0h.ko.rep2.1.fastq -2 ../reads/time_0h.ko.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_0h.ko.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_0h.ko.rep2.1.fastq -2 ../reads/time_0h.ko.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_0h.ko.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_30m.ko.rep1.1.fastq -2 ../reads/time_30m.ko.rep1.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_30m.ko.rep1.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_30m.ko.rep2.1.fastq -2 ../reads/time_30m.ko.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_30m.ko.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_30m.wt.rep2.1.fastq -2 ../reads/time_30m.wt.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_30m.wt.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_30m.wt.rep1.1.fastq -2 ../reads/time_30m.wt.rep1.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_30m.wt.rep1.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_4h.wt.rep1.1.fastq -2 ../reads/time_4h.wt.rep1.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_4h.wt.rep1.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_4h.wt.rep2.1.fastq -2 ../reads/time_4h.wt.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_4h.wt.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_4h.ko.rep2.1.fastq -2 ../reads/time_4h.ko.rep2.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_4h.ko.rep2.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+bowtie2 -1 ../reads/time_4h.ko.rep1.1.fastq -2 ../reads/time_4h.ko.rep1.2.fastq -x ~/genomic/coryne/nc_003450_3/index/NC_003450_3 -S sam/time_4h.ko.rep1.sam --sensitive-local --local --score-min C,110 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 40 -X 400 --no-mixed --ignore-quals
+
+
+#Mapping processing
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/sam/
+
+for file in *; do sam2bed.py $file --multimappers ../multi/${file%sam}bed  > ../bed/${file%sam}bed; done
+
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/bed
+
+for file in *; do sort -k1,1 -k2,2n $file  -o $file  ; done
+
+
+#Process and analyse the gene expression
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/bed
+
+for file in *; do python ~/afp/rnaseq/assign_expression.py  $file --genes ~/genomic/coryne/nc_003450_3/cds.gff  --plot ../log/ > ../coverage/${file%bed}gff; done
+
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/coverage
+python ~/afp/rnaseq/compile_expression.py --first time_0h.wt.rep1.gff time_0h.wt.rep2.gff --second time_0h.ko.rep1.gff time_0h.ko.rep2.gff --labels wt ko > ../differential/time_0h.tsv
+python ~/afp/rnaseq/compile_expression.py --first time_30m.wt.rep1.gff time_30m.wt.rep2.gff --second time_30m.ko.rep1.gff time_30m.ko.rep2.gff --labels wt ko > ../differential/time_30m.tsv
+python ~/afp/rnaseq/compile_expression.py --first time_4h.wt.rep1.gff time_4h.wt.rep2.gff --second time_4h.ko.rep1.gff time_4h.ko.rep2.gff --labels wt ko > ../differential/time_4h.tsv
+
+
+
+#Analyse differential gene expression
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/differential
+
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_0h.tsv --plot ../plots/ --minexpr 10 > time_0h.assigned.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_30m.tsv --plot ../plots/ --minexpr 10 > time_30m.assigned.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_4h.tsv --plot ../plots/ --fdr 0.06 --minexpr 10 > time_4h.assigned.tsv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

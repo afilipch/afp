@@ -1,0 +1,25 @@
+# Create a table which contains all the information on the HrrA project (ChAP + RNA-seq + TSS + annotation)
+
+
+
+# Prepare rna-seq data 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/differential
+
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_0h.tsv --plot ../log/ --minexpr 0.001 > time_0h.all.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_30m.tsv --plot ../log/ --minexpr 0.001 > time_30m.all.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py time_4h.tsv --plot ../log/ --fdr 0.06 --minexpr 0.001 > time_4h.all.tsv
+
+
+# Annotate ChAP regions with TSS and annotation 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
+
+
+python ~/afp/postanalyses/reannotate_according_tss.py regions/regions.annotated.gff --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3  --inside 200 --maxd 800 > regions/regions.filtered_tss.gff
+
+
+# Create table 
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
+
+python ~/afp/project_scripts/hrra/create_table_of_everything.py regions/regions.filtered_tss.gff --diff ../../rnaseq/project/differential/time_0h.all.tsv ../../rnaseq/project/differential/time_30m.all.tsv ../../rnaseq/project/differential/time_4h.all.tsv --diffnames 0h 30m 4h --chapnames pre 0h 30m 2h 4h  9h 24h > ~/mypapers/marc_hrra/data_suppl/hrra.allin_table.tsv
+
+

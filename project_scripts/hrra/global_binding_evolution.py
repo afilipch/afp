@@ -39,14 +39,13 @@ for key in sorted(experiment2peaks.keys()):
     else:
         weights.append(np.mean(experiment2peaks[key]));
     
-print(weights);
+for lw in zip(args.labels, weights):
+    print("%s\t%1.2f" % lw)
                 
 
-#sys.exit() 
+### PLOTTING ###
+
 fig, ax = plt.subplots(figsize=(16,9))
-
-
-
 plt.xlabel('Time', fontsize='x-large')
 if(args.total):
     plt.ylabel('Total peak height', fontsize='x-large')
