@@ -23,6 +23,7 @@ parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Outpu
 parser.add_argument('--control', nargs = '?', required=True, type = str, help = "Path to the artificially generated peaks");
 args = parser.parse_args();
 
+
 def get_starts(path):
     peaks = BedTool(path);
     return [int(x.attrs['tss']) for x in peaks];
