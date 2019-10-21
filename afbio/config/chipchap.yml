@@ -8,7 +8,7 @@ bowtie:
     k: ['8', '-']
     no-unal: ['True', '--']
     no-mixed: ['True', '--']
-    threads: ['8', '--']
+    p: ['8', '--']
     I: ['40', '-']
     X: ['800', '-']
 peak_detection:
@@ -32,3 +32,5 @@ region:
     zscore: 5
     min-zscore: 2
     maxshift: 40
+control:
+    smooth: 500

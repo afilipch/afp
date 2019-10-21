@@ -22,6 +22,10 @@ python ~/afp/genomic/randomize_intervals.py regions/regions.all_tss.gff --number
 python ~/afp/postanalyses/reannotate_according_tss.py regions/random.5000.bed --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3  --inside 200 --maxd 80000 > regions/random.5000.all_tss.gff
 python ~/afp/project_scripts/hrra/peak_to_tss_distance_distribution_s2.py regions/regions.all_tss.gff --control regions/random.5000.all_tss.gff --plot  ~/mypapers/marc_hrra/august2019_figures/supplement/s2.svg
 
+#Draw figure 7
+FOLDER: /home/IBT/filipchyk/mypapers/marc_hrra
+
+python ~/afp/project_scripts/hrra/peaks_expression_scatter_s7.py data_suppl/hrra.coordinates.allin_table.tsv --plot august2019_figures/supplement/s7.svg
 
 
 

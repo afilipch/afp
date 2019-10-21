@@ -11,7 +11,7 @@ from afbio.html.methods import add_ucsc
 from math import log
 
 parser = argparse.ArgumentParser(description='Generates html report of CHAP analyses by chipchap.py');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the log file, txt format");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the log folder");
 #parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 #parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
@@ -19,14 +19,15 @@ parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Pat
 #parser.add_argument('--flank', nargs = '?', default=60, type = int, help = "Peak plank length");
 args = parser.parse_args();
 
-name = ".".join(os.path.basename(args.path).split(".")[:-1])
+name = args.path.split("/")[-1]
+log_file = os.path.join(args.path, "log.txt")
 
 
 
 
 section2text = defaultdict(list);
 section = ""
-with open(args.path) as f:
+with open(log_file) as f:
     for l in f:
         if(l.startswith("###")):
             section = l.strip()[3:];
