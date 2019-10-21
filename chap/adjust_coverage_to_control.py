@@ -29,7 +29,7 @@ def smooth_coverage(coverage, flen):
 ####Read Coverage
 data = pd.read_csv(args.path, sep="\t" , names = ["chr", "position", "coverage"])
 coverage = data.coverage.values
-coverage = coverage/np.mean(coverage)
+
 
 
 control_coverage = pd.read_csv(args.control, sep="\t" , names = ["chr", "position", "coverage"]).coverage.values

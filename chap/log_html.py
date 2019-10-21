@@ -19,25 +19,28 @@ parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Pat
 #parser.add_argument('--flank', nargs = '?', default=60, type = int, help = "Peak plank length");
 args = parser.parse_args();
 
-name = args.path.split("/")[-1]
+#name = args.path.split("/")[-2]
+name = os.path.realpath(args.path).split("/")[-1]
 log_file = os.path.join(args.path, "log.txt")
+#sys.stderr.write("%s\n" % name)
 
 
 
 
-section2text = defaultdict(list);
+section2text = {} #defaultdict(list);
 section = ""
 with open(log_file) as f:
     for l in f:
         if(l.startswith("###")):
             section = l.strip()[3:];
+            section2text[section] = [];
         elif(section):
             section2text[section].append(l.strip())
             
             
 ### BOWTIE2 processing ###
 bowtie_list = [];
-bowtie_labels = ["Total reads", "Unmapped reads", "Mapped uniquely", "Mapped non-uniquely", "Mapped Discordantly"]
+bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmapped reads", "Mapped Discordantly"]
 ltemp = section2text['bowtie'][1:8]
 for l in (ltemp[:4] + ltemp[6:]):
     bowtie_list.append(int(l.split(" ")[0]))
@@ -94,9 +97,24 @@ with doc:
                 td(label)
                 td('{:,}'.format(value))
                 td("%1.2f%%" % (value/bowtie_total*100))
+                
+    with div(cls="row", style="display: flex"):
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src=os.path.join(args.path, '%s.scores.png' % name), alt="Snow", style="width:100%")
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src=os.path.join(args.path, '%s.fragment_lengthes.png' % name), alt="Snow", style="width:100%")
+    br()
+    br()
+    if(True):
+        p(strong("Genomic Control", style= 'font-size: 16pt'))
+        with div(cls="row", style="display: flex"):
+            with div(cls="column", style="padding: 5px; flex:50%"):
+                img(src=os.path.join(args.path, 'control_coverage.png'), alt="Snow", style="width:100%")
+            with div(cls="column", style="padding: 5px; flex:50%"):
+                img(src=os.path.join(args.path, 'control_correlation.png', ), alt="Snow", style="width:100%")
+        br()
+        br()        
     
-    br()
-    br()
     p(strong("Genomic Coverage", style= 'font-size: 16pt'))
     with table(style= 'font-size: 14pt') as _table:
         for label, value in zip(detection_labels[:4], detection_list[:4]):
@@ -121,7 +139,11 @@ with doc:
             with tr():
                 td(label)
                 td("%d" % value)
-                
+    with div(cls="row", style="display: flex"):
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src=os.path.join(args.path, 'convolution.png'), alt="Snow", style="width:100%")
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src=os.path.join(args.path, 'filtering.png'), alt="Snow", style="width:100%")
     br()
     br()
     p(strong("Peak Filtering Results", style= 'font-size: 16pt'))
