@@ -81,10 +81,10 @@ else:
     ###Filter peaks based on the coverage properties
     if(args.coverage):
         coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
-        threshold = np.mean(coverage)*args.minmedian;
+        cov_threshold = np.mean(coverage)*args.minmedian;
         before = len(filtered)
-        filtered = [ x for x in filtered if max(coverage[x.start:x.end]) > threshold]
-        sys.stderr.write("\nThreshold for min peak height:\t%1.2f\nnum of gauss-filtered peaks:\t%d\nnum of coverage-filtered peaks:\t%d\n\n" % (threshold, before, len(filtered)))  
+        filtered = [ x for x in filtered if max(coverage[x.start:x.end]) > cov_threshold]
+        sys.stderr.write("\nThreshold for min peak height:\t%1.2f\nnum of gauss-filtered peaks:\t%d\nnum of coverage-filtered peaks:\t%d\n\n" % (cov_threshold, before, len(filtered)))  
 
 
     
@@ -104,9 +104,21 @@ else:
 
     ### Plot the fitted gaussian curve vs scores distribution
     if(args.plot):
+        fontsize = 24
+        fig, ax = plt.subplots(figsize=(16,9))
+        plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+        
+        ax.tick_params(axis='both', which='major', labelsize=fontsize)
+        ax.tick_params(axis='both', which='minor', labelsize=fontsize)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set_xlabel("Score", fontsize=fontsize)
+        ax.set_ylabel('Fraction', fontsize=fontsize)
+        
         hist_fit = gauss(bin_centers, *coeff)
-        plt.plot(bin_centers, hist, label='Test data')
-        plt.plot(bin_centers, hist_fit, label='Fitted data')
+        ax.plot(bin_centers, hist, label='Test data')
+        ax.plot(bin_centers, hist_fit, label='Fitted data', linewidth = 2)
+        ax.axvline(threshold, color='red', linewidth = 4)
         _format = args.plot.split(".")[-1]
         plt.savefig(args.plot, format = _format)
 

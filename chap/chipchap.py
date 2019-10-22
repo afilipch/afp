@@ -70,6 +70,7 @@ elif(not args.coverage):
 
 chap_package = os.path.join(args.package, 'chap')
 mapping_package = os.path.join(args.package, 'mapping')
+html_lib = os.path.join(args.package, 'afbio', 'html')
 
 
 #######################################################################################################################
@@ -153,7 +154,7 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
         # Map reads with bowtie2
         input_files = control
         output_files = os.path.join('sam', '%s.control.sam' % name)
-        bs_list = ['echo', '\'###bowtie_control\'', '>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
+        bs_list = ['echo', '\'###bowtie_control\'', '>>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
         script = bs_list
         mlist.append(dependence(input_files, output_files, script))
         
@@ -204,6 +205,14 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
     final_files.append(output_files)
     script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
     mlist.append(dependence(input_files, output_files, script));
+    
+    #python ~/afp/chap/log_html.py log/sven3_18h --css ~/afp/afbio/html/table.css > test.html
+    input_files = log_dir
+    output_files = os.path.join(log_dir, 'report.html');
+    final_files.append(output_files)
+    script = get_script('log_html.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css')}, inp = input_files, out = output_files)
+    mlist.append(dependence(input_files, output_files, script));
+    
     
     
     

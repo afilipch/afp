@@ -63,6 +63,9 @@ fig, ax = plt.subplots(figsize=(16,9))
 plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
 ax.set_xlabel("Pearson R", fontsize=fontsize)
 ax.set_ylabel('Density', fontsize=fontsize)
+ax.tick_params(axis='both', which='major', labelsize=fontsize)
+ax.tick_params(axis='both', which='minor', labelsize=fontsize)
+
 ax.spines['top'].set_visible(False);
 ax.spines['right'].set_visible(False)
 ax.hist(correlations, density=True);
@@ -84,7 +87,11 @@ ax.set_xlabel("position (nt)", fontsize=fontsize)
 ax.set_ylabel('genomic control', fontsize=fontsize)
 ax2 = ax.twinx()
 ax2.plot(coverage, 'r-', label="CHAP coverage")
-ax2.set_ylabel('coverage')
+ax2.set_ylabel('coverage', fontsize=fontsize)
+ax.tick_params(axis='both', which='major', labelsize=fontsize)
+ax.tick_params(axis='both', which='minor', labelsize=fontsize)
+ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+ax2.tick_params(axis='both', which='minor', labelsize=fontsize)
 
 ax.spines['top'].set_visible(False) 
 ax2.spines['top'].set_visible(False) 

@@ -160,7 +160,7 @@ rnase_plot(e_nucls, os.path.join(args.outstat, '%s.rnase.3prime.png' % basename)
 
 #####################################################################################################################################
 ###Length distribution
-def draw_small_scale_distr(distr, output, title, xlabel, normed = False):
+def draw_small_scale_distr(distr, output, title, xlabel, normed = False, fontsize=24):
     feature_vals = distr.keys();
     lower = min(feature_vals)
     upper = max(feature_vals)+1
@@ -173,9 +173,14 @@ def draw_small_scale_distr(distr, output, title, xlabel, normed = False):
         ylabel = 'Counts'
     fig, ax = plt.subplots(figsize=(16, 9))
     ax.bar(brange, bars, 1, color='lightblue')
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    #plt.title(title)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.ylabel(ylabel, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax.tick_params(axis='both', which='minor', labelsize=fontsize)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
     plt.savefig(output, format='png');
     plt.clf()
     return list(brange), bars

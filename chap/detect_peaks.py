@@ -8,11 +8,13 @@ import sys
 import numpy as np;
 import pandas as pd;
 from afbio.peaks import estimate_bandwidth, convolute, detect_peaks
+from afbio.sequencetools import coverage2dict
 from multiprocessing.dummy import Pool
 
 
+
 parser = argparse.ArgumentParser(description='Detects peaks from the covergage track using a kernel-based convolution');
-parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to the coverage file");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the coverage file");
 parser.add_argument('--kernel', nargs = '?', choices = ['ndg', 'square'], default='ndg', type = str, help = "Kernel to use for the fitering");
 parser.add_argument('--peakwidth', nargs = '?', default=0, type = int, help = "Expected width of the peaks, if not set peakwidth is estimated automatically");
 parser.add_argument('--widthfactor', nargs = '?', default=1, type = float, help = "Multiplier for the eastimated peakwidth, so peakwidth=estimated_peakwidth*widthfactor");
@@ -23,9 +25,10 @@ parser.add_argument('--convolution', nargs = '?', default='', type = str, help =
 args = parser.parse_args();
 
 ###Read Coverage
-coverage = pd.read_csv(args.path[0], sep="\t" , names = ["chr", "position", "coverage"]).coverage.values
-for path in args.path[1:]:
-    coverage += pd.read_csv(path, sep="\t" , names = ["chr", "position", "coverage"]).coverage.values
+coverage_dict = coverage2dict(args.path);
+coverage = []
+for v in coverage_dict.values():
+    coverage.extend(v)
 
 ###Output basic coverage statistics
 sys.stderr.write("###detect_peaks\n")
@@ -54,17 +57,13 @@ else:
 ###Convolute coverage with a given kernel
 exec("from afbio.filters import %s as kernelfunc" % args.kernel)
 kernel = kernelfunc(truncate = 4.0);
-convolution = np.array(convolute(coverage, kernel, bandwidth, threads=args.threads))
 
 
-###Detect peaks for convolved coverage
-peaks = detect_peaks(convolution);
-    
-###Outut the detected peaks
-#sys.stdout.write("start\ttop\tend\tscore\n");
-for pk in peaks:
-    sys.stdout.write("%s\t%d\t%d\t%d\t%1.2f\t%s\n" % ('chr1', pk[0], pk[2], pk[1], pk[3], '+'));
-
+for chrom, ch_cov in coverage_dict.items():
+    convolution = np.array(convolute(ch_cov, kernel, bandwidth, threads=args.threads))
+    peaks = detect_peaks(convolution);
+    for pk in peaks:
+        sys.stdout.write("%s\t%d\t%d\t%d\t%1.2f\t%s\n" % (chrom, pk[0], pk[2], pk[1], pk[3], '+'));
 
 
 ###Output basic statistics of the detected peaks
@@ -79,24 +78,31 @@ if(args.convolution):
 ###Plot coverage vs convolution
 if(args.plot):
     import matplotlib.pyplot as plt
-
-    fig, ax1 = plt.subplots()
+    fontsize = 24
+    fig, ax1 = plt.subplots(figsize=(16,9))
+    plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+    
 
     ax1.plot(coverage, 'b-')
-    ax1.set_xlabel("position (nt)")
-    ax1.set_ylabel('coverage', color='b')
+    ax1.set_xlabel("position (nt)", fontsize=fontsize)
+    ax1.set_ylabel('coverage', color='b', fontsize=fontsize)
     ax1.tick_params('y', colors='b')
     
     convolution = [max(0,x) for x in convolution]
     ax2 = ax1.twinx()
     ax2.plot(convolution, 'r-')
-    ax2.set_ylabel("convolution", color='r')
+    ax2.set_ylabel("convolution", color='r', fontsize=fontsize)
     ax2.tick_params('y', colors='r')
     
-    ax1.spines['right'].set_visible(False)
+    #ax1.spines['right'].set_visible(False)
     ax1.spines['top'].set_visible(False) 
+    ax2.spines['top'].set_visible(False) 
+    ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax1.tick_params(axis='both', which='minor', labelsize=fontsize)
+    ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax2.tick_params(axis='both', which='minor', labelsize=fontsize)
 
-    fig.tight_layout()
+
     
     _format = args.plot.split(".")[-1]
     plt.savefig(args.plot, format = _format)

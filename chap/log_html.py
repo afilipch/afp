@@ -25,6 +25,8 @@ log_file = os.path.join(args.path, "log.txt")
 #sys.stderr.write("%s\n" % name)
 
 
+#print(args.css)
+#sys.exit()
 
 
 section2text = {} #defaultdict(list);
@@ -39,15 +41,23 @@ with open(log_file) as f:
             
             
 ### BOWTIE2 processing ###
-bowtie_list = [];
 bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmapped reads", "Mapped Discordantly"]
-ltemp = section2text['bowtie'][1:8]
-for l in (ltemp[:4] + ltemp[6:]):
-    bowtie_list.append(int(l.split(" ")[0]))
-    
-bowtie_list[1] -= bowtie_list[4]
-bowtie_list[1], bowtie_list[2], bowtie_list[3] = bowtie_list[2], bowtie_list[3], bowtie_list[1]
-bowtie_total = bowtie_list[0]
+
+def get_bowtie(name):
+    bowtie_list = [];
+    ltemp = section2text[name][1:8]
+    for l in (ltemp[:4] + ltemp[6:]):
+        bowtie_list.append(int(l.split(" ")[0]))
+        
+    bowtie_list[1] -= bowtie_list[4]
+    bowtie_list[1], bowtie_list[2], bowtie_list[3] = bowtie_list[2], bowtie_list[3], bowtie_list[1]
+    return bowtie_list, bowtie_list[0]
+
+bowtie_list, bowtie_total = get_bowtie('bowtie')
+bowtie_control_list, bowtie_control_total = get_bowtie('bowtie_control')
+
+
+
 
 
 ### Detect peaks processing
@@ -100,18 +110,25 @@ with doc:
                 
     with div(cls="row", style="display: flex"):
         with div(cls="column", style="padding: 5px; flex:50%"):
-            img(src=os.path.join(args.path, '%s.scores.png' % name), alt="Snow", style="width:100%")
+            img(src= '%s.scores.png' % name, alt="Snow", style="width:100%")
         with div(cls="column", style="padding: 5px; flex:50%"):
-            img(src=os.path.join(args.path, '%s.fragment_lengthes.png' % name), alt="Snow", style="width:100%")
+            img(src='%s.fragment_lengthes.png' % name, alt="Snow", style="width:100%")
     br()
     br()
     if(True):
         p(strong("Genomic Control", style= 'font-size: 16pt'))
+        with table(style= 'font-size: 14pt') as _table:
+            for label, value in zip(bowtie_labels, bowtie_control_list):
+                with tr():
+                    td(label)
+                    td('{:,}'.format(value))
+                    td("%1.2f%%" % (value/bowtie_control_total*100))
+        
         with div(cls="row", style="display: flex"):
             with div(cls="column", style="padding: 5px; flex:50%"):
-                img(src=os.path.join(args.path, 'control_coverage.png'), alt="Snow", style="width:100%")
+                img(src='control_coverage.png', alt="Snow", style="width:100%")
             with div(cls="column", style="padding: 5px; flex:50%"):
-                img(src=os.path.join(args.path, 'control_correlation.png', ), alt="Snow", style="width:100%")
+                img(src='control_correlation.png', alt="Snow", style="width:100%")
         br()
         br()        
     
@@ -141,9 +158,9 @@ with doc:
                 td("%d" % value)
     with div(cls="row", style="display: flex"):
         with div(cls="column", style="padding: 5px; flex:50%"):
-            img(src=os.path.join(args.path, 'convolution.png'), alt="Snow", style="width:100%")
+            img(src='convolution.png', alt="Snow", style="width:100%")
         with div(cls="column", style="padding: 5px; flex:50%"):
-            img(src=os.path.join(args.path, 'filtering.png'), alt="Snow", style="width:100%")
+            img(src='filtering.png', alt="Snow", style="width:100%")
     br()
     br()
     p(strong("Peak Filtering Results", style= 'font-size: 16pt'))
