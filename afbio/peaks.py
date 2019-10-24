@@ -123,6 +123,29 @@ def estimate_bandwidth(arr_coverage, meanmult):
                 toppeaks.add(apeak)
     lengths = [x[2] - x[0] for x in toppeaks]
     return np.mean(lengths), len(toppeaks)
+
+
+def recenter_based_on_coverage(peak, coverage, fold):
+    mpos = np.argmax(coverage);
+    threshold = max(coverage)*fold;
+    for c, val in enumerate(coverage[mpos:]):
+        if(val<=threshold):
+            right = c+mpos;
+            break;
+    else:
+        right = len(coverage)-1
+        
+    for c, val in enumerate(coverage[mpos::-1]):
+        if(val<=threshold):
+            left = mpos-c;
+            break;
+    else:
+        left = 0
+            
+    return (left, mpos, right);
+        
+        
+    
     
     
             

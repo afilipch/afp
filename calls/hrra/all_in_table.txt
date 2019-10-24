@@ -14,12 +14,12 @@ python ~/afp/rnaseq/analyse_differential_gene_expression.py time_4h.tsv --plot .
 FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
 
 
-python ~/afp/postanalyses/reannotate_according_tss.py regions/regions.annotated.gff --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/nc_003450_3/annotation.gff3  --inside 200 --maxd 800 > regions/regions.filtered_tss.gff
+python ~/afp/postanalyses/reannotate_according_tss.py regions/regions.annotated.gff --cds ~/genomic/coryne/nc_003450_3/cds.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --annotation ~/genomic/coryne/improved_annotation_2017.csv  --inside 200 --maxd 800 > regions/regions.filtered_tss.gff
 
 
 # Create table 
 FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
 
-python ~/afp/project_scripts/hrra/create_table_of_everything.py regions/regions.filtered_tss.gff --diff ../../rnaseq/project/differential/time_0h.all.tsv ../../rnaseq/project/differential/time_30m.all.tsv ../../rnaseq/project/differential/time_4h.all.tsv --diffnames 0h 30m 4h --chapnames pre 0h 30m 2h 4h  9h 24h > ~/mypapers/marc_hrra/data_suppl/hrra.allin_table.tsv
-
+python ~/afp/project_scripts/hrra/create_table_of_everything.py regions/regions.filtered_tss.gff --diff ../../rnaseq/project/differential/time_0h.all.tsv ../../rnaseq/project/differential/time_30m.all.tsv ../../rnaseq/project/differential/time_4h.all.tsv --diffnames 0h 30m 4h --chapnames pre 0h 30m 2h 4h  9h 24h > ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv
+python ~/afp/html/hrra.py ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv --js ~/afp/afbio/html/table.js --css  ~/afp/afbio/html/table.css --ucsc 'philipchick/hrra_2019' > ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.html
 

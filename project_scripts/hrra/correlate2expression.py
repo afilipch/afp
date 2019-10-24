@@ -42,7 +42,7 @@ for path in args.diff:
         names2diff[k].append(v);
 names2diff = dict([x for x in names2diff.items() if len(x[1]) == ldiff]); 
         
-print(names2diff)
+#print(names2diff)
 
 
 ###READ peak intensities        
@@ -61,7 +61,7 @@ for interval in BedTool(args.path):
 diff2timepoints = {0: '0h', 1: '0.5h', 2: '4h'}
 int2timepoints = {0: 'pre', 1: '0h', 2: '0.5h', 3: '2h', 4: '4h', 5: '9h', 6: '24h'}
 
-print("chap timepoint\trnaseq timepoint\tcorrelation for upregulated\tcorrelation for downregulated\tnum up\tnum down");
+print("chap timepoint\trnaseq timepoint\tcorrelation for upregulated\tcorrelation for downregulated\ttotal correlation\tnum up\tnum down\ttotal");
 
 
 intensity2diff = {};

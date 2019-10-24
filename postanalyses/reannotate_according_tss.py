@@ -16,8 +16,8 @@ parser = argparse.ArgumentParser(description='Annotates the provided genomic reg
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genomic regions, gff format");
 parser.add_argument('--cds', nargs = '?', required=True, type = str, help = "Path to the cds regions, gff format");
 parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts regions, gff format");
-parser.add_argument('--inside', nargs = '?', default=50, type = int, help = "Maximum allowed distance to TSS while inside a gene");
-parser.add_argument('--maxd', nargs = '?', default=700, type = int, help = "Maximum allowed distance to TSS");
+parser.add_argument('--inside', nargs = '?', default=200, type = int, help = "Maximum allowed distance to TSS while inside a gene");
+parser.add_argument('--maxd', nargs = '?', default=800, type = int, help = "Maximum allowed distance to TSS");
 parser.add_argument('--annotation', nargs = '?', required = True, type = str, help = "Path to the annotation file");
 #parser.add_argument('--annotation', nargs = '?', required = True, type = str, help = "If set, peaks are trea");
 args = parser.parse_args();

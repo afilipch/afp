@@ -60,10 +60,11 @@ kernel = kernelfunc(truncate = 4.0);
 
 
 for chrom, ch_cov in coverage_dict.items():
-    convolution = np.array(convolute(ch_cov, kernel, bandwidth, threads=args.threads))
+    normed_cov = ch_cov/np.mean(ch_cov)
+    convolution = np.array(convolute(normed_cov, kernel, bandwidth, threads=args.threads))
     peaks = detect_peaks(convolution);
     for pk in peaks:
-        sys.stdout.write("%s\t%d\t%d\t%d\t%1.2f\t%s\n" % (chrom, pk[0], pk[2], pk[1], pk[3], '+'));
+        sys.stdout.write("%s\t%d\t%d\t%d\t%1.3f\t%s\n" % (chrom, pk[0], pk[2], pk[1], pk[3], '+'));
 
 
 ###Output basic statistics of the detected peaks

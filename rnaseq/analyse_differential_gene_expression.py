@@ -17,7 +17,7 @@ from afbio.LRGFDR import lrg
 #from pybedtools import BedTool
 
 parser = argparse.ArgumentParser(description='Finds and explores differentially expressed genes');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the gene expression file, tsv format (complie_expression.py output)");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the gene expression file, tsv format (compile_expression.py output)");
 parser.add_argument('--minexpr', nargs = '?', default=0.001, type = float, help = "Minimum required expression for the differential analysis");
 parser.add_argument('--fdr', nargs = '?', default=0.05, type = float, help = "Threshold for the local empirical false discovery rate");
 parser.add_argument('--plot', nargs = '?', required=True, type = str, help = "Output directory for the plots");
@@ -32,6 +32,8 @@ basename  = os.path.basename(args.path).split(".")[0]
 
 genenames = [];
 expressions = [];
+misfits = []
+
 with open(args.path) as f:
     header = next(f).strip().split("\t")
     ratiostr = "%s/%s" % (header[2], header[1])
@@ -42,6 +44,8 @@ with open(args.path) as f:
         if(all([x>args.minexpr for x in s1+s2])):
             genenames.append(a[0]);
             expressions.append((s1, s2));
+        else:
+            misfits.append((a[0], s1, s2))
 
 labelnames = [];
 if(args.labelnames):
@@ -216,12 +220,38 @@ for name, expression, logfold, normed_fold, common_expr in zip(genenames, expres
     diff = check_diff(abs(normed_fold), common_expr)
     print("%s\t%s\t%s\t%1.3f\t%1.3f\t%d" % (name, e1, e2, logfold, normed_fold, diff))
     scatter.append((common_expr, logfold, diff))
+    
+for name, wt_values, ko_values in misfits:
+    e1 = ";".join([str(x) for x in wt_values])
+    e2 = ";".join([str(x) for x in ko_values])
+    wt = np.mean(wt_values)
+    ko = np.mean(ko_values)
+    if(wt+ko):
+        localfold = (ko-wt)/(wt+ko)
+    else:
+        localfold = 0;
+    if(wt and ko):
+        logfold = np.log2(ko/wt)
+    elif(ko):
+        logfold = 999999
+    elif(wt):
+        logfold = -999999
+    else:
+        logfold = 0;
+    print("%s\t%s\t%s\t%1.3f\t%1.3f\t%d" % (name, e1, e2, logfold, localfold, 0))
+    
+        
+    
 
     if(name in labelnames):
         textlabels.append((name, common_expr, logfold))
 
-#sys.stderr.write("\n\n%s\n\n" % ('ctaE' in labelnames))
-#sys.stderr.write("\n\n%s\n%s\n" % (len(textlabels), len(labelnames)) )
+
+
+
+
+
+
     
 ###generate loglog plot
 scatter1 = np.array([(x[0], x[1]) for x in scatter if not x[-1]]);

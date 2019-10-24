@@ -52,7 +52,8 @@ for region in regions:
     if(len(curdiff) == 3):
         a = [region.chrom, str(region.start), str(region.stop), region.attrs['gene'],  region.attrs['genesymbol'], region.attrs['atg'], region.attrs['tss']] + ["%1.3f" % float(x) if x != "None" else "None" for x in region.attrs['maxcov'].split(",")] + ["%1.1f" % x[0] for x in curdiff] + ["%1.1f" % x[1] for x in curdiff] + ["%1.3f" % x[2] for x in curdiff] + [region.attrs['function'],  region.attrs['annotation']]
         print("\t".join(a))
-    
+    #else:
+        #print(region.attrs['genesymbol'], curdiff)
     ll.append(len(curdiff))
 
 sys.stderr.write( "%s\n" % Counter(ll))
