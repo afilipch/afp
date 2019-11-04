@@ -34,9 +34,9 @@ with open(args.path) as f:
 #print(headers)
 #sys.exit()
 
-headers = ["ucsc", 'start', 'end', 'Gene ID', 'Gene symbol', 'Distance ATG', 'Distance to TSS', 'ChAP T=pre', 'ChAP T=0h', 'ChAP T=30m', 'ChAP T=2h', 'ChAP T=4h', 'ChAP T=9h', 'ChAP T=24h', 'mRNA wt T=0h', 'mRNA wt T=30m', 'mRNA wt T=4h', 'mRNA DhrrA T=0h', 'mRNA DhrrA T=30m', 'mRNA DhrrA T=4h', 'Log2 DhrrA/WT T=0h', 'Log2 DhrrA/WT T=30m', 'Log2 DhrrA/WT T=4h', 'Predicted Function', 'Annotation']
+headers = ["ucsc", 'start', 'end', 'Gene ID', 'Gene symbol', 'Distance ATG', 'Distance to TSS', 'ChAP T=pre', 'ChAP T=0h', 'ChAP T=30m', 'ChAP T=2h', 'ChAP T=4h', 'ChAP T=9h', 'ChAP T=24h', 'mRNA wt T=0h', 'mRNA wt T=30m', 'mRNA wt T=4h', 'mRNA DhrrA T=0h', 'mRNA DhrrA T=30m', 'mRNA DhrrA T=4h', 'Log2 DhrrA/WT T=0h', 'Log2 DhrrA/WT T=30m', 'Log2 DhrrA/WT T=4h', 'Predicted Function', 'Annotation', "Divergent"]
 
-dtypes = [0, 1, 1, 0, 0] + [1]*(len(headers)-7) + [0, 0]
+dtypes = [0, 1, 1, 0, 0] + [1]*(len(headers)-7) + [0, 0, 0]
 #sys.stderr.write(str(dtypes))
 ndict = {'None': 0}
 #print(add_ucsc(peaks[0]));
