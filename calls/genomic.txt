@@ -1,0 +1,23 @@
+# Ad TSS to CDF to get a 5' annotated transcripts
+FOLDER: /home/IBT/filipchyk/genomic/coryne/nc_003450_3
+
+python ~/afp/parsing/add_tss_to_cds.py --tss tss.raw.gtf --cds cds.gff --distance 300 --outdir plots/ > cds_tss.gff
+
+
+# Example of AT analyses
+FOLDER: /home/IBT/filipchyk/genomic/coryne/nc_003450_3
+
+python ~/afp/genomic/at_relative_to_transcripts.py --genome genome.fasta --transcripts cds_tss.gff --phages phages.bed --window 20 --lookup 200 --outdir plots
+python ~/afp/genomic/explore_at_upstream.py --genome genome.fasta --transcripts cds_tss.gff --phages phages.bed --length 10 41 --max_distance  81  --exact_distance 81  --outdir plots/at_heatmaps/
+python ~/afp/genomic/tss_phage_vs_genomic.py --transcripts cds_tss.gff --phages phages.bed --genome genome.fasta  --outdir plots --length 25
+
+python ~/afp/genomic/tss_phage_vs_genomic.py --transcripts cds_tss.gff --phages phages.bed --genome genome.fasta  --outdir plots --length 25
+
+#Genome at content exploration
+python ~/afp/genomic/get_at_track.py ../genome.fa --flen 15 > track.bed
+python ~/afp/genomic/detect_at_peaks.py track.bed > extrema.tsv
+python ~/afp/genomic/reformat_at_peaks.py --atdrops extrema.tsv --attrack track.bed --minat 0.6 > peaks.minat60.bed
+fastaFromBed -fi ../genome.fa -bed peaks.minat60.bed -s -name > peaks.minat60.fa
+python /home/IBT/filipchyk/afp/mapping/coverage2bedgraph.py track.bed --multiplier 100 --convert True --trackopts 'track name=AT_track description="window size 31" color=139,1,139 type=bedGraph visibility=2' > ../ucsc/track.bedgraph
+python ~/afp/parsing/add_tss_to_cds.py --tss tss.raw.gtf --cds cds.gff --distance 300 --outdir plots/ > transcripts.undisputed.gff
+python ~/afp/parsing/transcripts2ucsc.py ../transcripts.undisputed.gff --cds ../cds.gff --trackopts track name=nc_003450 transcripts description=transcripts with the information of transcription start sites visibility=2 color=0,128,0 > transcripts_tss.bed

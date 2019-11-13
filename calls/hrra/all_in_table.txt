@@ -23,3 +23,9 @@ FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/projects/selected
 python ~/afp/project_scripts/hrra/create_table_of_everything.py regions/regions.filtered_tss.gff --diff ../../rnaseq/project/differential/time_0h.all.tsv ../../rnaseq/project/differential/time_30m.all.tsv ../../rnaseq/project/differential/time_4h.all.tsv --diffnames 0h 30m 4h --chapnames pre 0h 30m 2h 4h  9h 24h > ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv
 python ~/afp/html/hrra.py ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv --js ~/afp/afbio/html/table.js --css  ~/afp/afbio/html/table.css --ucsc 'philipchick/hrra_2019' > ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.html
 
+
+# Create RNA-seq folder
+
+python ~/afp/project_scripts/hrra/table_rnaseq.py --diff rnaseq/project/differential/time_0h.all.tsv rnaseq/project/differential/time_30m.all.tsv rnaseq/project/differential/time_4h.all.tsv --diffnames 0h 30m 4h --annotation ~/genomic/coryne/improved_annotation_2017.csv >  ~/mypapers/marc_hrra/data_suppl/hrra.rnaseq_table.tsv
+
+

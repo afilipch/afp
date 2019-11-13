@@ -9,7 +9,7 @@ from collections import defaultdict, Counter
 from itertools import product;
 
 import numpy as np;
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 #import pandas as pd;
 from pybedtools import BedTool, Interval
 import matplotlib.pyplot as plt;
@@ -18,11 +18,75 @@ import matplotlib.pyplot as plt;
 
 
 parser = argparse.ArgumentParser(description='Correlates differential expression of the genes with the peak intensity on their promoters');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the annotated consensus regions of the time-series binding peaks");
-parser.add_argument('--diff', nargs = 3, required=True, type = str, help = "Path to the file with genes\' differential expression");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the all-in table");
 parser.add_argument('--distance', nargs = '?', default=400, type = int, help = "Maximum allowed distance for the peak to the closest peak");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path to the plot");
 args = parser.parse_args();
+
+data = [];
+with open(args.path) as f:
+    a = next(f).strip().split("\t")
+    chap_labels = [a[7]] + a[9:12]
+    mrna_labels = a[20:23]
+    #for ck in enumerate(a):
+        #print(ck)
+    for l in f:
+        a = l.strip().split("\t")
+        tss = float(a[6]);
+        chap = [a[7]] + a[9:12]
+        chap = [float(x) if x != 'None' else 0 for x in chap]
+        mrna_log2_change = [float(x) for x in a[20:23]]
+        mrna_expr = [float(x) for x in a[14:20]]
+        #FILTERING
+        if(tss<=args.distance):
+            data.append((chap, mrna_log2_change, mrna_expr))
+
+chap2values = defaultdict(list)           
+for chap_list, mrna_log2_change_list, mrna_expr_list in data:
+    for cc, (chap, label) in enumerate(zip(chap_list, chap_labels)):
+        if(cc==3):
+            corrected_cc = 2;
+        else:
+            corrected_cc = cc;
+        mrna_log2_change = [abs(x) for x in mrna_log2_change_list[corrected_cc:]]
+        if(mrna_log2_change):
+            mrna_log2_change = max(mrna_log2_change)
+            mrna_expr = mrna_expr_list[corrected_cc] + mrna_expr_list[corrected_cc]
+            if(mrna_expr > 20 and chap > 1 and mrna_log2_change<100):
+                chap2values[label].append((chap, mrna_log2_change))
+        
+
+correlations = {};
+for label, values in chap2values.items():
+    xvalues = [x[0] for x in values]
+    yvalues = [x[1] for x in values]
+    corr = spearmanr(xvalues, yvalues)[0]
+    correlations[label] = corr, len(xvalues)
+ 
+#print(correlations)
+print("ChaP time-point\tnumber of genes\tspearman correlation")
+for label in ['ChAP T=pre', 'ChAP T=30m', 'ChAP T=2h', 'ChAP T=4h']:
+    print("%s\t%d\t%1.2f" % (label, correlations[label][1], correlations[label][0]))
+        
+        
+        
+    ##for mc, mrna_log2_change in enumerate(mrna_log2_change_list, start=0):
+        ##if(mc==2):
+            ##corrected_mc = 4;
+        ##else:
+            ##corrected_mc = mc+1;
+        ##chap = max([abs(x) for x in chap_list[:corrected_mc]])
+        ##mrna_expr = max(mrna_expr_list[mc], mrna_expr_list[mc+3])
+        ##if(mrna_expr > 10 and chap > 1):
+            ##values[mc].append((chap, mrna_log2_change))
+ 
+##print(len(data))
+#print([len(x) for x in chap2values.values()]);
+
+
+
+
+sys.exit()
 
 ###READ differential gene expression
 ldiff = len(args.diff)
@@ -133,37 +197,6 @@ if(args.plot):
     plt.savefig(args.plot, format = os.path.basename(args.plot).split(".")[-1])
 else:
     plt.show()
-
-
-#selection = [(0,0), (0,1), (2,1), (0,2), (2,2), (4,2)]
-#upvals = [intensity2diff[x][0] for x in selection];
-#downvals = [intensity2diff[x][1] for x in selection];
-
-#ind = np.arange(len(selection))  # the x locations for the groups
-#width = 0.35       # the width of the bars
-
-#fig, ax = plt.subplots(figsize = (16, 9))
-#plt.tight_layout(rect=[0.04, 0.1, 1, 1])
-#ax.spines['top'].set_visible(False)
-#ax.spines['right'].set_visible(False)
-#rects1 = ax.bar(ind, upvals, width, color='darkblue')
-#rects2 = ax.bar(ind + width, downvals, width, color='lightblue')
-
-## add some text for labels, title and axes ticks
-#ax.set_ylabel('R coefficient')
-##ax.set_title('')
-#ax.set_xticks(ind + width / 2)
-#sep = '~'
-#fontsize = 18;
-#ax.legend((rects1[0], rects2[0]), ('Repression', 'Activation'), frameon=False, fontsize=fontsize, loc ='upper left')
-#ax.set_xticklabels(('0h%s0h' % sep, '0h%s0.5h' % sep, '0.5h%s0.5h' % sep, '0h%s4h' % sep, '0.5h%s4h' % sep, '4h%s4h' % sep), rotation = 45)
-#for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] + ax.get_xticklabels() + ax.get_yticklabels()):
-    #item.set_fontsize(fontsize)
-
-#if(args.plot):
-    #plt.savefig(args.plot, format = os.path.basename(args.plot).split(".")[-1])
-#else:
-    #plt.show()
 
 
 
