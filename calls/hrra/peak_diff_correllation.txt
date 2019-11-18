@@ -2,3 +2,6 @@
 FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/differential
 
 python ~/afp/project_scripts/hrra/correlate2expression.py  ~/projects/hrra_august2019/projects/selected/regions/regions.annotated.gff  --diff time_0h.assigned.tsv time_30m.assigned.tsv time_4h.assigned.tsv  --distance 350 --plot ~/mypapers/marc_hrra/fig3/fig3d.pdf > ~/mypapers/marc_hrra/fig3/fig3d.tsv
+
+FOLDER:/home/IBT/filipchyk/projects/hrra_august2019
+python ~/afp/project_scripts/hrra/maximal_rnaseq_correlation.py ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv --distance 200 --plot ~/mypapers/marc_hrra/august2019_figures/fig3/maximal_correlation.svg

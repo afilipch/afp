@@ -66,7 +66,7 @@ def transcript2upstream(interval, genome, window, lookup):
 
 
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
-transcripts = BedTool(args.transcripts);
+transcripts = BedTool([x for x in BedTool(args.transcripts) if len(x) > 100]);
 phages = BedTool(args.phages);
 
 
@@ -87,6 +87,7 @@ for ptr in phaged_transcripts:
     transcript_local_profiles = []
     temp_dict = defaultdict(list);
     for transcript in ptr:
+        #print(transcript)
         temp_dict[transcript.name].append(transcript_content(transcript, genome, args.window))
         
     for l in temp_dict.values():

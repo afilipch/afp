@@ -17,7 +17,7 @@ parser.add_argument('--moi', nargs = '+', required = True, type = float, help = 
 parser.add_argument('--length_cycle', nargs = '?', default = 1, type = int, help = "Time of the cycle for the modelling in minutes, default: 1");
 parser.add_argument('--max_cycles', nargs = '?', default = 200, type = int, help = "Number of cycles to model, default: 200");
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
-parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory")
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 #parser.add_argument('--cds', nargs = '?', type = str, help = "Path to the cds regions, gff format");
 args = parser.parse_args();
 
@@ -58,7 +58,7 @@ def cycle_basic(cell_number, cell_resistant, phage_number, food_limit, cell_dead
 #Pre-set parameters
 parameters = {"cell_number" : 10**6,
 "doubling_time" : 40,
-"infection_efficiency": 0.5*(10**(-8)),
+"infection_efficiency": 1*(10**(-10)),
 "lysogenic" : 0.001,
 "defective_lysis" : 0.2,
 "cell_resistant": 0.001,
@@ -70,7 +70,6 @@ parameters = {"cell_number" : 10**6,
 
 
 #Set free parameters
-infection_efficiency = parameters["infection_efficiency"]*args.length_cycle
 doubling_factor = np.e**(np.log(2)/(parameters['doubling_time']/args.length_cycle))
 #print(doubling_factor)
                            
@@ -82,7 +81,7 @@ doubling_factor = np.e**(np.log(2)/(parameters['doubling_time']/args.length_cycl
  
 ################################ Drawing Section ################################ 
 
-def draw_info(data, moi, fontsize=18):
+def draw_info(data, moi, outdir, fontsize=18):
     labels = ["num of phages", "num of dead cells", "food availible"]
     fig, axes = plt.subplots(nrows=2, ncols = 2, figsize = (16, 9), frameon=False)
     (ax1, ax2), (ax3, ax4) = axes
@@ -105,14 +104,13 @@ def draw_info(data, moi, fontsize=18):
         ax.spines['right'].set_visible(False)
         ax.plot(data[:,count])
         
-    plt.savefig(os.path.join(args.outdir, "info.moi_%1.1f_.%s"  %  (moi, args.format) ) , format = args.format)
+    plt.savefig(os.path.join(outdir, "info.moi_%1.1f_.%s"  %  (moi, args.format) ) , format = args.format)
     plt.clf()
     
     
-def draw_moi(total_list, fontsize=18):
+def draw_moi(total_list, outdir, ie_readable, fontsize=18):
     colors = plt.cm.RdPu(np.linspace(0.25,1,len(total_list)))
     #print(colors)
-    labels = ["num of phages", "num of dead cells", "food availible"]
     fig, ax = plt.subplots(figsize=(16,9))
 
     ax.set_xlabel('Time [minutes]', fontsize=fontsize)
@@ -124,27 +122,92 @@ def draw_moi(total_list, fontsize=18):
         ax.plot(total, color = color, label= "MOI=%1.1f" % moi)
     fig.legend(loc=(0.15, 0.75), frameon=False, fontsize=fontsize)   
         
-    plt.savefig(os.path.join(args.outdir, "varied_moi.%s"  %  args.format ) , format = args.format)
+    plt.savefig(os.path.join(outdir, "varied_moi.parameter_%s.%s"  %  (ie_readable, args.format) ) , format = args.format)
     plt.clf()
+    plt.close()
     
-    
-    
-    
-################################ Main Section ################################ 
-total_list = [];
-for moi in args.moi:
-    food_limit = parameters['food_limit']
-    cell_number = parameters['cell_number']
-    cell_resistant = cell_number*parameters['cell_resistant']
-    cell_dead = 0;
-    phage_number = moi*cell_number
-    print(phage_number)
-    data = cycle_basic(cell_number, cell_resistant, phage_number, food_limit, cell_dead, doubling_factor, infection_efficiency, args.max_cycles, parameters)
-    total_list.append(data[:,0])
-    draw_info(data, moi, fontsize=18)
- 
+def draw_parameter_distance(plateau_distances, ie_range, outdir, xlabel, fontsize=18):
+    #colors = plt.cm.RdPu(np.linspace(0.25,1,len(plateau_distances)))
+    fig, ax = plt.subplots(figsize=(16,9))
 
-draw_moi(total_list, fontsize=18)
+    ax.set_xlabel(xlabel, fontsize=fontsize)
+    ax.set_ylabel("Discrimination between MOI", fontsize=fontsize)    
+    ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    x_range = [np.log2(x) for x in ie_range]
+    ax.plot(x_range, plateau_distances, color = 'darkblue')
+    ax.plot(x_range, plateau_distances, 'r*')
+    #fig.legend(loc=(0.15, 0.75), frameon=False, fontsize=fontsize)   
+        
+    plt.savefig(os.path.join(outdir, "parameter_discrimination.%s"  %  args.format ) , format = args.format)
+    plt.clf()
+    plt.close()
+    
+    
+    
+    
+################################ Main Section ################################
+def run(parameters, outdir, ie_readable='constant', if_info = True):
+    total_list = [];
+    for moi in args.moi:
+        infection_efficiency = parameters["infection_efficiency"]*args.length_cycle
+        food_limit = parameters['food_limit']
+        cell_number = parameters['cell_number']
+        cell_resistant = cell_number*parameters['cell_resistant']
+        cell_dead = 0;
+        phage_number = moi*cell_number
+        #print(phage_number)
+        data = cycle_basic(cell_number, cell_resistant, phage_number, food_limit, cell_dead, doubling_factor, infection_efficiency, args.max_cycles, parameters)
+        total_list.append(data[:,0])
+        if(if_info):
+            draw_info(data, moi, outdir, fontsize=18)
+    
+    draw_moi(total_list, outdir, ie_readable, fontsize=18)
+    return total_list;
+
+
+run(parameters, args.outdir);
+
+
+################################ Vary infection infection efficiency ################################
+def get_plateau_diff(total_list):
+    return [max(x[0]) - max(x[1]) for x in zip(total_list, total_list[1:])]
+
+plateau_distances = []
+ie_start = 10**(-11)
+ie_range = np.array([2**x for x in range(11)])
+#ie_range = np.array([1, 2, 5, 10, 100, 1000, 10000]);
+for ie_cur in ie_range:
+    ie_local = ie_cur*ie_start
+    parameters['infection_efficiency'] = ie_local;
+    total_list = run(parameters, os.path.join(args.outdir, 'efficiency'), ie_readable=ie_cur,  if_info=False);
+    plateau_distances.append(min([abs(x) for x in get_plateau_diff(total_list)]));
+    
+draw_parameter_distance(plateau_distances, ie_range, os.path.join(args.outdir, 'efficiency'), 'Log2(Infection efficiency)', fontsize=18)
+parameters['infection_efficiency'] = ie_start*2;
+
+################################ Vary food availibility ################################
+plateau_distances = []
+food_start = 10**7
+food_range = np.array([2**x for x in range(21)])
+for f_cur in food_range:
+    f_local = f_cur*food_start
+    parameters['food_limit'] = f_local
+    total_list = run(parameters, os.path.join(args.outdir, 'food'), ie_readable=f_cur,  if_info=False);
+    plateau_distances.append(min([abs(x) for x in get_plateau_diff(total_list)]));
+    
+draw_parameter_distance(plateau_distances, food_range, os.path.join(args.outdir, 'food'), 'Log2(Food Limit)', fontsize=18)
+    
+
+
+
+
+
+#print( "\t".join(["TIME/MOI"] + [str(x) for x in args.moi]) )
+#curtime = 0;
+#for cycle in zip(*total_list):
+    #print(cycle)
     
 
     

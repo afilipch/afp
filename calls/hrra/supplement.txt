@@ -28,6 +28,16 @@ FOLDER: /home/IBT/filipchyk/mypapers/marc_hrra
 python ~/afp/project_scripts/hrra/peaks_expression_scatter_s7.py data_suppl/hrra.coordinates.allin_table.tsv --plot august2019_figures/supplement/s7.svg
 
 
+#Draw gene expression change dependence on the binding motif position relative to TSS
+FOLDER:/home/IBT/filipchyk/projects/hrra_august2019
+
+python ~/afp/project_scripts/hrra/motif_to_expression.py projects/selected/fimo_out/fimo.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.undisputed.gff --diff rnaseq/project/differential/time_30m.all.tsv --maxd 260 --inside 90 --plot ~/mypapers/marc_hrra/august2019_figures/supplement/motif_to_tss_distance_VS_gene_expression_change.svg
+
+#Draw gene expression change for bound VS unbound genes
+FOLDER:/home/IBT/filipchyk/projects/hrra_august2019
+python ~/afp/project_scripts/hrra/bound_vs_nonbound.py ~/mypapers/marc_hrra/data_suppl/hrra.coordinates.allin_table.tsv --distance 400 --plot ~/mypapers/marc_hrra/august2019_figures/fig3/bound_vs_unbound.svg --diff rnaseq/project/differential/time_0h.all.tsv rnaseq/project/differential/time_30m.all.tsv rnaseq/project/differential/time_4h.all.tsv
+
+
 
 
 

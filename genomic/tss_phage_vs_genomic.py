@@ -197,7 +197,10 @@ def draw_barplot(data, name, length, fontsize=28, linewidth = 5, width = 0.25, y
         for i in range(1, 1+arrsize):
             mean = np.mean(d[i])
             means[j].append(mean)
-            yerr_list[j].append(( mean - np.percentile(d[i], 25), np.percentile(d[i], 75) - mean ))
+            if(len(d[i]) > 2):
+                yerr_list[j].append(( mean - np.percentile(d[i], 25), np.percentile(d[i], 75) - mean ))
+            else:
+                yerr_list[j].append(( 0, 0 ))
             #print (j, i, np.percentile(d[i], 25), mean, mean - np.percentile(d[i], 25))
     yerr_list = [np.array(x).transpose() for x in yerr_list]
     #print(means);
