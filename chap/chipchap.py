@@ -206,11 +206,12 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
     script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
+    #Create html report
     #python ~/afp/chap/log_html.py log/sven3_18h --css ~/afp/afbio/html/table.css > test.html
-    input_files = log_dir
+    input_files = [log_dir, output_files]
     output_files = os.path.join(log_dir, 'report.html');
     final_files.append(output_files)
-    script = get_script('log_html.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css')}, inp = input_files, out = output_files)
+    script = get_script('log_html.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css')}, inp = input_files[0], out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
     

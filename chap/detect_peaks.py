@@ -26,6 +26,7 @@ args = parser.parse_args();
 
 ###Read Coverage
 coverage_dict = coverage2dict(args.path);
+#print( [x[:100] for x in coverage_dict.values()] )
 coverage = []
 for v in coverage_dict.values():
     coverage.extend(v)
@@ -59,9 +60,11 @@ exec("from afbio.filters import %s as kernelfunc" % args.kernel)
 kernel = kernelfunc(truncate = 4.0);
 
 
+convolution_list = [];
 for chrom, ch_cov in coverage_dict.items():
     normed_cov = ch_cov/np.mean(ch_cov)
     convolution = np.array(convolute(normed_cov, kernel, bandwidth, threads=args.threads))
+    convolution_list.append((chrom, convolution));
     peaks = detect_peaks(convolution);
     for pk in peaks:
         sys.stdout.write("%s\t%d\t%d\t%d\t%1.3f\t%s\n" % (chrom, pk[0], pk[2], pk[1], pk[3], '+'));
@@ -73,8 +76,9 @@ sys.stderr.write("\nRaw peaks detected with a kernel:\t%d\n\n" % len(peaks))
 ###Output convolution track
 if(args.convolution):
     with open(args.convolution, 'w') as f:
-        for c, el in enumerate(convolution):
-            f.write("chr1\t%d\t%d\n" % (c+1, el)); 
+        for chrom, convolution in convolution_list:
+            for c, el in enumerate(convolution, start=1):
+                f.write("%s\t%d\t%d\n" % (chrom, c, el)); 
 
 ###Plot coverage vs convolution
 if(args.plot):

@@ -21,7 +21,7 @@ parser.add_argument('--zscore', nargs = '?', default=3.0, type = float, help = "
 parser.add_argument('--pcut', nargs = '?', default=99.0, type = float, help = "Percentile cuttof apllied to the peak scores prior fitting them to gaussian distribution");
 parser.add_argument('--coverage', nargs = '?', required=True, type = str, help = "Path to the coverage file, if provided peaks are filtered according to --minmedian option");
 parser.add_argument('--minmedian', nargs = '?', default=3.0, type = float, help = "Minimal required height of the detected peaks, this filter is applied when --coverage is provided");
-parser.add_argument('--convolution', nargs = '?', required=True, type = str, help = "adfsa");
+#parser.add_argument('--convolution', nargs = '?', required=True, type = str, help = "adfsa");
 
 parser.add_argument('-ap', '--assignedpeaks', nargs = '?', default='', type = str, help = "If set, all the peaks with the assigned z-score are written to the given destination");
 parser.add_argument('--plot', nargs = '?', type = str, help = "Path for the output plot (convolution scores distribution and filtering)");
@@ -92,44 +92,55 @@ else:
     sys.stderr.write("\nThreshold for min peak height:\t%1.2f\nnum of gauss-filtered peaks:\t%d\nnum of coverage-filtered peaks:\t%d\n\n" % (cov_threshold, before, len(filtered)))  
 
 
-    convolution = list(coverage2dict(args.convolution).values())[0]
+    #convolution = list(coverage2dict(args.convolution).values())[0]
     ### Print the filtered peaks
+    num_recentered = 0;
     for peak in filtered:
         zscore = (float(peak.score) - fitmean)/fitdev;
         peak.score = "%1.1f" % zscore;
-        #sys.stdout.write(str(peak));
-        local_coverage = coverage_dict[peak.chrom][peak.start:peak.end]
-        local_convolution = convolution[peak.start:peak.end]
-        top = int(peak.name)
-        topcoverage = coverage_dict[peak.chrom][top]
         
+        #RECENTER PEAKS IF NEEDED
+        local_coverage = coverage_dict[peak.chrom][peak.start:peak.end]
+        #local_convolution = convolution[peak.start:peak.end]        
+        top = int(peak.name)
+        topcoverage = coverage_dict[peak.chrom][top]        
         newpos = recenter_based_on_coverage(peak, local_coverage, 0.5)
         
-        if(max(local_coverage) >= 1.5*topcoverage):
-            fontsize = 24
-            fig, ax1 = plt.subplots(figsize=(16,9))
-            plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
+        if(max(local_coverage) >= 1.4*topcoverage or (max(local_coverage) >= 1.2*topcoverage and abs(top-peak.start-newpos[1]) <= 0.25*len(peak)) ):
+            #print(peak);
+            peak.name = str(peak.start + newpos[1])
+            peak.stop = peak.start + newpos[2]
+            peak.start = peak.start + newpos[0]
+            num_recentered += 1;
+        sys.stdout.write(str(peak))
+            #print(peak)
+            #print("_"*120)
+            #print(top, [peak.start + x for x in newpos], local_coverage[newpos[1]], max(loc))
+            
+            #fontsize = 24
+            #fig, ax1 = plt.subplots(figsize=(16,9))
+            #plt.tight_layout(rect=[0.1, 0.1, 0.95, 0.95])
             
 
-            ax1.plot(local_coverage, 'b-')
-            ax1.plot(top - peak.start, topcoverage, 'r*', markersize=20)
-            ax1.plot(newpos, [local_coverage[x] for x in newpos], 'r+', markersize=20)
-            ax1.set_xlabel("position (nt)", fontsize=fontsize)
-            ax1.set_ylabel('coverage', color='b', fontsize=fontsize)
-            ax1.tick_params('y', colors='b')
+            #ax1.plot(local_coverage, 'b-')
+            #ax1.plot(top - peak.start, topcoverage, 'r*', markersize=20)
+            #ax1.plot(newpos, [local_coverage[x] for x in newpos], 'r+', markersize=20)
+            #ax1.set_xlabel("position (nt)", fontsize=fontsize)
+            #ax1.set_ylabel('coverage', color='b', fontsize=fontsize)
+            #ax1.tick_params('y', colors='b')
             
-            ax2 = ax1.twinx()
-            ax2.plot(local_convolution, 'g-')
-            ax2.set_ylabel("convolution", color='g', fontsize=fontsize)
-            ax2.tick_params('y', colors='g')
+            #ax2 = ax1.twinx()
+            #ax2.plot(local_convolution, 'g-')
+            #ax2.set_ylabel("convolution", color='g', fontsize=fontsize)
+            #ax2.tick_params('y', colors='g')
             
-            ax1.spines['right'].set_visible(False)
-            ax1.spines['top'].set_visible(False) 
-            ax1.tick_params(axis='both', which='major', labelsize=fontsize)
-            ax1.tick_params(axis='both', which='minor', labelsize=fontsize)
-            plt.show()
+            #ax1.spines['right'].set_visible(False)
+            #ax1.spines['top'].set_visible(False) 
+            #ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+            #ax1.tick_params(axis='both', which='minor', labelsize=fontsize)
+            #plt.show()
         
-        
+    sys.stderr.write("\nnum of re-centered peaks:\t%d\n\n" % num_recentered)    
         
         
         

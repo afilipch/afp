@@ -125,10 +125,10 @@ with doc:
                     td("%1.2f%%" % (value/bowtie_control_total*100))
         
         with div(cls="row", style="display: flex"):
-            with div(cls="column", style="padding: 5px; flex:50%"):
-                img(src='control_coverage.png', alt="Snow", style="width:100%")
-            with div(cls="column", style="padding: 5px; flex:50%"):
-                img(src='control_correlation.png', alt="Snow", style="width:100%")
+            #with div(cls="column", style="padding: 5px; flex:60%"):
+            img(src='control_coverage.png', alt="Snow", style="width:75%")
+            #with div(cls="column", style="padding: 5px; flex:40%"):
+                #img(src='control_correlation.png', alt="Snow", style="width:100%")
         br()
         br()        
     
