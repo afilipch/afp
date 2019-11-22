@@ -207,11 +207,11 @@ def array2fixed_length(arr1d, length):
     return [np.mean(x) for x in np.split(temp, length)]
 
 
-def coverage2dict(coverage):
+def coverage2dict(coverage, cpos=2):
     d = {};
-    data = pd.read_csv(coverage,sep="\t", header = None, names = ['chr', 'pos', 'coverage'])
-    for key, val in data.groupby(['chr']):
-        d[key] = np.array(val['coverage'])
+    data = pd.read_csv(coverage,sep="\t", header = None)
+    for key, val in data.groupby(0):
+        d[key] = np.array(val[cpos])
     return d;
         
     

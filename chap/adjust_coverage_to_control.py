@@ -55,7 +55,7 @@ control_coverage = control_coverage/np.mean(control_coverage)
 
 data.coverage = coverage/control_coverage;
 for l in data.itertuples():
-    print("%s\t%s\t%1.1f" % (l.chr, l.position, l.coverage));
+    print("%s\t%s\t%1.5f" % (l.chr, l.position, l.coverage));
     
  
  

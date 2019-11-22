@@ -88,8 +88,10 @@ else:
         coverage.extend(v)
     cov_threshold = np.mean(coverage)*args.minmedian;
     before = len(filtered)
-    filtered = [ x for x in filtered if max(coverage[x.start:x.end]) > cov_threshold]
-    sys.stderr.write("\nThreshold for min peak height:\t%1.2f\nnum of gauss-filtered peaks:\t%d\nnum of coverage-filtered peaks:\t%d\n\n" % (cov_threshold, before, len(filtered)))  
+    filtered = [ x for x in filtered if max(coverage_dict[x.chrom][x.start:x.end]) > cov_threshold]
+    sys.stderr.write("\nThreshold for min peak height:\t%1.2f\nnum of gauss-filtered peaks:\t%d\nnum of coverage-filtered peaks:\t%d\n\n" % (cov_threshold, before, len(filtered)))
+    #print(filtered)
+    #sys.exit()
 
 
     #convolution = list(coverage2dict(args.convolution).values())[0]

@@ -6,6 +6,7 @@ import sys
 import os
 from collections import defaultdict
 from bisect import bisect_right, bisect_left
+from afbio.sequencetools import coverage2dict
 
 
 import pandas as pd;
@@ -106,19 +107,14 @@ if(os.stat(args.path).st_size != 0):
         
     #################################################################################################################################################################
     ### Get coverage annotation
-    def annotate_coverage(interval, coverage, flen):
-        top = int(interval.name)
-        topcoverage = coverage[top]
-        
-        return topcoverage, start, end
     
     if(args.coverage):
-        coverage = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
-        #print(len(coverage))
-
+        coverage = coverage2dict(args.coverage)
+        cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
         for interval in peaks:
-            topcoverage, start, end = annotate_coverage(interval, coverage, args.flen)
-            interval.attrs['topcoverage'] =  "%1.3f" % topcoverage
+            interval.attrs['topcoverage'] =  "%1.3f" % coverage[interval.chrom][int(interval.name)]
+            interval.attrs['other_coverage'] =  ",".join(["%1.3f" % x[interval.chrom][int(interval.name)] for x in cov_list])
+            
 
 
     

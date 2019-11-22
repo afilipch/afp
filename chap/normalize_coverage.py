@@ -24,36 +24,30 @@ parser.add_argument('--zscore', nargs = '?', default=2.0, type = float, help = "
 parser.add_argument('--mode', nargs = '?', choices=['all', 'noise', 'signal'], default='all', type = str, help = "Mode of the normalization. --all: normalize to the whole coverage, --signal: noramlize to the coverage of the filtered (with z-score) peaks, --noise: normalize to the coverage of the non-signal regions");
 args = parser.parse_args();
 
-table = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "postion", "coverage"])
-coverage = table.coverage.values
+data = pd.read_csv(args.coverage, sep="\t" , names = ["chr", "position", "coverage"])
+coverage = copy.copy(data.coverage.values)
 
 
 peaks = [x for x in BedTool(args.path) if float(x.score) > args.zscore]
-length = len(coverage)
-temp = copy.copy(coverage)
+peak_coverage = []
 
 for peak in peaks:
-    temp[peak.start:peak.end] = [0]*len(peak)
-    length = length - len(peak);
+    peak_coverage.extend(coverage[peak.start:peak.end]) 
  
 sys.stderr.write("###normalize_coverage\n")
-sys.stderr.write("%s\nFile %s is processed\n\nSignal fraction of the coverage:%1.3f\t\nNoise fraction of the coverage:%1.3f\t\n\n" % ("_"*120, args.path, 1-sum(temp)/sum(coverage), sum(temp)/sum(coverage)))
+sys.stderr.write("%s\nFile %s is processed\n\nSignal fraction of the coverage:%1.3f\t\nNoise fraction of the coverage:%1.3f\t\n\n" % ("_"*120, args.path, sum(peak_coverage)/sum(coverage), 1 - sum(peak_coverage)/sum(coverage)))
+
+normfactors = {}
+normfactors['all'] = np.mean(coverage);
+normfactors['signal'] = np.mean(peak_coverage);
+normfactors['noise']= (sum(coverage) - sum(peak_coverage))/(len(coverage) - len(peak_coverage))
 
 
-if(args.mode == 'all'):
-    normfactor = np.mean(coverage);
+data.coverage = coverage/normfactors[args.mode];
+all_coverage = coverage/normfactors['all']
+signal_coverage = coverage/normfactors['signal']
+noise_coverage = coverage/normfactors['noise']
 
-elif(args.mode == 'noise'):
-    normfactor = sum(temp)/length
-    
-elif(args.mode == 'signal'):
-    temp = []
-    for peak in peaks:
-        temp.extend(coverage[peak.start:peak.end])
-    normfactor = np.mean(temp);
-
-
-coverage_normed = coverage/normfactor
-for cov, row in zip(coverage_normed, table.itertuples()):
-    print("\t".join((row[1], str(row[2]), "%1.5f" % cov)))
+for l, ac, sc, nc, oc in zip(data.itertuples(), all_coverage, signal_coverage, noise_coverage, coverage):
+    print("%s\t%s\t%1.5f\t%1.5f\t%1.5f\t%1.5f\t%1.5f" % (l.chr, l.position, l.coverage, ac, sc, nc, oc));
 
