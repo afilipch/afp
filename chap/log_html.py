@@ -75,12 +75,12 @@ detection_units = ['', ' nt', '']
 ### Filter peaks processing
 #coverage_list = [];
 filter_list = [];
-filter_labels = ["Initial Median Score", "Fitted Mean Score", "Fitted STD Score", "Score Threshold", "Mean Coverage", "Coverage Threshold", "Total Peaks", "Filtered by Score", "Filtered by Coverage"]
+filter_labels = ["Initial Median Score", "Fitted Mean Score", "Fitted STD Score", "Score Threshold", "Mean Coverage", "Coverage Threshold", "Total Peaks", "Filtered by Score", "Filtered by Coverage", "num of re-centered peaks"]
 for l in (section2text['filter_peaks']):
     if(l):
         filter_list.append(float(l.split("\t")[1]))
         
-filter_list = [filter_list[0], filter_list[3], filter_list[4], filter_list[5], detection_list[1], filter_list[10], filter_list[6], filter_list[7], filter_list[12] ]
+filter_list = [filter_list[0], filter_list[3], filter_list[4], filter_list[5], detection_list[1], filter_list[10], filter_list[6], filter_list[7], filter_list[12], filter_list[13] ]
 filter_total = filter_list[6]
 
 
