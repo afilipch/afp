@@ -1,7 +1,9 @@
 # Ad TSS to CDF to get a 5' annotated transcripts
 FOLDER: /home/IBT/filipchyk/genomic/coryne/nc_003450_3
 
-python ~/afp/parsing/add_tss_to_cds.py --tss tss.raw.gtf --cds cds.gff --distance 300 --outdir plots/ > cds_tss.gff
+python ~/afp/parsing/coryne/add_tss_to_cds.py --tss tss.raw.gtf --cds cds.gff --outdir plots/ > transcripts.gff
+python ~/afp/parsing/coryne/coryne_add_cg_names.py transcripts.gff --annotation ../improved_annotation_2017.csv > transcripts.annotated.gff
+
 
 
 # Example of AT analyses

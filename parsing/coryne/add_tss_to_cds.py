@@ -77,19 +77,22 @@ sys.stderr.write("\nTotal tss: %d\nValid tss: %d\n"  % tuple([len(x) for x in [t
 
 geneid2tss = defaultdict(list);
 for vtss in valid_tss:
-    geneid2tss[vtss[0]].append(vtss[1]);
+    geneid2tss[vtss[0]].append((vtss[1], vtss[3]));
     
 for cds in cds_list:
     tss_vars = geneid2tss.get(cds.name)
+    cds.attrs['cds'] = "%d:%d" % (cds.start+1, cds.stop)
     if(tss_vars):
         cds.attrs['tss_variants'] = str(len(tss_vars)) 
-        for tss in tss_vars:
+        for tss, distance in tss_vars:
             if(cds.strand == '+'):
                 cds.start = tss;
             else:
                 cds.stop = tss;
+            cds.attrs['distance'] = str(distance);
             sys.stdout.write(str(cds))
     else:
+        cds.attrs['distance'] = '0'; 
         cds.attrs['tss_variants'] = '1'
         sys.stdout.write(str(cds))
 

@@ -1,0 +1,7 @@
+# NCBI submission can be done with one lfpt command (help with lftp can be found here: https://serverfault.com/questions/220988/how-to-upload-a-directory-recursively-to-an-ftp-server-by-just-using-ftp-or-lftp)
+FOLDER: /home/IBT/filipchyk/mypapers/cgps/ncbi
+
+1) get credentials at https://www.ncbi.nlm.nih.gov/geo/info/submissionftp.html
+
+2) lftp -e "mirror -R /home/IBT/filipchyk/mypapers/cgps/ncbi/cgps_submission_261119 uploads/afilipch_wL0ToEAW" -u geoftp,rebUzyi1 ftp-private.ncbi.nlm.nih.gov
+

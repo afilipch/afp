@@ -16,6 +16,103 @@ from pybedtools import BedTool
 
 from afbio.pybedtools_af import construct_gff_interval
 
+
+parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genomic regions, gff format");
+parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts regions, gff format");
+parser.add_argument('--inside', nargs = '?', default=200, type = int, help = "Maximum allowed distance to TSS while inside a gene");
+parser.add_argument('--maxd', nargs = '?', default=800, type = int, help = "Maximum allowed distance to TSS");
+args = parser.parse_args();
+
+def annotate_position(peak, tr_plus, tr_minus, maxd, inside):
+    center = int(peak.name)
+    
+    distances = [('+', tr, tr.start-center) for tr in tr_plus]
+    distances.extend([('-', tr, center-tr.stop+1) for tr in tr_minus]);
+    distances = [x for x in distances if x[2]>-1*inside]
+    strand, transcript, mindistance = min(distances, key = lambda x: abs(x[2]))
+    
+    
+    if(abs(mindistance) <= maxd):
+        
+        atg = mindistance + int(transcript.attrs['distance'])
+        attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", "upstream")]
+        
+        if(if_bed):
+            return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score='0', strand=strand, source='annotate.py', frame='.', attrs=attrs )
+        else:
+            for attr_name, attr_value in attrs:
+                peak.attrs[attr_name] = str(attr_value);
+            return peak;
+    else:
+        pairs = [(tr, center-tr.start, tr.stop - center -1) for tr in tr_plus + tr_minus]
+        pairs = [x for x in pairs if x[1]>=0 and x[2]>=0];
+        if(pairs):
+            transcript = pairs[0][0]
+            mindistance = 
+            
+            #print(peak.name, pairs[0][0].start, pairs[0][0].stop)
+
+    
+
+
+
+tr_list = BedTool(args.transcripts)
+tr_plus = [ x for x in tr_list if x.strand == '+']
+tr_minus = [ x for x in tr_list if x.strand == '-']
+
+
+
+peaks = BedTool(args.path);
+if_bed = args.path.split(".")[-1] == 'bed' 
+
+filtered_out = 0;
+for peak in peaks:
+    newpeak = annotate_position(peak, tr_plus, tr_minus, args.maxd, args.inside)
+    if(newpeak):
+        #sys.stdout.write(str(newpeak))
+        pass;
+    else:
+        filtered_out += 1;
+        
+sys.stderr.write("\nTotal peaks: %d\nPeaks passed distance threshold: %d\n"  % (len(peaks), len(peaks) - filtered_out) );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sys.exit()
+
+
+
 parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the detected peaks");
 parser.add_argument('--genes', nargs = '?', required=True, type = str, help = "Path to the gene annotation file");
@@ -26,6 +123,19 @@ parser.add_argument('--promoter_distance', nargs = '?', default=700, type = int,
 parser.add_argument('--flen', nargs = '?', default=50, type = int, help = "Length of the peak\'s flanks to be included into analyses");
 parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
 args = parser.parse_args();
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if(os.stat(args.path).st_size != 0):
