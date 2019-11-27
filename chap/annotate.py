@@ -24,43 +24,61 @@ parser.add_argument('--inside', nargs = '?', default=200, type = int, help = "Ma
 parser.add_argument('--maxd', nargs = '?', default=800, type = int, help = "Maximum allowed distance to TSS");
 args = parser.parse_args();
 
-def annotate_position(peak, tr_plus, tr_minus, maxd, inside):
+STUB_TR = construct_gff_interval( "unknown", 0, 2, 'fake', score='0', strand="+", source='ff', frame='.', attrs= [("Name", "fake"), ("annotation", "None"), ("function", "None"), ("genesymbol", "fake"), ("distance", "NaN")])
+
+def annotate_position(peak, tr_dict, maxd, inside):
     center = int(peak.name)
+    if(peak.chrom not in tr_dict):
+        mindistance = float("NaN")
+        gtype = "intergenic"
+        transcript = STUB_TR
     
-    distances = [('+', tr, tr.start-center) for tr in tr_plus]
-    distances.extend([('-', tr, center-tr.stop+1) for tr in tr_minus]);
-    distances = [x for x in distances if x[2]>-1*inside]
-    strand, transcript, mindistance = min(distances, key = lambda x: abs(x[2]))
-    
-    
-    if(abs(mindistance) <= maxd):
-        
-        atg = mindistance + int(transcript.attrs['distance'])
-        attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", "upstream")]
-        
-        if(if_bed):
-            return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score='0', strand=strand, source='annotate.py', frame='.', attrs=attrs )
-        else:
-            for attr_name, attr_value in attrs:
-                peak.attrs[attr_name] = str(attr_value);
-            return peak;
     else:
-        pairs = [(tr, center-tr.start, tr.stop - center -1) for tr in tr_plus + tr_minus]
-        pairs = [x for x in pairs if x[1]>=0 and x[2]>=0];
-        if(pairs):
-            transcript = pairs[0][0]
-            mindistance = 
-            
-            #print(peak.name, pairs[0][0].start, pairs[0][0].stop)
+        center = int(peak.name)
+        tr_plus, tr_minus = tr_dict[peak.chrom]
+        distances = [(tr, tr.start-center) for tr in tr_plus]
+        distances.extend([(tr, center-tr.stop+1) for tr in tr_minus]);
+        distances = [x for x in distances if x[1]>-1*inside]
+        transcript, mindistance = min(distances, key = lambda x: abs(x[1]))
 
+        if(abs(mindistance) <= maxd):
+            gtype = 'upstream'
+        else:
+            pairs = [(tr, center-tr.start, tr.stop - center -1) for tr in tr_plus + tr_minus]
+            pairs = [x for x in pairs if x[1]>=0 and x[2]>=0];
+            if(pairs):
+                gtype = 'gene'
+                transcript = pairs[0][0]
+                if(transcript.strand == '+'):
+                    mindistance = -1*pairs[0][1]
+                else:
+                    mindistance = -1*pairs[0][2]
+            else:
+                gtype = 'intergenic'
+                                                  
+                
+    atg = mindistance + float(transcript.attrs['distance'])
+    if(str(atg) != "nan"):
+        atg = "%d" % atg
+        
+    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
     
+    if(if_bed):
+        return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score='0', strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )
+    else:
+        for attr_name, attr_value in attrs:
+            peak.attrs[attr_name] = str(attr_value);
+        return peak;
 
 
 
-tr_list = BedTool(args.transcripts)
-tr_plus = [ x for x in tr_list if x.strand == '+']
-tr_minus = [ x for x in tr_list if x.strand == '-']
+tr_dict = defaultdict(lambda: ([], []))
 
+for tr in BedTool(args.transcripts):
+    if(tr.strand == '+'):
+        tr_dict[tr.chrom][0].append(tr)
+    else:
+        tr_dict[tr.chrom][1].append(tr)
 
 
 peaks = BedTool(args.path);
@@ -68,8 +86,9 @@ if_bed = args.path.split(".")[-1] == 'bed'
 
 filtered_out = 0;
 for peak in peaks:
-    newpeak = annotate_position(peak, tr_plus, tr_minus, args.maxd, args.inside)
+    newpeak = annotate_position(peak, tr_dict, args.maxd, args.inside)
     if(newpeak):
+        print(newpeak.attrs["gtype"])
         #sys.stdout.write(str(newpeak))
         pass;
     else:
