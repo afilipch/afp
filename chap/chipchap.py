@@ -107,7 +107,7 @@ with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
-def makefile_local(m_input, coverage_mode, control, multi=False):
+def makefile_local(m_input, coverage_mode, control):
     final_files = []
     mlist=[];
     if(type(m_input) == str):
@@ -216,16 +216,15 @@ def makefile_local(m_input, coverage_mode, control, multi=False):
     
     
     
-    
     # Annotate peaks
-    if(not multi):
-        input_files = [filtered_path, normed_covpath]
-        output_files = os.path.join('peaks', '%s.annotated.gff' % name)
-        final_files.append(output_files)
-        script = get_script('annotate.py', chap_package, arguments={'--maxshift': annotation_settings['maxshift'], '--flen': annotation_settings['flen'], '--coverage': input_files[1], '--genes': args.annotation}, inp = input_files[0], out = output_files)
-        mlist.append(dependence(input_files, output_files, script)); 
-    else:
-        final_files.append(filtered_path)
+    #if(not multi):
+    input_files = [filtered_path, normed_covpath]
+    output_files = os.path.join('peaks', '%s.annotated.gff' % name)
+    final_files.append(output_files)
+    script = get_script('annotate.py', chap_package, arguments={'--coverage': input_files[1], '--transcripts': args.annotation, '--outdir': log_dir}, inp = input_files[0], out = output_files)
+    mlist.append(dependence(input_files, output_files, script)); 
+    #else:
+        #final_files.append(filtered_path)
     
     #Get header and cleaner for the makefile
     mlist.insert(0, get_header(final_files))
@@ -270,7 +269,7 @@ sample_names = [os.path.basename(x[0]).split(".")[0] for x in input_list]
 mf_names = []
 all_outputs = []
 for m_input, control in zip(input_list, control_list):
-    local_makefile, mname, local_output =  makefile_local(m_input, coverage_mode, control,  args.multi)
+    local_makefile, mname, local_output =  makefile_local(m_input, coverage_mode, control)
     mname = 'makefile_%s' % mname
     mf_names.append(mname);
     all_outputs.append(local_output);
@@ -304,14 +303,16 @@ if(args.multi):
     mlist.append(dependence(input_files, output_files, script));
     
     input_files = output_files
-    output_files = os.path.join('statistics', 'peaks.correlation.png')
+    output_files = os.path.join('log', 'peaks_correlation.svg')
     global_output.append(output_files)
     #sys.stderr.write("%s\n" % str(sample_names));
     script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));
     
     #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff
-    if(args.annotation):
+    
+    ###CHANGE
+    if(False and args.annotation):
         input_files = raw_regions
         output_files = os.path.join('regions', 'regions.annotated.gff')
         script = get_script('annotate.py', chap_package, arguments={'--maxshift': region_settings['maxshift'], '--flen': region_settings['flank'], '--genes': args.annotation}, inp = input_files, out = output_files)

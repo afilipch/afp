@@ -4,12 +4,10 @@
 import argparse
 import sys
 import os
-from collections import defaultdict
-from bisect import bisect_right, bisect_left
+from collections import defaultdict, Counter
 from afbio.sequencetools import coverage2dict
 
 
-import pandas as pd;
 import numpy as np;
 import matplotlib.pyplot as plt;
 from pybedtools import BedTool
@@ -20,11 +18,26 @@ from afbio.pybedtools_af import construct_gff_interval
 parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genomic regions, gff format");
 parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts regions, gff format");
+parser.add_argument('--coverage', nargs = '?', type = str, help = "Path to the coverage track, bed format")
 parser.add_argument('--inside', nargs = '?', default=200, type = int, help = "Maximum allowed distance to TSS while inside a gene");
 parser.add_argument('--maxd', nargs = '?', default=800, type = int, help = "Maximum allowed distance to TSS");
+parser.add_argument('--covlimit', nargs = '?', default=1, type = float, help = "Peak boundaries are set when coverage drops to --covlimit")
+parser.add_argument('--foldlimit', nargs = '?', default=4, type = float, help = "Peak boundaries are set when coverage is --foldlimit times less than top coverage")
+
+parser.add_argument('--format', nargs = '?', default='svg', type = str, help = "Plot format, svg by default");
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output plot directory")
 args = parser.parse_args();
 
+
+if(os.stat(args.path).st_size == 0):
+    sys.exit("###annotate\nInput file is empty, empty output is produced\n")
+
+
+
 STUB_TR = construct_gff_interval( "unknown", 0, 2, 'fake', score='0', strand="+", source='ff', frame='.', attrs= [("Name", "fake"), ("annotation", "None"), ("function", "None"), ("genesymbol", "fake"), ("distance", "NaN")])
+
+
+### Annotate genomically ###
 
 def annotate_position(peak, tr_dict, maxd, inside):
     center = int(peak.name)
@@ -84,210 +97,166 @@ for tr in BedTool(args.transcripts):
 peaks = BedTool(args.path);
 if_bed = args.path.split(".")[-1] == 'bed' 
 
-filtered_out = 0;
-for peak in peaks:
-    newpeak = annotate_position(peak, tr_dict, args.maxd, args.inside)
-    if(newpeak):
-        print(newpeak.attrs["gtype"])
-        #sys.stdout.write(str(newpeak))
-        pass;
-    else:
-        filtered_out += 1;
-        
-sys.stderr.write("\nTotal peaks: %d\nPeaks passed distance threshold: %d\n"  % (len(peaks), len(peaks) - filtered_out) );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-sys.exit()
-
-
-
-parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the detected peaks");
-parser.add_argument('--genes', nargs = '?', required=True, type = str, help = "Path to the gene annotation file");
-parser.add_argument('--coverage', nargs = '?', type = str, help = "Path to the coverage track, bed format");
-parser.add_argument('--overlap', nargs = '?', default=0.5, type = float, help = "Min overlap required overlap between a peak and genomic feature (as fraction of peak length)");
-parser.add_argument('--maxshift', nargs = '?', default=1, type = int, help = "Max allowed shift (in nucleotides) of the peak top position downstream to start of the gene, to be still counted as peak upstream the gene");
-parser.add_argument('--promoter_distance', nargs = '?', default=700, type = int, help = "Max allowed distance to the gene start for the peak to be reported as promoter");
-parser.add_argument('--flen', nargs = '?', default=50, type = int, help = "Length of the peak\'s flanks to be included into analyses");
-parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
-args = parser.parse_args();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if(os.stat(args.path).st_size != 0):
-
-
-    #################################################################################################################################################################
-    ### Read the input
-
-    genes = BedTool(args.genes);
-    peaks = BedTool(args.path);
-    offset = len(peaks[0].fields)
-
-    #################################################################################################################################################################
-    ### Convert NCBI genes the input
-    if(not args.custom):
-        coding_genes = [];
-        
-        def genebox2coding(genebox):
-            name = genebox[0].name
-            function = genebox[1].attrs.get('Note', 'None').replace(';', ':');
-            annotation = genebox[1].attrs['product'].replace(';', ':')
-            return construct_gff_interval('chr1', genebox[0].start, genebox[0].end, 'protein_coding', score='0', strand=genebox[0].strand, source='.', frame='.', attrs=[ ('Name', name), ('function', function), ('annotation', annotation)])
-        
-        genebox = [];
-        for interval in genes:
-            if(interval[2] in ['gene', 'pseudogene']):
-                if(genebox):
-                    if(len(genebox)==2):
-                        coding_genes.append(genebox2coding(genebox))
-                        #print([x[2] for x in genebox])
-                genebox = [interval]
-            elif(genebox):
-                genebox.append(interval)
-        else:
-            if(len(genebox)==2):
-                coding_genes.append(genebox2coding(genebox))
-                
-    #for interval in coding_genes:
-        #print(interval)
-        genes = coding_genes;
-        
-
-    genes2annotation = dict([ (x.name, (x.attrs['annotation'], x.attrs['function']) ) for x in genes])
-                            
-
-    #################################################################################################################################################################
-    ### Get names of the overlapping genes
-
-    
-    def get_gene_name(intersection, offset):
-        #print([x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
-        attrs = dict( [x.strip().split('=') for x in intersection[offset+8].strip(';').split(";")])
-        return attrs['Name']
-
-    peak2genenames = defaultdict(list);
-    for el in peaks.intersect(genes, wo = True, f = args.overlap):
-        peak2genenames[el.name].append(get_gene_name(el, offset))
-        
-        
-    if(peaks.file_type == 'gff'):
-        temp_peaks = []
-        for interval in peaks:
-            interval.attrs['genes'] = ",".join(peak2genenames.get(interval.name, ['None']))
-            temp_peaks.append(interval)
-        peaks = temp_peaks;
-    else:
-        temp_peaks = []
-        for interval in peaks:
-            top = int(interval.name)
-            start = max((top-args.flen,0))
-            end = top+args.flen +1
-            anint = construct_gff_interval(interval.chrom, start, end, 'peak', score=interval.score, strand=interval.strand, source='af_peak_detection', frame='.', attrs=[ ('Name', interval.name), ('genes', ",".join(peak2genenames.get(interval.name, ['None'])))])
-            temp_peaks.append(anint)
-        peaks = temp_peaks;
-            
-        
-        
+annpeaks = [annotate_position(peak, tr_dict, args.maxd, args.inside) for peak in peaks]
 
         
-    #################################################################################################################################################################
-    ### Get coverage annotation
-    
-    if(args.coverage):
-        coverage = coverage2dict(args.coverage)
-        cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
-        for interval in peaks:
-            interval.attrs['topcoverage'] =  "%1.3f" % coverage[interval.chrom][int(interval.name)]
-            interval.attrs['other_coverage'] =  ",".join(["%1.3f" % x[interval.chrom][int(interval.name)] for x in cov_list])
-            
 
+### Add Peak Intensities ###
 
-    
-    #sys.exit()
+def calculate_area_coverage(peak, coverage, covlimit, foldlimit):
+    top = int(peak.name);
+    topcov = coverage[top]
+
+    for f, v in enumerate(coverage[top:]):
+        if(v<covlimit or v*foldlimit<topcov):
+            break;
+    for b, v in enumerate(coverage[top-1::-1]):
+        if(v<covlimit or v*foldlimit<topcov):
+            break;
+    return sum(coverage[top-b:top+f])
         
-
-    
-    #################################################################################################################################################################    
-    ###Get closest genomic starts upstream to the dected peaks
-    #plusstarts = [x.start for x in genes if gene.strand == '+']
-    #minusstarts = [x.end-1 for x in genes if gene.strand == '-']
-
-    genestarts = [ (x.start, x.strand, x.name) if x.strand == '+' else (x.end-1, x.strand, x.name) for x in genes]
-
-
-    def findclosest(interval, genestarts, maxshift):
-        pos = int(interval.name)
-        raw_distances = [x[0]-pos if x[1] == '+' else pos-x[0] for x in genestarts];
-        distances = [abs(x) if x > -maxshift else 10**8 for x in raw_distances]
-        minindex = np.argmin(distances);
-        start, strand, name = genestarts[minindex];
-        return distances[minindex], name, strand
+if(args.coverage):
+    cov_dict = coverage2dict(args.coverage)
+    cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
+    for peak in annpeaks:
+        peak.attrs['area_coverage'] = "%1.1f" % calculate_area_coverage(peak, cov_dict[peak.chrom], args.covlimit, args.foldlimit)
+        peak.attrs['topcoverage'] =  "%1.3f" % cov_dict[peak.chrom][int(peak.name)]
+        peak.attrs['other_coverage'] =  ",".join(["%1.3f" % x[peak.chrom][int(peak.name)] for x in cov_list])
+        
+        
+### Output Results ###
+#for peak in annpeaks:
+    #sys.stdout.write(str(peak));
     
     
-    def add_type(interval, maxdistance):
-        if(interval.attrs['genes'].split(",")[0] != 'None'):
-            return "Gene"
-        elif(int(interval.attrs['start_gene_distance']) <= maxdistance):
-            return "Promoter"
-        else:
-            return "Intergenic"
-        
 
-                
+### Draw Plots ###
+
+
+def fix_density(ax, bins, scale):
+    factor = bins[1]-bins[0]
+    ypos = [float(x) for x in ax.get_yticks().tolist()]
+    yvals = [float(x)*factor for x in ax.get_yticks().tolist()]
+    
+    step = scale/yvals[1]*ypos[1]
+    newvals = [x for x in np.arange(0, max(yvals), scale)]
+    newpos = np.arange(0, step*len(newvals), step)
+
+    #print(sum(ylabels))
+    ax.set_yticks(newpos)
+    ax.set_yticklabels(["%d" % (x*100) for x in newvals])
+    
+
+
+### Plot a piechart of target types ###
+fontsize = 16
+colors = ['gold', 'lightblue', 'gray'];
+labels = ['upstream', 'gene', 'intergenic']
+sizes = Counter([x.attrs['gtype'] for x in annpeaks])
+sizes = [sizes[x] for x in labels]
+labels = ["%s (%d)" % x for x in zip(labels, sizes)]
+
+plt.figure(figsize=(12,9))
+plt.pie(sizes, explode=None, labels=labels, colors=colors, shadow=False, startangle=30, pctdistance=0.8, autopct="%1.1f%%", textprops={'fontsize': fontsize})
+plt.axis('equal')
+
+plt.title("Upstream: Peak is up to %d bp upstream and %d downstream to the closest TSS" % (args.maxd, args.inside), fontsize = fontsize)
+plt.savefig(os.path.join(args.outdir, "peak_genomic_types.%s") % args.format, format = args.format)
+plt.close()
+
+
+### Plot a scatter of peaks topcoverage/area_coverage ###
+if(args.coverage):
+    fontsize=24
+    linewidth = 5
+    xvals = np.array([float(x.attrs['topcoverage']) for x in annpeaks])
+    yvals = np.array([float(x.attrs['area_coverage']) for x in annpeaks])
+
+    fig, ax = plt.subplots(figsize=(16,9))
+    #plt.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
+
+    ax.set_xlabel('Top coverage [avg]', fontsize=fontsize)
+    ax.set_ylabel('Area coverage [avg]', fontsize=fontsize)    
+    ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.scatter(xvals, yvals)
+    plt.title("Area boundaries: drop to %1.1f in coverage averages or %1.1f folds to top coverage" % (args.covlimit, args.foldlimit), fontsize = fontsize)
+    plt.savefig(os.path.join(args.outdir, "peak_coverage_scores.%s") % args.format, format = args.format)
+    plt.close()
+
+
+
+### Plot a distribution of peaks topcoverage ###
+
+    scores = [float(x.attrs['topcoverage']) for x in annpeaks]
+    scores.sort();
+    selected_scores = scores[:int(len(scores)*0.75)]
+    #print(min(scores))
+    
+    fig, axes = plt.subplots(ncols=2, figsize = (22, 7), frameon=False)
+    fig.tight_layout(rect=[0.05, 0.1, 1, 1])
+    fig.subplots_adjust(wspace = 0.2)
+    for data, ax in zip([scores, selected_scores], axes):
+        _, bins, _  = ax.hist(data, bins = 20, range = (0, max(data)), density = True)
+        ax.set_xlabel('Top coverage', fontsize=fontsize)
+        ax.set_ylabel('Fraction [%]', fontsize=fontsize)    
+        ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fix_density(ax, bins, 0.05)
+    
+    plt.savefig(os.path.join(args.outdir, "topcoverage_hist.%s") % args.format, format = args.format)
+    plt.close()
+    
+    
+    
+### Plot a distribution of peaks TSS distances ###
+
+    scores = [float(x.attrs['tss']) for x in annpeaks if x.attrs['tss'] != 'nan']
+    scores.sort();
+    selected_scores = [x for x in scores if x <= 300 and x >= -100]
+    #print(min(scores))
+    
+    fig, axes = plt.subplots(ncols=2, figsize = (22, 7), frameon=False)
+    fig.tight_layout(rect=[0.05, 0.1, 1, 1])
+    fig.subplots_adjust(wspace = 0.2)
+    for data, ax in zip([scores, selected_scores], axes):
+        _, bins, _ = ax.hist(data, bins = 20, density = True)
         
-    peak2genestarts = {}
-    for interval in peaks:
-        ss_distance, ss_genename, ss_strand = findclosest(interval, genestarts, args.maxshift)
-        interval.attrs['start_gene'] = ss_genename
-        interval.attrs['start_gene_distance'] =  "%d" % ss_distance
-        interval.attrs['start_gene_strand'] = ss_strand
-        interval.attrs['start_annotation'], interval.attrs['start_function'] = genes2annotation[ss_genename]
-        interval.attrs['type'] = add_type(interval, args.promoter_distance)
-        sys.stdout.write(str(interval))
+        ax.set_xlabel('TSS distance', fontsize=fontsize)
+        ax.set_ylabel('Fraction [%]', fontsize=fontsize)    
+        ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fix_density(ax, bins, 0.05)
+        
+    
+    plt.savefig(os.path.join(args.outdir, "tss_hist.%s") % args.format, format = args.format)
+    plt.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

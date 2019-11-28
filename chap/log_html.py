@@ -125,10 +125,8 @@ with doc:
                     td("%1.2f%%" % (value/bowtie_control_total*100))
         
         with div(cls="row", style="display: flex"):
-            #with div(cls="column", style="padding: 5px; flex:60%"):
             img(src='control_coverage.png', alt="Snow", style="width:75%")
-            #with div(cls="column", style="padding: 5px; flex:40%"):
-                #img(src='control_correlation.png', alt="Snow", style="width:100%")
+
         br()
         br()        
     
@@ -170,6 +168,25 @@ with doc:
                 td(label)
                 td('{:,}'.format(int(value)))
                 td("%1.2f%%" % (value/filter_total*100))
+    br()
+    br()
+    p(strong("Peaks Annotation", style= 'font-size: 16pt'))
+    with div(cls="row", style="display: flex"):
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src='peak_genomic_types.svg', alt="Snow", style="width:100%")
+        with div(cls="column", style="padding: 5px; flex:50%"):
+            img(src='peak_coverage_scores.svg', alt="Snow", style="width:100%")
+    br()
+    br()
+    p(strong("Peaks Top Coverage", style= 'font-size: 16pt'))
+    with div(cls="row", style="display: flex"):
+        img(src='topcoverage_hist.svg', alt="Snow", style="width:100%")    
+    br()
+    br()
+    p(strong("Peaks TSS distance", style= 'font-size: 16pt'))
+    with div(cls="row", style="display: flex"):
+        img(src='tss_hist.svg', alt="Snow", style="width:100%")
+
 
 
 print(doc.render());

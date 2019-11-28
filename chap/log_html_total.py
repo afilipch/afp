@@ -12,11 +12,10 @@ from math import log
 
 parser = argparse.ArgumentParser(description='Generates html report of CHAP analyses by chipchap.py');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the root log folder");
-#parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
+parser.add_argument('--name', nargs = '?', default="experiment", type = str, help = "Name of the experiment");
 #parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
-#parser.add_argument('--flank', nargs = '?', default=60, type = int, help = "Peak plank length");
 args = parser.parse_args();
 
 ### SET CONSTANTS ###
@@ -104,7 +103,7 @@ names = [os.path.basename(x) for x in folders]
 
 
 ########### HTML SECTION ###########
-doc = dominate.document(title="CHAP analyses overview for all the samples")
+doc = dominate.document(title="%s: CHAP analyses overview" % args.name)
 with open(args.css) as f:
     _style = f.read()
 with doc.head:
@@ -131,15 +130,15 @@ with doc:
                 td(sample_data['filter'][2])
                 td(sample_data['filter'][3])
                 td("%1.1f" % (sample_data['filter'][4]/sample_data['filter'][3]*100))
-                #td(sample_data['bowtie'][0][2])
-                #td(sample_data['bowtie'][0][3])
-                #td(sample_data['bowtie'][0][4])
+    br()
+    br()
+    p(strong("Peaks correlation"))
+    with div(cls="row", style="display: flex"):
+        img(src='peaks_correlation.svg', alt="peaks correlation", style="width:75%")
 
-                
+
                 
     _script = script(raw(plain_script), type='text/javascript')
-    #_script.add_raw_string(plain_script)
-
 
 print(doc.render());
 
@@ -147,18 +146,3 @@ print(doc.render());
 
 
 
-
-
-
-
-
-'''357955 reads; of these:
-  357955 (100.00%) were paired; of these:
-    31369 (8.76%) aligned concordantly 0 times
-    321179 (89.73%) aligned concordantly exactly 1 time
-    5407 (1.51%) aligned concordantly >1 times
-    ----
-    31369 pairs aligned concordantly 0 times; of these:
-      1049 (3.34%) aligned discordantly 1 time
-91.53% overall alignment rate
-'''
