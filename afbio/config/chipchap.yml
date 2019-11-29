@@ -14,8 +14,15 @@ bowtie:
 peak_detection:
     widthfactor: 0.9
     meanmult: 4.0
+peak_filtering_loose:
+    zscore: 2.0
+    minmedian: 1.0
+peak_filtering_normal:
     zscore: 3.0
     minmedian: 2.0
+peak_filtering_strict:
+    zscore: 5.0
+    minmedian: 2.5
 coverage:
     zscore: 2.0
     mode: 'noise'

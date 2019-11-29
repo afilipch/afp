@@ -41,9 +41,14 @@ parser.add_argument('--only_makefile', nargs = '?', default = False, const = Tru
 #Options controlling postprocessing
 parser.add_argument('--multi', nargs = '?', default = False, const = True, type = bool, help = "If set, consensus regions will be generated and explored");
 parser.add_argument('--annotation', nargs = '?', default=False, type = os.path.abspath, help = "Path to genbank annotation file in gff format.");
+parser.add_argument('--ucsc', nargs = '?', default="stub", type = str, help = "Name of the UCSC session for the experiment");
+parser.add_argument('--name', nargs = '?', default="stub", type = str, help = "Name of the project");
 
-#bowtie2 options
+
+#bowtie2  and filtering options
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
+
+parser.add_argument('--filtering', nargs = '?', default="normal", choices=['loose', 'normal', 'strict'], type = str, help = "Strength of filtering, can be: 'loose', 'normal' or 'strict'");
 
 #Performance option
 parser.add_argument('--threads', nargs = '?', default = 1, type = int, help = "Number of threads to use");
@@ -63,7 +68,7 @@ elif(not args.coverage):
     parser.error('Either --reads or --coverage argument must be provided');
     
 
-
+peak_filtering_settings = conf['peak_filtering_%s' % args.filtering]
 
 #######################################################################################################################
 # Set paths' constants
@@ -187,7 +192,7 @@ def makefile_local(m_input, coverage_mode, control):
     input_files = output_files[0]
     output_files = [os.path.join('peaks', '%s.filtered.bed' % name), os.path.join(log_dir, 'assigned.tsv'), os.path.join(log_dir, 'filtering.png')]
     filtered_path = output_files[0]
-    script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_detection_settings['zscore'], '--minmedian': peak_detection_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0], log=log_file)
+    script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_filtering_settings['zscore'], '--minmedian': peak_filtering_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0], log=log_file)
     mlist.append(dependence(input_files, output_files, script));
     
     # Normalize coverage
@@ -206,6 +211,16 @@ def makefile_local(m_input, coverage_mode, control):
     script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
+    
+    
+    # Annotate peaks
+    #if(not multi):
+    input_files = [filtered_path, normed_covpath]
+    output_files = os.path.join('peaks', '%s.annotated.gff' % name)
+    script = get_script('annotate.py', chap_package, arguments={'--coverage': input_files[1], '--transcripts': args.annotation, '--outdir': log_dir}, inp = input_files[0], out = output_files)
+    mlist.append(dependence(input_files, output_files, script)); 
+    
+    
     #Create html report
     #python ~/afp/chap/log_html.py log/sven3_18h --css ~/afp/afbio/html/table.css > test.html
     input_files = [log_dir, output_files]
@@ -215,16 +230,13 @@ def makefile_local(m_input, coverage_mode, control):
     mlist.append(dependence(input_files, output_files, script));
     
     
-    
-    # Annotate peaks
-    #if(not multi):
-    input_files = [filtered_path, normed_covpath]
-    output_files = os.path.join('peaks', '%s.annotated.gff' % name)
-    final_files.append(output_files)
-    script = get_script('annotate.py', chap_package, arguments={'--coverage': input_files[1], '--transcripts': args.annotation, '--outdir': log_dir}, inp = input_files[0], out = output_files)
-    mlist.append(dependence(input_files, output_files, script)); 
-    #else:
-        #final_files.append(filtered_path)
+    input_files = os.path.join('peaks', '%s.annotated.gff' % name)
+    output_files = os.path.join(log_dir, 'peaks.html'), os.path.join(log_dir, 'peaks.tsv');
+    final_files.extend(output_files)
+    script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir}, inp = input_files)
+    mlist.append(dependence(input_files, output_files, script));
+
+
     
     #Get header and cleaner for the makefile
     mlist.insert(0, get_header(final_files))
@@ -281,7 +293,7 @@ for m_input, control in zip(input_list, control_list):
 
 
 mlist = [];
-global_output = []
+final_files = []
 mf_multipath = [os.path.join(project_path, 'makefiles', x) for x in mf_names] 
 
 for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
@@ -298,34 +310,35 @@ if(args.multi):
     
     input_files = mf_names
     output_files = os.path.join('regions', 'regions.gff')
-    raw_regions = output_files
     script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
     input_files = output_files
     output_files = os.path.join('log', 'peaks_correlation.svg')
-    global_output.append(output_files)
-    #sys.stderr.write("%s\n" % str(sample_names));
     script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));
+    
+    
+    input_files = output_files
+    output_files = os.path.join('log', 'report.html')
+    final_files.append(output_files)
+    script = get_script('log_html_total.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name}, inp = 'log', out = output_files)
+    mlist.append(dependence(input_files, output_files, script))    
     
     #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff
     
     ###CHANGE
     if(False and args.annotation):
-        input_files = raw_regions
+        input_files = os.path.join('regions', 'regions.gff')
         output_files = os.path.join('regions', 'regions.annotated.gff')
+        final_files.append(output_files)
         script = get_script('annotate.py', chap_package, arguments={'--maxshift': region_settings['maxshift'], '--flen': region_settings['flank'], '--genes': args.annotation}, inp = input_files, out = output_files)
         mlist.append(dependence(input_files, output_files, script));    
-    
-    if(type(output_files) == str):
-        global_output.append(output_files);
-    else:
-        global_output.extend(output_files);
+
         
         
 #makefile header    
-mlist.insert(0, get_header(global_output, phonyfiles=mf_names))
+mlist.insert(0, get_header(final_files, phonyfiles=mf_names))
 # makefie cleaner
 mlist.append( 'clean:\n%s' %  ("\n".join(["\t$(MAKE) -f %s clean" % x for x in mf_multipath])) );
     

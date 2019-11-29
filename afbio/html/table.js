@@ -62,12 +62,12 @@ function sortTable(n, data_type) {
 }
 
 
-function my_search(n) {
+function my_search(n, input_name, table_name) {
   // Declare variables
   var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("myInput");
+  input = document.getElementById(input_name);
   filter = input.value.toUpperCase();
-  table = document.getElementById("myTable");
+  table = document.getElementById(table_name);
   tr = table.getElementsByTagName("tr");
 
   // Loop through all table rows, and hide those who don't match the search query
@@ -85,12 +85,12 @@ function my_search(n) {
 }
 
 
-function my_filter_greater(n) {
+function my_filter_greater(n, input_name, table_name) {
   // Declare variables
   var input, filter, table, tr, td, i, txtValue;
-  input = document.getElementById("myInputGreater");
+  input = document.getElementById(input_name);
   filter = Number(input.value)
-  table = document.getElementById("myTable");
+  table = document.getElementById(table_name);
   tr = table.getElementsByTagName("tr");
 
   // Loop through all table rows, and hide those who don't match the search query
@@ -106,3 +106,29 @@ function my_filter_greater(n) {
     }
   }
 }
+
+
+function my_filter_lesser_abs(n, input_name, table_name) {
+  // Declare variables
+  var input, filter, table, tr, td, i, txtValue;
+  input = document.getElementById(input_name);
+  filter = Number(input.value)
+  table = document.getElementById(table_name);
+  tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[n];
+    if (td) {
+      txtValue = td.textContent || td.innerText;
+      if (Math.abs(Number(txtValue)) < filter) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
+}
+
+
+

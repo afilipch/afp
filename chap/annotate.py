@@ -126,8 +126,8 @@ if(args.coverage):
         
         
 ### Output Results ###
-#for peak in annpeaks:
-    #sys.stdout.write(str(peak));
+for peak in annpeaks:
+    sys.stdout.write(str(peak));
     
     
 

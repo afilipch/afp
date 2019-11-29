@@ -72,7 +72,8 @@ def process_folder(folder):
     data_dict = {}
     section2text = process_log(os.path.join(folder, "log.txt"))
     data_dict['bowtie'] = get_bowtie(section2text, 'bowtie')
-    data_dict['bowtie_control'] = get_bowtie(section2text, 'bowtie_control')
+    if('bowtie_control' in section2text):
+        data_dict['bowtie_control'] = get_bowtie(section2text, 'bowtie_control')
     data_dict["filter"] = get_filter(section2text)
     return data_dict
 

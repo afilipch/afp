@@ -45,6 +45,7 @@ bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmap
 
 def get_bowtie(name):
     bowtie_list = [];
+    
     ltemp = section2text[name][1:8]
     for l in (ltemp[:4] + ltemp[6:]):
         bowtie_list.append(int(l.split(" ")[0]))
@@ -54,7 +55,10 @@ def get_bowtie(name):
     return bowtie_list, bowtie_list[0]
 
 bowtie_list, bowtie_total = get_bowtie('bowtie')
-bowtie_control_list, bowtie_control_total = get_bowtie('bowtie_control')
+if('bowtie_control' in section2text):
+    bowtie_control_list, bowtie_control_total = get_bowtie('bowtie_control')
+else:
+    bowtie_control_list = [];
 
 
 
@@ -115,7 +119,7 @@ with doc:
             img(src='%s.fragment_lengthes.png' % name, alt="Snow", style="width:100%")
     br()
     br()
-    if(True):
+    if(bowtie_control_list):
         p(strong("Genomic Control", style= 'font-size: 16pt'))
         with table(style= 'font-size: 14pt') as _table:
             for label, value in zip(bowtie_labels, bowtie_control_list):

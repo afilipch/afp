@@ -48,12 +48,16 @@ def makefile_local(mates, names, outdir):
     
     for pair in mates:
     # Detect peaks
-        name = names[os.path.basename(pair[0]).split("_")[0]]
-        input_files = pair
-        output_files = [os.path.join(outdir, "%s.%d.fastq" % (name, x)) for x in (1,2)]
-        script = get_script('collapse_reads.py', seq_package, arguments={'--output': os.path.join(outdir,name)}, inp = input_files)
-        mlist.append(dependence(input_files, output_files, script));  
-        final_files.extend(output_files)
+        rname = os.path.basename(pair[0]).split("_")[0]
+        name = names.get(rname)
+        if(name):
+            input_files = pair
+            output_files = [os.path.join(outdir, "%s.%d.fastq" % (name, x)) for x in (1,2)]
+            script = get_script('collapse_reads.py', seq_package, arguments={'--output': os.path.join(outdir,name)}, inp = input_files)
+            mlist.append(dependence(input_files, output_files, script));  
+            final_files.extend(output_files)
+        else:
+            sys.stderr.write("\n%s name is not found in the provided table\n" % rname)
     
     #Get header and cleaner for the makefile
     sys.stderr.write("\n" + " ".join([x for x in final_files if 'control' not in x]) + "\n\n")
