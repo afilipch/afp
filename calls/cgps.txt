@@ -1,0 +1,3 @@
+# Counter-silencing experiment
+FOLDER: /home/IBT/filipchyk/projects/cgps/counter_silencing/projects/main
+python ~/afp/project_scripts/cgps/gntr_vs_cgps.py peaks/ --interest ../../data/interesting_regions.bed --outdir plots/ --coverage coverage/ --format svg

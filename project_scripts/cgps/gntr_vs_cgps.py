@@ -95,6 +95,7 @@ cgps_fru_data = [x for x in data if x[0][0] == 'fru' and x[0][1] == 'strep']
     
 ############################# DRAWING SECTION #############################
 def draw(data, ctype, width = 0.6, fontsize = 24, linewidth = 4):
+    trd = {'glu_strep': 'CgpS:Glu', 'fru_strep': 'CgpS:Fru', 'glu_his': 'GntR:Glu', 'fru_his': 'GntR:Fru'}
     bars = [(x[1]+x[2])/2 for x in data]
     errors = np.array([(x[1] - min(x[0][1:]), max(x[0][1:]) - x[1]) for x in zip(data, bars)]).transpose()
 
@@ -112,7 +113,7 @@ def draw(data, ctype, width = 0.6, fontsize = 24, linewidth = 4):
     ax.set_xlabel('Name of experiment', fontsize=fontsize)
     ax.set_ylabel('Peak Intensity [averaged coverage]', fontsize=fontsize)
     ax.set_xticks(x)
-    ax.set_xticklabels([x[0] for x in data], rotation = 0)
+    ax.set_xticklabels([trd[x[0]] for x in data], rotation = 0)
     ax.tick_params(axis='both', labelsize=fontsize-4, top=False, right=False)
 
     plt.savefig(os.path.join(args.outdir, "interesting_intensity_%s.%s") % (ctype, args.format) , format = args.format)

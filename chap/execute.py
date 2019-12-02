@@ -248,7 +248,7 @@ else:
     input_list = args.reads;
 if(args.paired):
     input_list = [(input_list[2*x], input_list[2*x+1]) for x in range(int(len(input_list)/2))]
-print(input_list);
+#print(input_list);
 
     
     
