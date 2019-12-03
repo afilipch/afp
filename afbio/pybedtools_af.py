@@ -54,6 +54,13 @@ def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', s
 	attrs_str = "; ".join(["%s=%s" % (str(x[0]), str(x[1])) for x in attrs])
 	return create_interval_from_list( [chrom, source, feature, str(start+1), str(stop), score, strand, frame, attrs_str] );
 
+def intersection2gff(intersection):
+    #offset = 9;
+    a = str(intersection).strip().split("\t")
+    if(a[9] == '.'):
+        return create_interval_from_list(a[:9]), None;
+    else:
+        return create_interval_from_list(a[:9]), create_interval_from_list(a[9:]);
 
 def bed2gff(bi, source='.', feature='.', attrs=[]):
 	'''yields gff interval from given bed interval'''
