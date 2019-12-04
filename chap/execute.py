@@ -317,7 +317,7 @@ if(args.multi):
     input_files = output_files
     output_files = os.path.join('log', 'report.html')
     final_files.append(output_files)
-    script = get_script('log_html_total.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name}, inp = 'log', out = output_files)
+    script = get_script('log_html_total.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names}, inp = 'log', out = output_files)
     mlist.append(dependence(input_files, output_files, script))    
     
     #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff

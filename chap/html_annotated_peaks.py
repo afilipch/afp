@@ -14,8 +14,11 @@ parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
 parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
 parser.add_argument('--name', nargs = '?', default="unknown", type = str, help = "Name of the sample");
+parser.add_argument('--top', nargs = '?', default=300, type = int, help = "Shows only [top] peaks");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory (tsv and html files will be written there)")
 args = parser.parse_args();
+
+chr_dict = {'NC_003450.3': 'chr1', 'pJC1-Plys::GntR': 'chr2'}
 
 
 def flatten_peak(peak):
@@ -23,7 +26,7 @@ def flatten_peak(peak):
     
 
 _title = "Binding peaks for the sample: %s" % args.name
-peaks = BedTool(args.path);
+peaks = list(sorted(BedTool(args.path), key = lambda x: float(x.score), reverse = True))[:args.top]
 
 header_main = ["ucsc", 'chrom', 'start', 'end', 'top', 'strand']
 dtypes_main = [0, 0, 1, 1, 1, 0]
@@ -62,7 +65,7 @@ with doc:
         _tr.add([ th(x[1][0], onclick='sortTable(%d, %d)' % (x[0], x[1][1])) for x in enumerate(zip(header, dtypes))  ])
         for peak in peaks:
             with tr():
-                td(raw('<a href=%s target="_blank">ucsc_link</a>' % add_ucsc(peak, args.ucsc, flank=25)) )
+                td(raw('<a href=%s target="_blank">ucsc_link</a>' % add_ucsc(peak, args.ucsc, flank=25, chr_dict=chr_dict)) )
                 for entry in flatten_peak(peak):
                     td(entry)
                 #td(peak.chrom)

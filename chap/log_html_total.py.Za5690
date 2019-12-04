@@ -121,17 +121,18 @@ with doc:
     #input(type="number", id="myInputGreater", onkeyup="my_filter_greater(6)", placeholder="Filter AT content greater than..")
     with table(id = "myTable") as _table:
         _tr = tr()
+        print(args.path)
         _tr.add([ th(x[1][0], onclick='sortTable(%d, %d)' % (x[0], x[1][1])) for x in enumerate(zip(labels, dtypes))  ])
         for name, sample_data in zip(names, data):
             #print(sample_data['bowtie'])
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(name, "report.html"), name) )) 
+                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.path, name, "report.html"), name) )) 
                 td(sample_data['bowtie'][0])
                 td("%1.1f" % (sample_data['bowtie'][1]/sample_data['bowtie'][0]*100))
                 td(sample_data['filter'][0])
                 td("%1.1f" % sample_data['filter'][1])
                 td(sample_data['filter'][2])
-                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(name, "peaks.html"), sample_data['filter'][3]) )) 
+                td(sample_data['filter'][3])
                 td("%1.1f" % (sample_data['filter'][4]/sample_data['filter'][3]*100))
     br()
     br()

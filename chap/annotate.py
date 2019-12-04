@@ -77,7 +77,7 @@ def annotate_position(peak, tr_dict, maxd, inside):
     attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
     
     if(if_bed):
-        return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score='0', strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )
+        return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )
     else:
         for attr_name, attr_value in attrs:
             peak.attrs[attr_name] = str(attr_value);

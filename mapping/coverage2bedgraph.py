@@ -21,26 +21,40 @@ if(args.trackopts):
     print(args.trackopts);
 
 
-def flush(start, end, ident, convert):
+def flush(start, end, ident, convert, chr_count):
     if(ident and ident[1]):
         if(convert):
-            print("\t".join( [str(x) for x in ('chr1', start, end, ident[1])] ))
+            print("\t".join( [str(x) for x in ('chr%d' % chr_count, start, end, ident[1])] ))
         else:
             print("\t".join( [str(x) for x in (ident[0], start, end, ident[1])] ))
 
     
 curstart = 0;
 curident = None;
+chr_count = 2;
+cur_chrom = None
+chrom_ident = None
+chrom_end = None
+
 with open(args.path) as f:
     for l in f:
         a = l.strip().split("\t");
         start = int(a[1]);
         ident = (a[0], round(float(a[2])*args.multiplier));
-        if(ident != curident):
-            flush(curstart, start, curident, args.convert)
+        if(cur_chrom and  a[0] != cur_chrom):
+            flush(curstart, chrom_end, chrom_ident, args.convert, chr_count)
+            chr_count -= 1;
+            curstart = start;
+            curident = ident
+
+        elif(ident != curident):
+            flush(curstart, start, curident, args.convert, chr_count)
             curstart = start;
             curident = ident;
+        chrom_ident = ident;
+        chrom_end = start+1
+        cur_chrom = a[0]
     else:
-        flush(curstart, start, curident, args.convert)
+        flush(curstart, start, curident, args.convert, chr_count)
             
     

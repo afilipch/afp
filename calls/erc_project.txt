@@ -1,0 +1,11 @@
+#For the discovered prophages annotate their host bacteria via connecting to NCBI databases
+python scripts/explore_entrez.py 'prophage_features/*.txt' --failed prophage_metainfo/failed.txt  > prophage_metainfo/bacteria2taxonomy.tsv
+
+#Additional trial to get annotations for those bacteria which were not downloaded in the previous attempt
+python scripts/explore_entrez.py 'prophage_features/*.txt' --failed prophage_metainfo/failed.txt  --add_failed prophage_metainfo/failed.txt >> prophage_metainfo/bacteria2taxonomy.tsv
+
+#Gather information on prophages into one table
+python scripts/get_prophages.py 'prophage_features/*' > prophage_metainfo/prophages.tsv
+
+#Draw basic statistics on prophages
+python scripts/prophage_basic_stat.py prophage_metainfo/prophages.tsv --bacteria prophage_metainfo/bacteria2taxonomy.tsv --maxlength 300000 --plot plots/ --format png
