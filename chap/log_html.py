@@ -70,7 +70,10 @@ detection_list = [];
 detection_labels = ["Median Coverage", "Mean Coverage", "STD Coverage", "Maximum Coverage", "Strong Peaks Detected", "Strong Peaks Bandwidth", "Total Peaks Detected"]
 for l in (section2text['detect_peaks']):
     if(l):
-        detection_list.append(float(l.split("\t")[1]))
+        a = l.split("\t")
+        #print(a)
+        if(not a[0].startswith("WARNING") and len(a)>1):
+            detection_list.append(float(a[1]))
 detection_list = detection_list[:6] + detection_list[7:]
 detection_list[4], detection_list[5] = detection_list[5], detection_list[4]
 detection_units = ['', ' nt', '']

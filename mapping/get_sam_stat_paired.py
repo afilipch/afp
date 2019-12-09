@@ -21,7 +21,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the reference genome, fasta format");
 parser.add_argument('--outstat', nargs = '?', required=True, type = str, help = "Path to a folder for statistics");
 parser.add_argument('--outcoverage', nargs = '?', required=True, type = str, help = "Path to a folder for coverage");
-#parser.add_argument('--name', nargs = '?', default='unknown', type = str, help = "Name of the sample");
+parser.add_argument('--ambiguos', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguos mappings will be also counted");
 #parser.add_argument('--multimappers', nargs = '?', default='', type = str, help = "Path to store multimapped reads. If not set, multimapped reads are discrarded");
 args = parser.parse_args();
 
@@ -41,7 +41,7 @@ for seqrecord in SeqIO.parse(args.genome, 'fasta'):
 scores = defaultdict(int)
 fragment_lengthes = defaultdict(int)
 
-def get_basic_stat(readmappings, collapsed=False):
+def get_basic_stat(readmappings, count=1):
     s1, s2 = readmappings;
     if(s1.is_reverse):
         strand = '+'
@@ -52,10 +52,6 @@ def get_basic_stat(readmappings, collapsed=False):
     start = min(s1.reference_start, s2.reference_start);
     end = max(s1.reference_end, s2.reference_end);
     chrom = s1.reference_name    
-    if(collapsed):
-        count = 1;
-    else:
-        count = 1;
     
     #scores    
     scores[s1.get_tag('AS')] += count;
@@ -86,8 +82,14 @@ for seg1, seg2 in generator_doublesam(samfile):
         readmappings.append((seg1, seg2))
     else:
         if(readmappings):
-            if(len(readmappings)==1 and readmappings[0][0].is_proper_pair):
-                get_basic_stat(readmappings[0]);
+            f_mappings = [x for x in readmappings if x[0].is_proper_pair]
+            if(f_mappings and  args.ambiguos):
+                count = 1.0/len(f_mappings)
+                for pair in f_mappings:
+                    get_basic_stat(pair, count=count);
+            elif(len(f_mappings)==1):
+                get_basic_stat(f_mappings[0]);
+                
         readmappings = [(seg1, seg2)]
         curname = seg1.query_name
 

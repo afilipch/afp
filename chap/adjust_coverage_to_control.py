@@ -88,6 +88,8 @@ plt.close()
 size=200
 curstart = 0;
 fig, axes = plt.subplots(nrows=len(chr2length), figsize = (16, 8*len(chr2length)), frameon=False)
+if(len(chr2length) == 1):
+    axes = [axes]
 for ax, (chrom, length) in zip(axes, chr2length):
     curend = curstart+length
     #print(curstart, curend)

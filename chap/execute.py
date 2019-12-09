@@ -1,7 +1,7 @@
 #! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
 '''Creates makefile and directory structure for chip/chap seq analysis'''
 
-
+from time import gmtime, strftime
 import argparse
 import sys
 import os
@@ -31,7 +31,7 @@ parser.add_argument('--package', nargs = '?', required=True, type = os.path.absp
 parser.add_argument('--reads', nargs = '+', required=True, type = os.path.abspath, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
 parser.add_argument('--index', nargs = '?', required=True, type = os.path.abspath, help = "Path to the mapping reference bowtie2 indices");
 parser.add_argument('--genome', nargs = '?', required=True, type = os.path.abspath, help = "Path to the mapping references in fasta format");
-parser.add_argument('--control', nargs = '+', type = str, help = "Path to the genomic control fasta files used for the adjustment of multiple dna copies. The order of the files must be the same as for --reads option. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places");
+parser.add_argument('--control', nargs = '+', type = os.path.abspath, help = "Path to the genomic control fasta files used for the adjustment of multiple dna copies. The order of the files must be the same as for --reads option. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places");
 
 #Options for the mapping result postprocessing
 parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collapsed with collapse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
@@ -50,6 +50,7 @@ parser.add_argument('--name', nargs = '?', default="stub", type = str, help = "N
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
 
 parser.add_argument('--filtering', nargs = '?', default="normal", choices=['loose', 'normal', 'strict'], type = str, help = "Strength of filtering, can be: 'loose', 'normal' or 'strict'");
+parser.add_argument('--ambiguos', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguos mappings will be also counted");
 
 #Performance option
 parser.add_argument('--threads', nargs = '?', default = 1, type = int, help = "Number of threads to use");
@@ -100,13 +101,16 @@ while(not args.only_makefile):
 #######################################################################################################################
 # Log project info
 with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
-    f.write("Project call: python %s\n" % " ".join(sys.argv));
+    timestr = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    f.write("Time created: %s\n\nProject call: python %s\n" % (timestr, " ".join(sys.argv)) );
 
 
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
 def makefile_local(m_input,  control):
+    #print(m_input)
+    #print(control)
     final_files = []
     mlist=[];
     if(type(m_input) == str):
@@ -133,7 +137,7 @@ def makefile_local(m_input,  control):
     # Convert mappings into coverage
     input_files = output_files;
     output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-    script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage'}, inp = input_files)
+    script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguos': args.ambiguos}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));   
     
     # Merge coverages coming from different strands
@@ -145,6 +149,9 @@ def makefile_local(m_input,  control):
 
         
     if(control):
+        log_dir_control = os.path.join('log', name + "_control")
+        os.makedirs(os.path.join(project_path, log_dir_control), exist_ok=True);
+    
         # Processing of the left chimeric part bowite2 settings
         bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, control, "%s.control" % name, threads=args.threads)
 
@@ -158,7 +165,7 @@ def makefile_local(m_input,  control):
         # Convert mappings into coverage
         input_files = output_files;
         output_files = [os.path.join('coverage', '%s.control.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': 'statistics', '--outcoverage': 'coverage'}, inp = input_files)
+        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir_control, '--outcoverage': 'coverage'}, inp = input_files)
         mlist.append(dependence(input_files, output_files, script));   
         
         # Merge coverages coming from different strands
@@ -182,7 +189,7 @@ def makefile_local(m_input,  control):
     
     # Filter peaks
     input_files = output_files[0]
-    output_files = [os.path.join('peaks', '%s.filtered.bed' % name), os.path.join(log_dir, 'assigned.tsv'), os.path.join(log_dir, 'filtering.png')]
+    output_files = [os.path.join('peaks', '%s.filtered.bed' % name), os.path.join("peaks", '%s.assigned.tsv' % name), os.path.join(log_dir, 'filtering.png')]
     filtered_path = output_files[0]
     script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_filtering_settings['zscore'], '--minmedian': peak_filtering_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0], log=log_file)
     mlist.append(dependence(input_files, output_files, script));
@@ -244,6 +251,7 @@ if( os.path.isdir(args.reads[0]) ):
     input_list = []
     for path in args.reads:
         input_list.extend(list(sorted( [os.path.join(path, x) for x in listdir(path) if isfile(os.path.join(path, x))] )))
+    input_list.sort()
 else:
     input_list = args.reads;
 if(args.paired):
@@ -253,13 +261,15 @@ if(args.paired):
     
     
 if(args.control):
-    if(len(args.control) != len(args.reads)):
-        sys.exit("Number of files provided to --reads and --control must be equal and files must correspond to each other. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places\n\n")
-    elif(args.paired):
-        control_list = [(args.control[2*x], args.control[2*x+1]) for x in range(int(len(args.control)/2))]
-        control_list = [None if x[0] == 'none' else (os.path.abspath(x[0]), os.path.abspath(x[1])) for x in control_list]
+    if( os.path.isdir(args.control[0]) ):
+        control_list = []
+        for path in args.control:
+            control_list.extend(list(sorted( [os.path.join(path, x) for x in listdir(path) if isfile(os.path.join(path, x))] )))
+        control_list.sort()
     else:
-        control_list = [None if x == 'none' else os.path.abspath(x) for x in args.control]
+        control_list = args.control;
+    if(args.paired):
+        control_list = [(control_list[2*x], control_list[2*x+1]) for x in range(int(len(control_list)/2))]
 else:
     control_list = [None]*len(input_list);
         

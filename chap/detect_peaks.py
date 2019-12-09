@@ -47,7 +47,8 @@ else:
     if(numpeaks < 10):
         ##sys.stdout.write('');
         bandwidth = 120
-        sys.stderr.write("\nWARNING! Only %d peak(s) detected.\nBandwidth is set to the default value: %d\n\n" % (numpeaks, bandwidth))
+        sys.stderr.write("\nWARNING! Only %d peak(s) detected. Bandwidth is set to the default value: %d\n\n" % (numpeaks, bandwidth))
+        sys.stderr.write("Raw bandwith:\t%1.2f\nAdjusted bandwith:\t%1.2f\nRaw peaks detected:\t%1.2f\n\n" % (bandwidth, bandwidth, numpeaks))
         #valid = False
     else:
         bandwidth = rawbandwidth*args.widthfactor
@@ -61,11 +62,13 @@ kernel = kernelfunc(truncate = 4.0);
 
 
 convolution_list = [];
+total_peaks= 0;
 for chrom, ch_cov in coverage_dict.items():
     normed_cov = ch_cov/np.mean(ch_cov)
     convolution = np.array(convolute(normed_cov, kernel, bandwidth, threads=args.threads))
     convolution_list.append((chrom, convolution));
     peaks = detect_peaks(convolution);
+    total_peaks += len(peaks)
     for pk in peaks:
         sys.stdout.write("%s\t%d\t%d\t%d\t%1.3f\t%s\n" % (chrom, pk[0], pk[2], pk[1], pk[3], '+'));
 

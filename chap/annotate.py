@@ -167,7 +167,7 @@ plt.close()
 
 
 ### Plot a scatter of peaks topcoverage/area_coverage ###
-if(args.coverage):
+if(args.coverage and len(annpeaks)>20):
     fontsize=24
     linewidth = 5
     xvals = np.array([float(x.attrs['topcoverage']) for x in annpeaks])
