@@ -22,7 +22,7 @@ chr_dict = {'NC_003450.3': 'chr1', 'pJC1-Plys::GntR': 'chr2'}
 
 
 def flatten_peak(peak):
-    return peak.chrom, peak.start, peak.stop, peak.name, peak.strand, peak.attrs["gene"], peak.attrs["genesymbol"], peak.attrs["gtype"], peak.attrs["tss"], peak.attrs["atg"], peak.attrs["annotation"], peak.attrs["function"], peak.attrs["topcoverage"], peak.attrs["area_coverage"]
+    return peak.chrom, peak.start, peak.stop, peak.name, peak.strand, peak.attrs["gene"], peak.attrs["genesymbol"], peak.attrs["gtype"], peak.attrs["tss"], peak.attrs["atg"], peak.attrs["annotation"], peak.attrs["function"], peak.attrs["topcoverage"], peak.attrs["area_coverage"], peak.attrs["cg"]
     
 
 _title = "Binding peaks for the sample: %s" % args.name
@@ -30,8 +30,8 @@ peaks = list(sorted(BedTool(args.path), key = lambda x: float(x.score), reverse 
 
 header_main = ["ucsc", 'chrom', 'start', 'end', 'top', 'strand']
 dtypes_main = [0, 0, 1, 1, 1, 0]
-header_attrs =  ['geneID', 'genesymbol', 'gtype', 'tss', 'atg', 'annotation', 'function', 'topcoverage', 'area_coverage']
-dtypes_attrs = [0, 0, 0, 1, 1, 0, 0, 1, 1]
+header_attrs =  ['geneID', 'genesymbol', 'gtype', 'tss', 'atg', 'annotation', 'function', 'topcoverage', 'area_coverage', 'cg']
+dtypes_attrs = [0, 0, 0, 1, 1, 0, 0, 1, 1, 0]
 header = header_main + header_attrs
 dtypes = dtypes_main + dtypes_attrs
 
