@@ -21,7 +21,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the reference genome, fasta format");
 parser.add_argument('--outstat', nargs = '?', required=True, type = str, help = "Path to a folder for statistics");
 parser.add_argument('--outcoverage', nargs = '?', required=True, type = str, help = "Path to a folder for coverage");
-parser.add_argument('--ambiguos', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguos mappings will be also counted");
+parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguous mappings will be also counted");
 #parser.add_argument('--multimappers', nargs = '?', default='', type = str, help = "Path to store multimapped reads. If not set, multimapped reads are discrarded");
 args = parser.parse_args();
 
@@ -83,7 +83,7 @@ for seg1, seg2 in generator_doublesam(samfile):
     else:
         if(readmappings):
             f_mappings = [x for x in readmappings if x[0].is_proper_pair]
-            if(f_mappings and  args.ambiguos):
+            if(f_mappings and  args.ambiguous):
                 count = 1.0/len(f_mappings)
                 for pair in f_mappings:
                     get_basic_stat(pair, count=count);

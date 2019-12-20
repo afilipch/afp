@@ -70,7 +70,7 @@ def get_header(output_files, phonyfiles=[]):
 
 
 
-def get_bowtie_call(settings, arguments, reference, reads, project_name, threads=1):
+def get_bowtie_call(settings, arguments, reference, reads, project_name, threads=1, reads_format='U'):
     for bo in arguments:
         try:
             name, value = bo.split("=");
@@ -80,12 +80,12 @@ def get_bowtie_call(settings, arguments, reference, reads, project_name, threads
         if(name in settings):
             settings[name] = (value, settings[name][1])
         else:
-            sys.stderr.write("provided option \'%s\' is currently not supported by Chiflex and will be ignored\n" % name) 
+            sys.stderr.write("provided option \'%s\' is currently not supported and will be ignored\n" % name) 
             
     settings['x'] = os.path.abspath(reference), '-'
     settings['S'] = os.path.join('sam', '%s.sam' % project_name), '-'
-    if(len(reads) == 1):
-        settings['U'] = reads[0], '-';
+    if(isinstance(reads, str)):
+        settings[reads_format] = reads, '-';
     else:
         settings['1'] = reads[0], '-'
         settings['2'] = reads[1], '-'

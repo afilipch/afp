@@ -48,6 +48,7 @@ parser.add_argument('--name', nargs = '?', default="stub", type = str, help = "N
 
 #bowtie2  and filtering options
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
+parser.add_argument('--reads_format', nargs = '?', default = 'U', choices = ['U', 'f'], type = str, help = "Reads format: 'U' -> fastq, 'f' -> fasta");
 
 parser.add_argument('--filtering', nargs = '?', default="normal", choices=['loose', 'normal', 'strict'], type = str, help = "Strength of filtering, can be: 'loose', 'normal' or 'strict'");
 parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguous mappings will be also counted");
@@ -124,7 +125,8 @@ def makefile_local(m_input,  control):
     
 
     # Processing bowite2 settings
-    bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads)
+    bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads, reads_format=args.reads_format)
+    print(bs_list, m_input)
     bs_list = ['echo', '\'###bowtie\'', '>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
 
     # Map reads with bowtie2
@@ -178,70 +180,15 @@ def makefile_local(m_input,  control):
         output_files = os.path.join('coverage', '%s.adjusted.bed' % name)
         covpath = output_files
         script = get_script('adjust_coverage_to_control.py', chap_package, inp = input_files[0], arguments={'--control': input_files[1], '--outdir': log_dir }, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));        
-        
-    
-    # Detect peaks
-    input_files = output_files
-    output_files = [os.path.join('peaks', '%s.raw.bed' % name), os.path.join(log_dir, 'convolution.bed'), os.path.join(log_dir, 'convolution.png')]
-    script = get_script('detect_peaks.py', chap_package, arguments={'--threads': args.threads, '--widthfactor': peak_detection_settings['widthfactor'], '--meanmult': peak_detection_settings['meanmult'], '--convolution': output_files[1] , '--plot': output_files[2]}, inp = input_files, out = output_files[0], log=log_file)
-    mlist.append(dependence(input_files, output_files, script));  
-    
-    # Filter peaks
-    input_files = output_files[0]
-    output_files = [os.path.join('peaks', '%s.filtered.bed' % name), os.path.join("peaks", '%s.assigned.tsv' % name), os.path.join(log_dir, 'filtering.png')]
-    filtered_path = output_files[0]
-    script = get_script('filter_peaks.py', chap_package, arguments={'--zscore': peak_filtering_settings['zscore'], '--minmedian': peak_filtering_settings['minmedian'], '-ap': output_files[1] , '--plot': output_files[2], '--coverage': covpath}, inp = input_files, out = output_files[0], log=log_file)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    # Normalize coverage
-    input_files = [output_files[1], covpath]
-    output_files = os.path.join('coverage', '%s.normalized.bed' % name)
-    normed_covpath = output_files;
-    script = get_script('normalize_coverage.py', chap_package, arguments={'--zscore': coverage_settings['zscore'], '--mode': coverage_settings['mode'], '--coverage': input_files[1]}, inp = input_files[0], out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    # Create UCSC tracks
-    # python ~/afp/mapping/coverage2bedgraph.py coverage/time10_neb.normalized.bed --trackopts 'track name=time10_neb description="CHAP coverage for time10_neb sample" color=60,150,237 type=bedGraph visibility=2' --multiplier 100 --convert > todel.bedgrap
-    trackopts = "\'track name=%s description=\"CHAP seq genomic coverage for sample %s\" %s\'" % (name, name, " ".join(["%s=%s" % x for x in coverage_settings['trackopts'].items()]))
-    input_files = output_files
-    output_files = os.path.join('ucsc', '%s.bedgraph' % name)
-    final_files.append(output_files)
-    script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    
-    
-    # Annotate peaks
-    #if(not multi):
-    input_files = [filtered_path, normed_covpath]
-    output_files = os.path.join('peaks', '%s.annotated.gff' % name)
-    script = get_script('annotate.py', chap_package, arguments={'--coverage': input_files[1], '--transcripts': args.annotation, '--outdir': log_dir}, inp = input_files[0], out = output_files)
-    mlist.append(dependence(input_files, output_files, script)); 
-    
-    
-    #Create html report
-    #python ~/afp/chap/log_html.py log/sven3_18h --css ~/afp/afbio/html/table.css > test.html
-    input_files = [log_dir, output_files]
-    output_files = os.path.join(log_dir, 'report.html');
-    final_files.append(output_files)
-    script = get_script('log_html.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css')}, inp = input_files[0], out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    
-    input_files = os.path.join('peaks', '%s.annotated.gff' % name)
-    output_files = os.path.join(log_dir, 'peaks.html'), os.path.join(log_dir, 'peaks.tsv');
-    final_files.extend(output_files)
-    script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir}, inp = input_files)
-    mlist.append(dependence(input_files, output_files, script));
+        mlist.append(dependence(input_files, output_files, script));            
 
 
     
     #Get header and cleaner for the makefile
-    mlist.insert(0, get_header(final_files))
+    mlist.insert(0, get_header(output_files))
     mlist.append('clean:\n\techo "nothing to clean."\n');
 
-    return "\n\n".join(mlist), name, [normed_covpath] + [filtered_path]
+    return "\n\n".join(mlist), name, [output_files]
 
 
 #######################################################################################################################
