@@ -306,6 +306,14 @@ def find_best_trend(array2d, axis, penalty, increasing=True):
     else:
         return array2d[bestindex,:], bestindex
     
+    
+def find_elements_order(mylist):
+    temp = sorted(mylist)     
+    return [ (mylist.count(x)-1)/2 + temp.index(x) for x in mylist]
+    
+    
+
+    
         
         
         
@@ -322,14 +330,9 @@ def find_best_trend(array2d, axis, penalty, increasing=True):
 	
 #testing section
 if(__name__ == "__main__"):
-    #a = [1,1,1,4,5,6,7,7, 9]
-    #b = [1,2,3,3,5,7,8,10]
-    #print(lists2thresholds(a, b, True));
-    a = [1,2,4,3,5]
-    b = [1,3,5,11,7]
-    arr = np.array((a,b))
-    best = find_best_trend(arr, 0, 5)
-    print(arr[:,best])
+    mylist = [2,3,4, 1, 6, 1, 3, 7, 2]
+    print(mylist);
+    print(find_elements_order(mylist))
     
     
     
