@@ -3,6 +3,7 @@
 usually you should provide path to input file and size of elements(not lines) in buffer'''
 import sys;
 import re;
+import os;
 import itertools;
 from afbio import sequencetools
 from collections import *
@@ -226,6 +227,9 @@ def grouper(iterable, n):
                 return
         yield arr;
         arr = []
+        
+def get_only_files(folder):
+    return [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f)) ]
                             
 #testing
 if(__name__ == "__main__"):
