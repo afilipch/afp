@@ -17,75 +17,74 @@ from afbio.pybedtools_af import construct_gff_interval, intersection2gff
 
 
 parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments');
-parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to the annotated peaks of the replicates for two different conditions. Conditions must be split by comma, that is 'a_r1 a_r2 a_r3, b_r1 b_r2'");
-#parser.add_argument('--rep_numbers', nargs = '+', required=True, type = str, help = "Numbers of replicates per condition. If we provide 3 replicates for condition '1' and the 4 replicates for condition '2' then we have to set '--rep_numbers 3 4'")
-parser.add_argument('--zscore', nargs = '?', default=5.0, type = float, help = "Mininimum z-score required for a peak to be a seed for the consensus region");
+parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to the merged replicates peaks, gff files");
 parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maximal distance allowed between top positions of the peaks");
 parser.add_argument('--fraction', nargs = '?', default=1.0, type = float, help = "Minimum fraction of replicates to harbor a valid peak");
-#parser.add_argument('--peakflank', nargs = '?', default=5, type = int, help = "Flank's length around a peak to detect maximum coverage");
 args = parser.parse_args()
 
 
-def print_compiled(compiled):
+
+def print_compiled(compiled, size):
+    temp_d = dict(compiled)
+    compiled_processed = [temp_d.get(x, None) for x in range(size)]
+    
+    area_coverage = ",".join([x.attrs['area_coverage'] if x else '0' for x in compiled_processed])
+    topcoverage=",".join([x.attrs['topcoverage'] if x else '0' for x in compiled_processed])
+    compiled_processed = [x for x in compiled_processed if x]
+    
+    compiled = [x[1] for x in sorted(compiled, key = lambda x: x[0])]
+    pos = int(sum([int(x.name)*float(x.attrs['topcoverage']) for x in compiled_processed])/sum([float(x.attrs['topcoverage']) for x in compiled_processed]))
+    start = min([x.start for x in compiled_processed])
+    stop = min([x.stop for x in compiled_processed])
+    
+    consensus = construct_gff_interval(compiled[0].chrom, start, stop, 'consensus', score='0', strand='.', source='.', frame='.', attrs=[('Name', pos), ('topcoverage', topcoverage), ('area_coverage', area_coverage)])
+    
+    return consensus;
+    
+    #print(consensus)
+    #for cs in compiled_processed:
+        #print(cs)
+    #print()
+    #print("*"*150)
+    
+    
     
 
-def find_shared_double(compiled_dict, current_replicates, maxd):
-    next_replicates = [];
+
+            
+########################################################################################################
+
+def check_replicates(bedtool, fraction_threshold):
+    res = [];
+    for interval in bedtool:
+        topcoverage = [float(x) for x in interval.attrs['topcoverage'].split(",")]
+        fraction = len([x for x in topcoverage if x])/len(topcoverage)
+        if(fraction >= fraction_threshold):
+            res.append(interval);
+    return res;
+
+            
+def find_different(peaks1, peaks2, maxd):
+    diff_peaks = [];
+    for peak in peaks1:
+        close_peaks = [x for x in peaks2 if x.chrom == peak.chrom and abs(int(x.name)-int(peak.name)) <= maxd ]
+        if(not close_peaks):
+            print(peak)
+        #print(len(close_peaks));
     
-    r1 = current_replicates[0]
-    for r2 in current_replicates[1:]:
-        lnext = [];
-        for el in r2.intersect(b=r1, wao=True):
-            i1, i2 = intersection2gff(el)
-            if(i2 and abs(int(i1.name) - int(i2.name)) <= maxd):
-                key = len(current_replicates), i2.chrom, int(i2.name)
-                if(key not in compiled_dict):
-                    compiled_dict[key].append(i2)
-                compiled_dict[key].append(i1)
-            else:
-                lnext.append(i1)
-        next_replicates.append(BedTool(lnext));
-    #print([len(x) for x in next_replicates])
-    return next_replicates
             
 
     
-
-
-def find_shared_replicates(replicates, fraction, maxd):
-    compiled_dict = defaultdict(list)
-    current_replicates = replicates;
-    #print()
-    
-    while(len(current_replicates) > 1):
-        #print([len(x) for x in current_replicates])
-        current_replicates = find_shared_double(compiled_dict, current_replicates, maxd)
-        
-    return compiled_dict
-        
-    #for k, v in compiled_dict.items():
-        #if(len(v)==3):
-            #print('bu')
-            #for el in v:
-                #sys.stdout.write(str(el))
-            #print()
-            #print()
-    
         
     
+condition_names = [os.path.basename(x).split(".")[0] for x in args.path]
+condition_bedtools = [check_replicates(BedTool(x), args.fraction) for x in args.path]
+    
+    
+for (name1, peaks1), (name2, peaks2) in combinations(zip(condition_names, condition_bedtools), 2):
+    find_different(peaks1, peaks2, args.maxd)
+    
 
-
-temp = "#".join(args.path).split(",")
-temp = [x.strip("#").split("#")  for x in temp]
-conditions_list = []
-for l in temp:
-    conditions_list.append([BedTool(x) for x in l])
-    
-    
-for replicates in conditions_list:
-    find_shared_replicates(replicates, args.fraction, args.maxd)
-    break
-    
     
     
 

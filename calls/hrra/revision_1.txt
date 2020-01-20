@@ -1,0 +1,15 @@
+# Scripts Calls for the first revision 
+
+
+# all in table
+FOLDER: /home/IBT/filipchyk/mypapers/marc_hrra/data_suppl
+python ~/afp/project_scripts/hrra/chap_replicates.py --table hrra.with_divergent.allin_table.tsv --replicates ~/projects/hrra_august2019/projects/trial_3/peaks/ ~/projects/hrra_august2019/projects/trial_2/peaks/ --journal supertable.csv > super_table.with_replicates_counter.tsv
+
+# rna-seq replicates correlation
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019/rnaseq/project/differential
+python ~/afp/project_scripts/hrra/rnaseq_inter_correlation.py  time_0h.all.tsv time_30m.all.tsv time_4h.all.tsv > ~/mypapers/marc_hrra/data_suppl/rnaseq_intra_replicates_correlation.tsv
+
+# empty vector control
+FOLDER: /home/IBT/filipchyk/projects/hrra_august2019
+python /home/IBT/filipchyk/afp/chap/execute.py projects/control --package /home/IBT/filipchyk/afp/ --reads fastq/control/ --index /home/IBT/filipchyk/genomic/coryne/nc_003450_3/index/NC_003450_3 --genome /home/IBT/filipchyk/genomic/coryne/nc_003450_3/genome.fasta --paired --annotation /home/IBT/filipchyk/genomic/coryne/nc_003450_3/transcripts.annotated.gff --ucsc philipchick/hrra --name hrra_control --filtering normal --threads 
+

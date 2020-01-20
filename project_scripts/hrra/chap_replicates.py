@@ -49,7 +49,7 @@ with open(args.table) as f:
 reference = BedTool(reference);
 
 overlap_counter = defaultdict(int)
-for folder in args.replicates[:1]:
+for folder in args.replicates:
     files = [x for x in get_only_files(folder) if "filtered" in x]
     replicates_list = [BedTool(x) for x in files];
     for r in reference.intersect(b=replicates_list, u = True):
@@ -59,6 +59,7 @@ for folder in args.replicates[:1]:
             #overlap_counter[(r.start, r.stop)] += 1;
  
 for name, a in name2string.items():
+    #if(overlap_counter[name]==2):
     a.append(str(overlap_counter[name]))
     print("\t".join(a))
     
