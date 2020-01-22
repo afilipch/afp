@@ -1,7 +1,13 @@
-import numpy as np;
-from afbio.sequencetools import sliding_window
+import sys
+from collections import defaultdict
 from multiprocessing import Pool
-import sys;
+
+from pybedtools import BedTool
+import numpy as np;
+
+from afbio.sequencetools import sliding_window
+
+
 
 
         
@@ -143,6 +149,77 @@ def recenter_based_on_coverage(peak, coverage, fold):
         left = 0
             
     return (left, mpos, right);
+
+
+
+
+
+def _find_shared_peaks_chromosome(bedtools_chr, maxd):
+    res = [];
+    stat_counts = []
+    marked = [];
+    for c, intervals in enumerate(bedtools_chr):
+        for interval in intervals:
+            marked.append((c, interval))
+    marked.sort(key = lambda x: int(x[1].name));
+    selections = [];
+    current_selection = [marked[0]];
+    for m in marked[1:]:
+        if(current_selection and int(m[1].name) - int(current_selection[0][1].name) <= maxd):
+            current_nums = [x[0] for x in current_selection]
+            if(m[0] not in current_nums):
+                current_selection.append(m)
+        else:
+            res.append(current_selection)
+            stat_counts.append(len(current_selection))
+            current_selection = [m]
+    else:
+        res.append(current_selection)
+        stat_counts.append(len(current_selection))
+        
+    return res, stat_counts
+
+
+
+def find_shared_peaks(multipath, maxd):
+    #Split by chromosome
+    
+    chr2bedtools = defaultdict(list);
+    for intervals in [BedTool(x) for x in multipath]:
+
+        temp_d = defaultdict(list);
+        for interval in intervals:
+            temp_d[interval.chrom].append((interval));
+        for chrom, local_intervals in temp_d.items():
+            chr2bedtools[chrom].append(local_intervals)
+            
+    bedtools_list = [x[1] for x in sorted(chr2bedtools.items(), key = lambda x: x[0])]
+
+    stat_total_counts = []
+    res_total = [];
+    for bedtools_chr in bedtools_list:
+        res, stat_counts = _find_shared_peaks_chromosome(bedtools_chr, maxd)
+        res_total.extend(res)
+        stat_total_counts.extend(stat_counts);
+        
+    return res_total, stat_total_counts
+
+
+def shared_peaks_stat_to_string(stat_total_counts, size):
+    l = []
+    l.append("number of peaks per merged\tnumber of merged peaks\tfraction [%]\n")    
+    for s in range(1, size+1):
+        count = stat_total_counts.count(s);
+        l.append("%d\t%d\t%1.1f\n" % (s, count, count/len(stat_total_counts)*100))
+    return "".join(l)
+    
+    
+    
+    
+    
+    
+    
+    
         
         
     

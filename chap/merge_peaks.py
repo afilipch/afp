@@ -5,11 +5,10 @@
 import argparse
 import os
 import sys
-from collections import defaultdict
 
-from pybedtools import BedTool
 
-from afbio.pybedtools_af import construct_gff_interval, intersection2gff
+from afbio.pybedtools_af import construct_gff_interval
+from afbio.peaks import find_shared_peaks, shared_peaks_stat_to_string
 
 
 parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments/replicates');
@@ -76,29 +75,37 @@ def run_accross_chromosome(bedtools_chr, maxd, size):
         
 ########################################################################################################    
 ### Execution Section
-chr2bedtools = defaultdict(list);
-for intervals in [BedTool(x) for x in args.path]:
 
-    temp_d = defaultdict(list);
-    for interval in intervals:
-        temp_d[interval.chrom].append((interval));
-    for chrom, local_intervals in temp_d.items():
-        #print(len(local_intervals))
-        chr2bedtools[chrom].append(local_intervals)
+
+
+
+#chr2bedtools = defaultdict(list);
+#for intervals in [BedTool(x) for x in args.path]:
+
+    #temp_d = defaultdict(list);
+    #for interval in intervals:
+        #temp_d[interval.chrom].append((interval));
+    #for chrom, local_intervals in temp_d.items():
+        ##print(len(local_intervals))
+        #chr2bedtools[chrom].append(local_intervals)
         
-bedtools_list = [x[1] for x in sorted(chr2bedtools.items(), key = lambda x: x[0])]
+#bedtools_list = [x[1] for x in sorted(chr2bedtools.items(), key = lambda x: x[0])]
 
 
-stat_total_counts = []
-for bedtools_chr in bedtools_list:
-    size = len(bedtools_chr)
-    stat_counts = run_accross_chromosome(bedtools_chr, args.maxd, size)
-    stat_total_counts.extend(stat_counts);
+#stat_total_counts = []
+#for bedtools_chr in bedtools_list:
+    #size = len(bedtools_chr)
+    #stat_counts = run_accross_chromosome(bedtools_chr, args.maxd, size)
+    #stat_total_counts.extend(stat_counts);
 
-sys.stderr.write("number of peaks per merged\tnumber of merged peaks\tfraction [%]\n")    
-for s in range(1, size+1):
-    count = stat_total_counts.count(s);
-    sys.stderr.write("%d\t%d\t%1.1f\n" % (s, count, count/len(stat_total_counts)*100))
+size = len(args.path)
+res_total, stat_total_counts = find_shared_peaks(args.path, args.maxd)
+
+for compiled in res_total:
+    print_compiled(compiled, size)
+    
+
+sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
 
     
 

@@ -25,7 +25,7 @@ parser.add_argument('--covlimit', nargs = '?', default=1, type = float, help = "
 parser.add_argument('--foldlimit', nargs = '?', default=4, type = float, help = "Peak boundaries are set when coverage is --foldlimit times less than top coverage")
 
 parser.add_argument('--format', nargs = '?', default='svg', type = str, help = "Plot format, svg by default");
-parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output plot directory")
+parser.add_argument('--outdir', nargs = '?', required=False, type = str, help = "Path to the output plot directory")
 args = parser.parse_args();
 
 
@@ -150,6 +150,9 @@ def fix_density(ax, bins, scale):
 
 
 ### Plot a piechart of target types ###
+if(not args.outdir):
+    sys.exit()
+
 fontsize = 16
 colors = ['gold', 'lightblue', 'gray'];
 labels = ['upstream', 'gene', 'intergenic']
