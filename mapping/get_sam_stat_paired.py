@@ -14,18 +14,66 @@ from Bio.Seq import reverse_complement
 from Bio import SeqIO
 from matplotlib import pyplot as plt;
 
-from afbio.generators import generator_doublesam
+from afbio.generators import generator_single_mappings, generator_paired_mappings
 
 parser = argparse.ArgumentParser(description='Converts sam records with multimappers into bedfile');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the sam file");
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the reference genome, fasta format");
 parser.add_argument('--outstat', nargs = '?', required=True, type = str, help = "Path to a folder for statistics");
 parser.add_argument('--outcoverage', nargs = '?', required=True, type = str, help = "Path to a folder for coverage");
-parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguous mappings will be also counted");
+parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If set ambiguous mappings will be also counted");
+parser.add_argument('--paired', nargs = '?', default=False, const=True, type = bool, help = "has to be set if the mappings arise from paired-end reads");
 #parser.add_argument('--multimappers', nargs = '?', default='', type = str, help = "Path to store multimapped reads. If not set, multimapped reads are discrarded");
 args = parser.parse_args();
 
-#genome = SeqIO.parse(args.genome, 'fasta');
+def get_stat_paired(pair):
+
+    if(pair[0].is_reverse):
+        strand = '+'
+    else:
+        strand = '-'
+    
+    chrom = pair[0].reference_name
+    start = min([x.reference_start for x in pair]);
+    end = max([x.reference_end for x in pair]);
+    score = sum([int(x.get_tag('AS')) for x in pair])
+            
+    return chrom, start, end, score, strand 
+
+
+def get_stat_single(s):
+    if(s.is_reverse):
+        strand = '+'
+    else:
+        strand = '-'
+    
+    chrom = s.reference_name
+    start = s.reference_start 
+    end = s.reference_end
+    score = int(s.get_tag('AS'))
+            
+    return chrom, start, end, score, strand 
+    
+    
+def readmappings2stat(readmappings, func, ambiguous):
+    if(not readmappings):
+        return []
+    if(not ambiguous and len(readmappings)>1):
+            return []
+    return [func(x) for x in readmappings]
+
+
+if(args.paired):
+    generator_mappings = generator_paired_mappings;
+    get_stat = get_stat_paired
+else:
+    generator_mappings = generator_single_mappings;
+    get_stat = get_stat_single
+
+
+
+scores = defaultdict(int)
+fragment_lengthes = defaultdict(int)
 coverage = {};
 starts = {};
 ends = {};
@@ -36,70 +84,27 @@ for seqrecord in SeqIO.parse(args.genome, 'fasta'):
     starts[(seqrecord.name, '-')] = np.zeros(len(seqrecord));
     ends[(seqrecord.name, '+')] = np.zeros(len(seqrecord)+1);
     ends[(seqrecord.name, '-')] = np.zeros(len(seqrecord)+1);
-    
-
-scores = defaultdict(int)
-fragment_lengthes = defaultdict(int)
-
-def get_basic_stat(readmappings, count=1):
-    s1, s2 = readmappings;
-    if(s1.is_reverse):
-        strand = '+'
-        ss = s2.reference_start
-    else:
-        strand = '-'
-        ss = s1.reference_start
-    start = min(s1.reference_start, s2.reference_start);
-    end = max(s1.reference_end, s2.reference_end);
-    chrom = s1.reference_name    
-    
-    #scores    
-    scores[s1.get_tag('AS')] += count;
-    scores[s2.get_tag('AS')] += count;
-    #fragment_lengthes
-    fragment_lengthes[end-start] += count;    
-    #coverage
-    coverage[chrom, strand][start:end] += count;
-    #starts 
-    starts[chrom, strand][start] += count;
-    #ends
-    ends[chrom, strand][end] += count;
-        
-    return ss == start
-    
-
-
-
 
 
 samfile = pysam.AlignmentFile(args.path)
-curname = '';
-readmappings = [];
-for seg1, seg2 in generator_doublesam(samfile):
-    if(seg1.query_name != seg2.query_name):
-        sys.stderr.write("WARNING: Consequtive paired reads have different names:\t%s\t%s\n" % (seg1.query_name, seg2.query_name))
-    if(seg1.query_name == curname):
-        readmappings.append((seg1, seg2))
-    else:
-        if(readmappings):
-            f_mappings = [x for x in readmappings if x[0].is_proper_pair]
-            if(f_mappings and  args.ambiguous):
-                count = 1.0/len(f_mappings)
-                for pair in f_mappings:
-                    get_basic_stat(pair, count=count);
-            elif(len(f_mappings)==1):
-                get_basic_stat(f_mappings[0]);
-                
-        readmappings = [(seg1, seg2)]
-        curname = seg1.query_name
-
-else:
-    if(len(readmappings)==1 and readmappings[0][0].is_proper_pair):
-        get_basic_stat(readmappings[0]);
+for readmappings in generator_mappings(samfile):
+    stat_list = readmappings2stat(readmappings, get_stat, args.ambiguous)
+    if(stat_list):
+        count = 1.0/len(stat_list)
+        for chrom, start, end, score, strand in stat_list:
+            coverage[chrom, strand][start:end] += count;
+            fragment_lengthes[end-start] += count;
+            starts[chrom, strand][start] += count;
+            ends[chrom, strand][end] += count;
+            scores[score] += count;
+            
+    
 
 
 ### GET SAMPLE basename
 basename = ".".join((os.path.basename(args.path)).split(".")[:-1]);
+
+
 
 
 
@@ -145,19 +150,7 @@ def rnase_plot(ndict, output, title, normed=False):
 rnase_plot(s_nucls, os.path.join(args.outstat, '%s.rnase.5prime.png' % basename), "%s 5'end cut frequences" % basename, normed=True)
 rnase_plot(e_nucls, os.path.join(args.outstat, '%s.rnase.3prime.png' % basename), "%s 3'end cut frequences" % basename, normed=True)
         
-#normalization
-#norm = sum(s_nucls.values())
-#for k, v in s_nucls.items():
-    #s_nucls[k] = v/norm
-#for k, v in e_nucls.items():
-    #e_nucls[k] = v/norm
 
-#with open(os.path.join(args.outstat, '%s.rnase.png' % basename), 'w') as f:
-    #print("cut between\t5'end\t3'end")
-    #for nn in product('ACTG', repeat=2):
-        #nn = "".join(nn)
-        #print("%s\t%.3f\t%.3f" % (nn, s_nucls[nn], e_nucls[nn]))
-    #print()
 
 
 #####################################################################################################################################

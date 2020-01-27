@@ -1,0 +1,66 @@
+# work on GLXR project
+
+##########################################################################################
+# DIFFERENTIAL BINDING ANALYSES
+
+# merge peaks
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks
+
+python ~/afp/chap/merge_peaks.py glu_wt_rep1.annotated.gff glu_wt_rep2.annotated.gff glu_wt_rep3.annotated.gff > glu_wt.merged.gff
+python ~/afp/chap/merge_peaks.py glu_ko_cyab_rep1.annotated.gff glu_ko_cyab_rep2.annotated.gff > glu_ko_cyab.merged.gff
+python ~/afp/chap/merge_peaks.py ace_glu_wt_rep1.annotated.gff ace_glu_wt_rep2.annotated.gff > ace_glu_wt.merged.gff
+python ~/afp/chap/merge_peaks.py ace_glu_ko_cyab_rep1.annotated.gff ace_glu_ko_cyab_rep2.annotated.gff > ace_glu_ko_cyab.merged.gff
+
+
+# find differentially bound
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks
+
+python ~/afp/chap/differential.py glu_wt.merged.gff glu_ko_cyab.merged.gff ace_glu_wt.merged.gff ace_glu_ko_cyab.merged.gff  --maxd 100 --outdir ../differential/raw --minfold 2 --mincov 3
+
+
+
+# Annotate differential binding
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential/raw
+
+for file in *.gff; do python ~/afp/chap/annotate.py $file --transcripts ~/genomic/coryne/nc_003450_3/transcripts.annotated.gff > ../annotated/$file; done
+
+
+# Produce local html reports
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential/annotated
+
+for file in *.gff; do python /home/IBT/filipchyk/afp/chap/differential/html_differential_peaks.py $file  --css /home/IBT/filipchyk/afp/afbio/html/table.css --js /home/IBT/filipchyk/afp/afbio/html/table.js --ucsc philipchick/glxr_camp  --outdir ../html/; done
+
+
+# Produce global html report
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential
+
+python /home/IBT/filipchyk/afp/chap/differential/html_differential_total.py annotated/ --css /home/IBT/filipchyk/afp/afbio/html/table.css --js /home/IBT/filipchyk/afp/afbio/html/table.js --name glxr_camp  --tables html/ > report_differential.html
+
+
+
+##########################################################################################
+# FIGURES
+
+# Draw a global pattern 
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp
+
+python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../../mailbox/global_coverage.svg --labels ../../data/peaks_to_label.csv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

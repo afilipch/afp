@@ -78,7 +78,7 @@ html_lib = os.path.join(args.package, 'afbio', 'html')
 # Create folders
 
 project_path = args.path
-folders = ['sam', 'coverage', 'log', 'peaks', 'makefiles', 'regions', 'ucsc']
+folders = ['sam', 'coverage', 'log', 'transcripts', 'makefiles', 'differential', 'ucsc']
 
 
 while(not args.only_makefile):
@@ -126,7 +126,6 @@ def makefile_local(m_input,  control):
 
     # Processing bowite2 settings
     bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads, reads_format=args.reads_format)
-    print(bs_list, m_input)
     bs_list = ['echo', '\'###bowtie\'', '>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
 
     # Map reads with bowtie2
@@ -138,49 +137,18 @@ def makefile_local(m_input,  control):
     
     # Convert mappings into coverage
     input_files = output_files;
-    output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['minus', 'plus']]
+    output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['plus', 'minus']]
     script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));   
     
-    # Merge coverages coming from different strands
-    input_files = output_files;
-    output_files = os.path.join('coverage', '%s.bed' % name)
-    covpath = output_files
-    script = get_script('merge_coverages.py', chap_package, inp = input_files, out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
-
-        
-    if(control):
-        log_dir_control = os.path.join('log', name + "_control")
-        os.makedirs(os.path.join(project_path, log_dir_control), exist_ok=True);
+    # Assign TPM and annotate the mappings
     
-        # Processing of the left chimeric part bowite2 settings
-        bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, control, "%s.control" % name, threads=args.threads)
-
-        # Map reads with bowtie2
-        input_files = control
-        output_files = os.path.join('sam', '%s.control.sam' % name)
-        bs_list = ['echo', '\'###bowtie_control\'', '>>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
-        script = bs_list
-        mlist.append(dependence(input_files, output_files, script))
-        
-        # Convert mappings into coverage
-        input_files = output_files;
-        output_files = [os.path.join('coverage', '%s.control.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir_control, '--outcoverage': 'coverage'}, inp = input_files)
-        mlist.append(dependence(input_files, output_files, script));   
-        
-        # Merge coverages coming from different strands
-        input_files = output_files;
-        output_files = os.path.join('coverage', '%s.control.bed' % name)
-        script = get_script('merge_coverages.py', chap_package, inp = input_files, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));
-        
-        input_files = [covpath, output_files]
-        output_files = os.path.join('coverage', '%s.adjusted.bed' % name)
-        covpath = output_files
-        script = get_script('adjust_coverage_to_control.py', chap_package, inp = input_files[0], arguments={'--control': input_files[1], '--outdir': log_dir }, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));            
+    input_files = output_files;
+    output_files = os.path.join('transcripts', '%s.gff' % name)
+    covpath = output_files
+    script = get_script('assign_mappings.py', mapping_package, inp = input_files, out = output_files, arguments={'--transcripts': args.annotation, '--logdir': log_dir} )
+    mlist.append(dependence(input_files, output_files, script));
+            
 
 
     

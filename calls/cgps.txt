@@ -1,3 +1,10 @@
 # Counter-silencing experiment
 FOLDER: /home/IBT/filipchyk/projects/cgps/counter_silencing/projects/main
 python ~/afp/project_scripts/cgps/gntr_vs_cgps.py peaks/ --interest ../../data/interesting_regions.bed --outdir plots/ --coverage coverage/ --format svg
+
+
+# AT-content
+python ~/afp/project_scripts/cgps/at_along_region.py mmc.peaks.gff --genome ~/genomic/coryne/nc_003450_3/genome.fasta  --phages ~/genomic/coryne/nc_003450_3/phages.bed   --outdir plots --zscore 5
+python ~/afp/project_scripts/cgps/peaks_vs_random.py mmc.peaks.gff --control control/mmc.peaks.bed --genome ~/genomic/coryne/nc_003450_3/genome.fasta  --transcripts ~/genomic/coryne/nc_003450_3/cds_tss.gff --phages ~/genomic/coryne/nc_003450_3/phages.bed   --outdir plots --length 200 --zscore 5 
+python ~/afp/project_scripts/cgps/split_peaks_relative_to_transcriptome.py mmc.peaks.gff --genome ~/genomic/coryne/nc_003450_3/genome.fasta --transcripts ~/genomic/coryne/nc_003450_3/cds_tss.gff --phages ~/genomic/coryne/nc_003450_3/phages.bed --coverage projects/main/coverage/with_mmc_6h.normalized.bed  --outdir plots --length 200 --zscore 5 --at_length 30 --full
+python ~/afp/project_scripts/cgps/coverage_genes_multiple_tss.py mmc.peaks.gff --genome ~/genomic/coryne/nc_003450_3/genome.fasta --transcripts ~/genomic/coryne/nc_003450_3/cds_tss.gff --phages ~/genomic/coryne/nc_003450_3/phages.bed --coverage projects/main/coverage/with_mmc_6h.normalized.bed  --outdir plots/genes/ --length 200 --zscore 10 --at_length 30 --cds ~/genomic/coryne/nc_003450_3/cds.gff --shorter 200

@@ -107,8 +107,13 @@ def generator_doublesam(samfile):
     for c, segment in enumerate(samfile.fetch(until_eof=True)):
         doublesam.append(segment);
         if(c % 2):
+            seq1, seq2 = doublesam
+            if(seq1.query_name != seq2.query_name):
+                sys.stderr.write("WARNING: Consequtive paired reads have different names:\t%s\t%s\n" % (seq1.query_name, seq2.query_name))
             yield doublesam;
             doublesam = [];
+            
+
                     
 
 def generator_seqrecord(paths, ftype):
@@ -209,12 +214,10 @@ def targets_generator(consfasta):
             sequences[seqrecord.id] = str(seqrecord.seq.upper()).replace('U', 'T')
     else:
         yield name, mirid, sequences
-			
-			
 
-			
-		
-	
+
+
+
 def grouper(iterable, n):
     it = iter(iterable);
     arr = [];
@@ -230,8 +233,83 @@ def grouper(iterable, n):
         
 def get_only_files(folder):
     return [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f)) ]
+
+
+def generator_paired_mappings(samfile):
+    curname = '';
+    readmappings = [];
+    for seq1, seq2 in generator_doublesam(samfile):
+        if(seq1.query_name == curname):
+            readmappings.append((seq1, seq2))
+        else:
+            yield ([x for x in readmappings if x[0].is_proper_pair])
+            readmappings = [(seq1, seq2)]
+            curname = seq1.query_name
+    else:
+        yield ([x for x in readmappings if x[0].is_proper_pair])
+        
+        
+        
+def generator_single_mappings(samfile):
+    curname = '';
+    readmappings = [];
+    for seq in samfile.fetch(until_eof=True):
+        if(seq.query_name == curname):
+            readmappings.append(seq)
+        else:
+            yield readmappings
+            readmappings = [seq]
+            curname = seq.query_name
+    else:
+        yield readmappings
+    
+    
+       
+    
+    
+    
                             
 #testing
 if(__name__ == "__main__"):
     pass;
-		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
