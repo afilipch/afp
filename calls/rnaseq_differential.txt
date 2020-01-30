@@ -1,0 +1,49 @@
+#Brief and rough overview for what has been done for sophia's diff rna-seq
+
+
+#FOLDER: /home/IBT/filipchyk/projects/sophia/rnaseq
+
+time bowtie2 -1 ../data/glucose_rep1.2.fastq -2 ../data/glucose_rep1.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/glu_1.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+time bowtie2 -1 ../data/glucose_rep2.2.fastq -2 ../data/glucose_rep2.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/glu_2.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+bowtie2 -1 ../data/alanine_rep1.1.fastq -2 ../data/alanine_rep1.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/ala_1.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+bowtie2 -1 ../data/alanine_rep2.1.fastq -2 ../data/alanine_rep2.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/ala_2.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+bowtie2 -1 ../data/histidine_rep1.1.fastq -2 ../data/histidine_rep1.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/his_1.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+bowtie2 -1 ../data/histidine_rep2.1.fastq -2 ../data/histidine_rep2.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/his_2.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+bowtie2 -1 ../data/threonine_rep1.1.fastq -2 ../data/threonine_rep1.2.fastq -x ~/genomic/vibrionat/index/vibrionat -S sam/thr_2.sam --sensitive-local --ignore-quals --local --score-min C,120 --rdg 9,5 --rfg 9,5 -a --threads 8 --no-unal -I 50 -X 800 --no-mixed
+
+
+#FOLDER: /home/IBT/filipchyk/projects/sophia/rnaseq/sam
+
+for file in *; do python /home/IBT/filipchyk/afp/mapping/get_sam_stat_paired.py $file --genome /home/IBT/filipchyk/genomic/vibrionat/genome.fa --outstat ../statistics --outcoverage ../coverage; done
+for file in *; do sam2bed.py $file --multimappers ../multi/${file%sam}bed  > ../bed/${file%sam}bed; done
+
+
+#FOLDER: /home/IBT/filipchyk/projects/sophia/rnaseq/bed
+
+for file in *; do sort -k1,1 -k2,2n $file  -o $file  ; done
+for file in *; do time python ~/afp/mapping/annotate_mappings.py $file --annotation ~/genomic/vibrionat/annotation.custom.gff --multi ../multi/${file}  --outdir ../statistics/  ; done
+for file in *; do python ~/afp/rnaseq/assign_tpm.py  $file --genes ~/genomic/vibrionat/cds.gff  > ../coverage/${file%bed}gff; done
+
+
+#FOLDER: /home/IBT/filipchyk/projects/sophia/rnaseq/coverage
+
+python ~/afp/rnaseq/compile_expression.py --first glu_1.gff glu_2.gff --second  ala_1.gff ala_2.gff --labels glu ala > ../differential/glu_ala.tsv
+python ~/afp/rnaseq/compile_expression.py --first glu_1.gff glu_2.gff --second  his_1.gff his_2.gff --labels glu his > ../differential/glu_his.tsv
+python ~/afp/rnaseq/compile_expression.py --first  his_1.gff his_2.gff --second ala_1.gff ala_2.gff --labels his ala > ../differential/his_ala.tsv
+
+python ~/afp/rnaseq/differential_without_replicates.py --first glu_1.gff glu_2.gff --second thr_2.gff --labels glu thr --minexpr 10 --outdir ../plots/ > ../differential/glu_thr.assigned.tsv
+python ~/afp/rnaseq/differential_without_replicates.py --first his_1.gff his_2.gff --second thr_2.gff --labels his thr --minexpr 10 --outdir ../plots/ > ../differential/his_thr.assigned.tsv
+python ~/afp/rnaseq/differential_without_replicates.py --first ala_1.gff ala_2.gff --second thr_2.gff --labels ala thr --minexpr 10 --outdir ../plots/ > ../differential/ala_thr.assigned.tsv
+
+
+#FOLDER: /home/IBT/filipchyk/projects/sophia/rnaseq/differential
+
+python ~/afp/rnaseq/analyse_differential_gene_expression.py glu_ala.tsv --plot ../plots --minexpr 10 > glu_ala.assigned.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py glu_his.tsv --plot ../plots --minexpr 10 > glu_his.assigned.tsv
+python ~/afp/rnaseq/analyse_differential_gene_expression.py his_ala.tsv --plot ../plots --minexpr 10 > his_ala.assigned.tsv
+
+
+python ~/afp/rnaseq/select_diffexpr_candidates.py glu_ala.assigned.tsv --annotation ~/genomic/vibrionat/cds.gff --top 100 --mode up --maxvar 0.3 > glu_ala.candidates.tsv
+python ~/afp/rnaseq/select_diffexpr_candidates.py glu_his.assigned.tsv --annotation ~/genomic/vibrionat/cds.gff --top 100 --mode up --maxvar 0.3 > glu_his.candidates.tsv
+python ~/afp/rnaseq/select_diffexpr_candidates.py glu_thr.assigned.tsv --annotation ~/genomic/vibrionat/cds.gff --top 100 --mode up --maxvar 0.3 > glu_thr.candidates.tsv
+
