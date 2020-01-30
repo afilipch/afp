@@ -152,4 +152,3 @@ def draw(bars, name, width = 1, fontsize = 24, linewidth = 4):
     #draw(profile, name)
 
 
-
