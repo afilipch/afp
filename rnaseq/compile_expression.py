@@ -11,10 +11,13 @@ import matplotlib.pyplot as plt;
 
 from pybedtools import BedTool
 from afbio.generators import get_only_files
+import yaml
 
 
 parser = argparse.ArgumentParser(description='Compiles gene expression values coming form different sources');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the transcripts folder");
+parser.add_argument('--outdir', nargs = '?', default='.', type = str, help = "Path to the output directory");
+parser.add_argument('--annotation', nargs = '?', type = str, help = "Path to the gene annotation");
 #parser.add_argument('--first', nargs = '+', required=True, type = str, help = "Path to gene expression data (replicates) for the first sample");
 #parser.add_argument('--second', nargs = '+', required=True, type = str, help = "Path to gene expression data (replicates) for the second sample");
 #parser.add_argument('--labels', nargs = 2, required=True, type = str, help = "Names of the samples");
@@ -29,7 +32,8 @@ def line2score(l):
     return sum([sum(x) for x in l[1:]])
 
     
-    
+gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
+
 
 label2file = defaultdict(list)
 for f in sorted(get_only_files(args.path)):
@@ -66,38 +70,26 @@ for gene in genes:
         line_list.append([x[gene] for x in local_expr])
     table_list.append(line_list)
 
-print("\t".join(['gene'] + labels))    
-table_list.sort(key = lambda x: line2score(x), reverse = True)
-for l in table_list:
-    s_list = []
-    for a in l[1:]:
-        s_list.append([str(x) for x in a])
-        
-    s = "\t".join([l[0]] + [",".join(x) for x in s_list])
-    print(s)
+with open(os.path.join(args.outdir, 'table.raw.tsv'), 'w') as f:
+    f.write("%s\n" % "\t".join(['gene'] + labels))    
+    table_list.sort(key = lambda x: line2score(x), reverse = True)
+    for l in table_list:
+        s_list = []
+        #print(l)
+        for a in l[1:]:
+            s_list.append([str(x) for x in a])
+            
+        s = "\t".join([l[0]] + [",".join(x) for x in s_list])
+        l[0] = list(gene2annotation[l[0][5:]])
+        f.write("%s\n" % s)
     
 
 
-#sys.exit();
-##def get_sampleid(multipath):
-    ##return os.path.basename(multipath[0]).split(".")[0]
+with open(os.path.join(args.outdir, 'table.raw.yaml'), 'w') as f:
+    to_yaml = labels, table_list
+    yaml.dump(to_yaml, f)
 
-#def get_expr(mp1, mp2):
-    #genes2expr = defaultdict(lambda: defaultdict(list));
-    #for path in mp1:
-        #for interval in BedTool(path):
-            #genes2expr[interval.name][0].append(float(interval.attrs['tpm']))
-    #for path in mp2:
-        #for interval in BedTool(path):
-            #genes2expr[interval.name][1].append(float(interval.attrs['tpm']))
-    #return genes2expr;
-            
-#genes2expr = [ (x[0], x[1][0], x[1][1]) for x in get_expr(args.first, args.second).items()]
-#genes2expr.sort(key= lambda x: sum(x[1]), reverse=True)
 
-#print("\t".join(["gene_id"] + args.labels));
-#for el in genes2expr:
-    #print("\t".join((el[0], ";".join([str(x) for x in el[1]]), ";".join([str(x) for x in el[2]]))))
 
 
 

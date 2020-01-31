@@ -1,5 +1,5 @@
 #! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
-'''Finds consensus regions for the peaks found in different experiments'''
+'''Compares multiple rna-seq samples (with/wo replicates) and assigns gene differential expression for all the pairwise combinations of the samples'''
 
 import argparse
 import os
@@ -9,21 +9,29 @@ import copy
 
 
 import numpy as np;
-import pandas as pd;
 from pybedtools import BedTool, Interval
 from itertools import combinations, permutations
 import matplotlib.pyplot as plt;
-
-from afbio.pybedtools_af import construct_gff_interval, intersection2gff
-from afbio.peaks import find_shared_peaks, shared_peaks_stat_to_string
+import yaml;
 
 
-parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments');
+
+parser = argparse.ArgumentParser(description='Compares multiple rna-seq samples (with/wo replicates) and assigns gene differential expression for all the pairwise combinations of the samples');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression table, tsv format");
 parser.add_argument('--minexpr', nargs = '?', default=20, type = float, help = "Minimum mean (among replicates) coverage for a peak to be considered as expressed greatly than the other");
 parser.add_argument('--minfold', nargs = '?', default=2.0, type = float, help = "Minimum fold difference between two peaks to be considered as differential");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args()
+
+
+#with open(args.path) as f:
+    #labels, gene_expression_list = yaml.full_load(f)
+    
+#print(labels)
+#print(gene_expression_list[0])
+
+#sys.exit()
+
 
 def gene_total_score(mylist):
     return max([x[1] for x in mylist]), np.argmax([x[1] for x in mylist])
