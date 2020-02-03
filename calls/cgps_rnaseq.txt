@@ -1,0 +1,11 @@
+FOLDER: /home/IBT/filipchyk/projects/cgps/rnaseq/sandbox/test
+
+python ~/afp/rnaseq/compile_expression.py transcripts/ --order 0h 05h 1h 3h 6h 9h 24h --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff > phage/all.gff
+python ~/afp/project_scripts/cgps/rnaseq/split_by_phage.py phage/all.gff --outdir phage
+python ~/afp/rnaseq/differential_multi.py phage/phage.gff > phage/phage.assigned.tsv
+python /home/IBT/filipchyk/afp/rnaseq/html_differetnial_genes.py phage/phage.assigned.tsv --annotation ~/genomic/coryne/nc_003450_3/transcripts.annotated.gff --css /home/IBT/filipchyk/afp/afbio/html/table.css --js /home/IBT/filipchyk/afp/afbio/html/table.js --name phage  --outdir phage/ --ucsc philipchick/coryne
+
+
+python ~/afp/project_scripts/cgps/rnaseq/total_expression_dynamics.py phage/nonphage.gff phage/phage.gff --plot log/expression_dynamics_total.png
+
+
