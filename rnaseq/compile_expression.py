@@ -16,7 +16,7 @@ import yaml
 
 parser = argparse.ArgumentParser(description='Compiles gene expression values coming form different sources');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the transcripts folder");
-parser.add_argument('--outdir', nargs = '?', default='.', type = str, help = "Path to the output directory");
+#parser.add_argument('--outdir', nargs = '?', default='.', type = str, help = "Path to the output directory");
 parser.add_argument('--annotation', nargs = '?', type = str, help = "Path to the gene annotation");
 #parser.add_argument('--first', nargs = '+', required=True, type = str, help = "Path to gene expression data (replicates) for the first sample");
 #parser.add_argument('--second', nargs = '+', required=True, type = str, help = "Path to gene expression data (replicates) for the second sample");
@@ -69,25 +69,39 @@ for gene in genes:
     for local_expr in expression:
         line_list.append([x[gene] for x in local_expr])
     table_list.append(line_list)
+    
+    
+   
+   
+print("#labels=%s" % ",".join(labels))
+table_list.sort(key = lambda x: line2score(x), reverse = True)
+for l in table_list:
+    transcript = gene2annotation[l[0][5:]]
+    s_list = []
+    for a in l[1:]:
+        s_list.append([str(x) for x in a])
+    transcript.attrs['expression'] = ":".join([",".join(x) for x in s_list])
+    sys.stdout.write(str(transcript))
+    
 
-with open(os.path.join(args.outdir, 'table.raw.tsv'), 'w') as f:
-    f.write("%s\n" % "\t".join(['gene'] + labels))    
-    table_list.sort(key = lambda x: line2score(x), reverse = True)
-    for l in table_list:
-        s_list = []
-        #print(l)
-        for a in l[1:]:
-            s_list.append([str(x) for x in a])
+#with open(os.path.join(args.outdir, 'table.raw.tsv'), 'w') as f:
+    #f.write("%s\n" % "\t".join(['gene'] + labels))    
+    #table_list.sort(key = lambda x: line2score(x), reverse = True)
+    #for l in table_list:
+        #s_list = []
+        ##print(l)
+        #for a in l[1:]:
+            #s_list.append([str(x) for x in a])
             
-        s = "\t".join([l[0]] + [",".join(x) for x in s_list])
-        l[0] = list(gene2annotation[l[0][5:]])
-        f.write("%s\n" % s)
+        #s = "\t".join([l[0]] + [",".join(x) for x in s_list])
+        #l[0] = list(gene2annotation[l[0][5:]])
+        #f.write("%s\n" % s)
     
 
 
-with open(os.path.join(args.outdir, 'table.raw.yaml'), 'w') as f:
-    to_yaml = labels, table_list
-    yaml.dump(to_yaml, f)
+#with open(os.path.join(args.outdir, 'table.raw.yaml'), 'w') as f:
+    #to_yaml = labels, table_list
+    #yaml.dump(to_yaml, f)
 
 
 

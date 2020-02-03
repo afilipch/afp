@@ -38,8 +38,7 @@ gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
 
 
 def annotate(d, gene2annotation):
-    name = d[0].split("-")[1]
-    gene = gene2annotation[name]
+    gene = gene2annotation[d[0]]
     return [gene.attrs['genesymbol']] + d[1:], gene
     
 
@@ -74,7 +73,13 @@ with doc:
             with tr():
                 td(raw('<a href=%s target="_blank">%s</a>' % (add_ucsc(gene, args.ucsc), newd[0])  ))
                 for el in newd[1:]:
-                    td(el)
+                    a = el.split(",")
+                    if(len(a)==1):
+                        td(el)
+                    else:
+                        with td():
+                            for aa in a:
+                                p(aa)
                 
     _script = script(raw(plain_script), type='text/javascript')
     

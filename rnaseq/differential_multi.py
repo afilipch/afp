@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description='Compares multiple rna-seq samples 
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression table, tsv format");
 parser.add_argument('--minexpr', nargs = '?', default=20, type = float, help = "Minimum mean (among replicates) coverage for a peak to be considered as expressed greatly than the other");
 parser.add_argument('--minfold', nargs = '?', default=2.0, type = float, help = "Minimum fold difference between two peaks to be considered as differential");
-parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
+#parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args()
 
 
@@ -93,30 +93,21 @@ def compare(expr1, expr2, minfold, minexpr):
     
         
         
-
-
-genes = [];
 with open(args.path) as f:
-    labels = next(f).strip().split("\t")[1:]
-    expr_list = [[] for i in range(len(labels))];
-    #print(expr_list)
-    for l in f:
-        a = l.strip().split("\t")
-        genes.append(a)
-        for c, el in enumerate(a[1:]):
-            expr_list[c].append([float(x) for x in el.split(",")])
-        #print(expr_list[0])
-        #break
-            #res.append( [float(x) for x in el.split(",")] )
-        #expr_list.append(res)
-        #print(res)
-        
-#print(len(expr_list[0]))
+    labels = next(f).strip().split("=")[1].split(",")
+
+
+transcripts = BedTool(args.path)
+expr_list = [[] for i in range(len(labels))];
+
+         
+for transcript in transcripts:
+    for c, s in enumerate(transcript.attrs['expression'].split(":")):
+        expr_list[c].append([float(x) for x in s.split(",")])
+
 
 labels_combinations = list(combinations(labels, 2))
 fold_list = [[] for x in labels_combinations]
-#print(labels_combinations)
-#sys.exit()
 for c, (elist1, elist2) in enumerate(combinations(expr_list, 2)):
     for expr1, expr2 in zip(elist1, elist2):
         fold, change = compare(expr1, expr2, args.minfold, args.minexpr)
@@ -126,45 +117,11 @@ for c, (elist1, elist2) in enumerate(combinations(expr_list, 2)):
  
 header = ['gene', 'pair', 'score'] + labels + ["|".join(x) for x in labels_combinations]
 print("\t".join(header))
-for c, gene in enumerate(genes):
+for c, transcript in enumerate(transcripts):
     fold_list_local = [x[c] for x in fold_list]
     score, pos = gene_total_score(fold_list_local)
     label_pair = labels_combinations[pos]
-    a = [gene[0], "|".join(label_pair), "%d" % score] + gene[1:] + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
+    a = [transcript.attrs['ID'], "|".join(label_pair), "%d" % score] + transcript.attrs['expression'].split(":") + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
     print("\t".join(a))
     
-    #print(gene)
-    ##print(fold_list_local)
-    #print(score, label_pair, pos)
-    #print()
-    #print()
-    
-        
-        
-        #if(change):
-            #print(expr1, expr2, fold, change)
-    #break;
-        
 
-
-
-    
-        
-#size = len(args.path)
-#pairs = list(permutations(range(size), 2))
-#print(pairs)
-
-#condition_names = [os.path.basename(x).split(".")[0] for x in args.path]
-#res_total, stat_total_counts = find_shared_peaks(args.path, args.maxd)
-#sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
-
-#pos2pairs = defaultdict(list);
-#for compiled in res_total:
-    #for p, peak1, peak2 in compare_multiple_peaks(compiled, pairs, args.minfold, args.mincov):
-        #pos2pairs[p].append((peak1, peak2))
-    
-#for p in pairs:
-    #name = "%s_GREATER_%s.gff" % (condition_names[p[0]], condition_names[p[1]])
-    #with open(os.path.join(args.outdir, name), 'w') as f:
-        #for peak1, peak2 in pos2pairs[p]:
-            #f.write(str(pair2interval(peak1, peak2)))
