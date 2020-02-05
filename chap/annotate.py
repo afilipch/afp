@@ -73,8 +73,9 @@ def annotate_position(peak, tr_dict, maxd, inside):
     atg = mindistance + float(transcript.attrs['distance'])
     if(str(atg) != "nan"):
         atg = "%d" % atg
-        
-    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs['cg']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
+       
+    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
+    #attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs['cg']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
     
     if(if_bed):
         return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )
@@ -118,11 +119,11 @@ def calculate_area_coverage(peak, coverage, covlimit, foldlimit):
         
 if(args.coverage):
     cov_dict = coverage2dict(args.coverage)
-    cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
+    #cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
     for peak in annpeaks:
         peak.attrs['area_coverage'] = "%1.1f" % calculate_area_coverage(peak, cov_dict[peak.chrom], args.covlimit, args.foldlimit)
         peak.attrs['topcoverage'] =  "%1.3f" % cov_dict[peak.chrom][int(peak.name)]
-        peak.attrs['other_coverage'] =  ",".join(["%1.3f" % x[peak.chrom][int(peak.name)] for x in cov_list])
+        #peak.attrs['other_coverage'] =  ",".join(["%1.3f" % x[peak.chrom][int(peak.name)] for x in cov_list])
         
         
 ### Output Results ###
