@@ -17,6 +17,7 @@ parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Na
 parser.add_argument('--name', nargs = '?', default="unknown", type = str, help = "Name of the sample");
 parser.add_argument('--top', nargs = '?', default=300, type = int, help = "Shows only [top] peaks");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory (tsv and html files will be written there)")
+parser.add_argument('--genes_dir', nargs = '?', required=True, type = str, help = "Path to the directory with genes html reports")
 args = parser.parse_args();
 
 
@@ -61,6 +62,7 @@ with doc.head:
     style(_style)
 
 
+header.insert(1, 'UCSC')
 with doc:
     p(strong(_title))
     input(type="text", id="inp1", onkeyup='my_search(1, "inp1", "myTable")', placeholder="Search for a genesymbol..")
@@ -71,7 +73,8 @@ with doc:
         for d in data:
             newd, gene = annotate(d, gene2annotation)
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (add_ucsc(gene, args.ucsc), newd[0])  ))
+                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, gene.name + ".html"), newd[0]) ))
+                td(raw('<a href=%s target="_blank">link</a>' % add_ucsc(gene, args.ucsc) ))
                 for el in newd[1:]:
                     a = el.split(",")
                     if(len(a)==1):

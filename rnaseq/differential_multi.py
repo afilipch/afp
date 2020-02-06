@@ -40,20 +40,27 @@ def gene_total_score(mylist):
     
     
 
-def assign_score(expr1, expr2, fold, change):
-    e = max([np.mean(expr1), np.mean(expr2)])
+def assign_score(expr1, expr2, fold, change, maxfold=20):
+    e = max([min(expr1), min(expr2)])
     
     if (fold == 'NaN'):
-        myfold = 10;
+        myfold = maxfold;
     else:
-        myfold = max(fold, 1/fold)
+        myfold = min(maxfold, fold)
+        
     
     if(not change):
         coeff = 0.5*(myfold - 1)
     else:
-        coeff = 1;
+        coeff = myfold;
         
-    return coeff*myfold*e
+    return coeff*e
+
+
+
+
+def get_fold_change(expr1, expr2):
+    return min(expr1)/max(expr2)
 
 
 
@@ -61,30 +68,35 @@ def simple_check_change(expr, minexpr):
     return int(all([x>minexpr for x in expr]))
 
 
-def check_change(expr1, expr2, fold, minfold, minexpr):
+def check_change(expr1, expr2, f1, f2, minfold, minexpr):
     m1 = max(expr1)
     m2 = max(expr2)
     change = 0;
-    if(fold>=1 and fold>minfold and all([x>minexpr for x in expr1]) and all([x>m2 for x in expr1])):
-        change = 1;
-    elif( 1.0/fold>minfold and all([x>minexpr for x in expr2]) and all([x>m1 for x in expr2]) ):
-        change = 2;
+    
+    if(f1>=f2):
+        fold = f1;
+        if(f1>minfold and all([x>minexpr for x in expr1])):
+            change = 1;
+    else:
+        fold = f2;
+        if(f2>minfold and all([x>minexpr for x in expr2])):
+            change = 2;        
         
-    return change;
+    return change, fold
 
 
 
 def compare(expr1, expr2, minfold, minexpr):
-    s1 = np.mean(expr1)
-    s2 = np.mean(expr2)
-    if(s1):
-        if(s2):
-            fold = s1/s2
-            change = check_change(expr1, expr2, fold, minfold, minexpr)
+    
+    if(any(expr1)):
+        if(any(expr2)):
+            f1 = get_fold_change(expr1, expr2);
+            f2 = get_fold_change(expr2, expr1)
+            change, fold = check_change(expr1, expr2, f1, f2, minfold, minexpr)
         else:
             fold, change = 'NaN', simple_check_change(expr1, minexpr)
     else:
-        if(s2):
+        if(any(expr2)):
             fold, change = 'NaN', 2*simple_check_change(expr2, minexpr)
         else:
             fold, change = 'NaN', 0
