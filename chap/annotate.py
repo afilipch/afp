@@ -12,7 +12,7 @@ import numpy as np;
 import matplotlib.pyplot as plt;
 from pybedtools import BedTool
 
-from afbio.pybedtools_af import construct_gff_interval
+from afbio.pybedtools_af import construct_gff_interval, read_comments
 
 
 parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
@@ -73,15 +73,17 @@ def annotate_position(peak, tr_dict, maxd, inside):
     atg = mindistance + float(transcript.attrs['distance'])
     if(str(atg) != "nan"):
         atg = "%d" % atg
+    
        
-    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
-    #attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs['cg']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
+    #attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
+    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs.get('cg', 'unknown')), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
     
     if(if_bed):
         return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )
     else:
         for attr_name, attr_value in attrs:
             peak.attrs[attr_name] = str(attr_value);
+        peak.strand = transcript.strand
         return peak;
 
 
@@ -95,6 +97,7 @@ for tr in BedTool(args.transcripts):
         tr_dict[tr.chrom][1].append(tr)
 
 
+comments = read_comments(args.path);
 peaks = BedTool(args.path);
 if_bed = args.path.split(".")[-1] == 'bed' 
 
@@ -125,15 +128,21 @@ if(args.coverage):
         peak.attrs['topcoverage'] =  "%1.3f" % cov_dict[peak.chrom][int(peak.name)]
         #peak.attrs['other_coverage'] =  ",".join(["%1.3f" % x[peak.chrom][int(peak.name)] for x in cov_list])
         
-        
+
+
+
+
+######################################################################################################
 ### Output Results ###
+for comment in comments:
+    print(comment)
 for peak in annpeaks:
     sys.stdout.write(str(peak));
     
-    
-
+  
+  
+######################################################################################################
 ### Draw Plots ###
-
 
 def fix_density(ax, bins, scale):
     factor = bins[1]-bins[0]

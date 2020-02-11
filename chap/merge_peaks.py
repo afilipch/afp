@@ -101,6 +101,7 @@ def run_accross_chromosome(bedtools_chr, maxd, size):
 size = len(args.path)
 res_total, stat_total_counts = find_shared_peaks(args.path, args.maxd)
 
+print("# %s" % ",".join([os.path.basename(x).split(".")[0] for x in args.path]))
 for compiled in res_total:
     print_compiled(compiled, size)
     

@@ -15,7 +15,7 @@ python ~/afp/chap/merge_peaks.py ace_glu_ko_cyab_rep1.annotated.gff ace_glu_ko_c
 # find differentially bound
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks
 
-python ~/afp/chap/differential.py glu_wt.merged.gff glu_ko_cyab.merged.gff ace_glu_wt.merged.gff ace_glu_ko_cyab.merged.gff  --maxd 100 --outdir ../differential/raw --minfold 2 --mincov 3
+python ~/afp/chap/differential/differential.py glu_wt.merged.gff glu_ko_cyab.merged.gff ace_glu_wt.merged.gff ace_glu_ko_cyab.merged.gff  --maxd 100 --outdir ../differential/raw --minfold 2 --mincov 3
 
 
 
@@ -36,6 +36,74 @@ FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential
 
 python /home/IBT/filipchyk/afp/chap/differential/html_differential_total.py annotated/ --css /home/IBT/filipchyk/afp/afbio/html/table.css --js /home/IBT/filipchyk/afp/afbio/html/table.js --name glxr_camp  --tables html/ > report_differential.html
 
+##########################################################################################
+# Motif VS peak intensity
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks/motifs
+
+python ~/afp/project_scripts/glxr/narrow_peaks.py raw/ --outdir narrow/ --mincov 1.5
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks/motifs/narrow
+
+for file in *.gff; do fastaFromBed -fi ~/genomic/coryne/nc_003450_3/genome.fasta -bed $file -name -fo ../fasta/${file//gff/fa}; done
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks/motifs
+
+source miniconda2-bash-init
+meme fasta/glu_wt.merged.fa -oc fasta/glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -smaxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/glu_ko_cyab.merged.fa -oc fasta/glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/ace_glu_ko_cyab.merged.fa -oc fasta/ace_glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/ace_glu_wt.merged.fa -oc meme/ace_glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
+
+fimo -oc fimo/glu_wt/ meme/glu_wt/meme.txt fasta/glu_wt.merged.fa
+fimo -oc fimo/glu_ko_cyab/ meme/glu_ko_cyab/meme.txt fasta/glu_ko_cyab.merged.fa
+fimo -oc fimo/ace_glu_ko_cyab/ meme/ace_glu_ko_cyab/meme.txt fasta/ace_glu_ko_cyab.merged.fa
+fimo -oc fimo/ace_glu_wt/ meme/ace_glu_wt/meme.txt fasta/ace_glu_wt.merged.fa
+
+source anaconda3-bash-init
+python ~/afp/project_scripts/glxr/motif_vs_intensity.py narrow/glu_wt.merged.gff --fimo fimo/glu_wt/fimo.gff --plot intensity_vs_motif/glu_wt.intensity_vs_motif.png
+python ~/afp/project_scripts/glxr/motif_vs_intensity.py narrow/ace_glu_wt.merged.gff --fimo fimo/ace_glu_wt/fimo.gff --plot intensity_vs_motif/ace_glu_wt.intensity_vs_motif.png
+python ~/afp/project_scripts/glxr/motif_vs_intensity.py narrow/glu_ko_cyab.merged.gff --fimo fimo/glu_ko_cyab/fimo.gff --plot intensity_vs_motif/glu_ko_cyab.intensity_vs_motif.png
+python ~/afp/project_scripts/glxr/motif_vs_intensity.py narrow/ace_glu_ko_cyab.merged.gff --fimo fimo/ace_glu_ko_cyab/fimo.gff --plot intensity_vs_motif/ace_glu_ko_cyab.intensity_vs_motif.png
+
+
+
+##########################################################################################
+# Motif difference for differential binding
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential/motifs
+
+source anaconda3-bash-init
+python ~/afp/project_scripts/glxr/narrow_peaks.py ../annotated/ --outdir narrow/
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential/motifs/narrow
+
+for file in *.gff; do fastaFromBed -fi ~/genomic/coryne/nc_003450_3/genome.fasta -bed $file -name -fo ../fasta/${file//gff/fa}; done
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/differential/motifs/narrow
+
+source miniconda2-bash-init
+for file in *.fa; do  meme $file -dna -oc ../meme/${file//gff/} -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp; done
+
+
+
+##########################################################################################
+# ALL-IN table
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks
+
+python /home/IBT/filipchyk/afp/chap/merge_peaks.py glu_wt_rep1.annotated.gff glu_wt_rep2.annotated.gff glu_wt_rep3.annotated.gff glu_ko_cyab_rep1.annotated.gff glu_ko_cyab_rep2.annotated.gff ace_glu_wt_rep1.annotated.gff ace_glu_wt_rep2.annotated.gff ace_glu_ko_cyab_rep1.annotated.gff ace_glu_ko_cyab_rep2.annotated.gff > ../regions/regions.gff
+
+
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/regions
+python ~/afp/chap/annotate.py regions.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --format png --outdir ../regions/ > regions.annotated.gff
+python ~/afp/chap/add_antisense_annotation.py regions.annotated.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff > regions.antisense.gff
+python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 1.5 > ~/mypapers/glxr/allin_table.tsv
 
 
 ##########################################################################################

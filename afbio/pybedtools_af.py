@@ -8,31 +8,31 @@ from pybedtools import Interval, BedTool, create_interval_from_list
 from afbio.numerictools import overlap
 
 def generate_overlaping_intervals(bed, distance):
-	'''applicable only for sorted(with strandness) bed files'''
-	#sys.stderr.write("%s\n" % bed);
-	
-	first = bed[0];
-		
-	merged = [first]
-	start, end = first.start, first.stop
-	rname = (first.chrom, first.strand)
-	
-	for i in bed[1:]:
-		if(rname == (i.chrom, i.strand)):
-			s, e = overlap((i.start, i.stop), (start, end))
-			if(e - s >= -1*distance):
-				merged.append(i);
-				end = max(i.stop, end)
-			else:
-				yield merged;
-				start, end = i.start, i.stop;
-				merged = [i];
-		else:
-			yield merged
-			start, end = i.start, i.stop
-			merged = [i];
-			rname = (i.chrom, i.strand);
-	yield merged
+    '''applicable only for sorted(with strandness) bed files'''
+    #sys.stderr.write("%s\n" % bed);
+
+    first = bed[0];
+        
+    merged = [first]
+    start, end = first.start, first.stop
+    rname = (first.chrom, first.strand)
+
+    for i in bed[1:]:
+        if(rname == (i.chrom, i.strand)):
+            s, e = overlap((i.start, i.stop), (start, end))
+            if(e - s >= -1*distance):
+                merged.append(i);
+                end = max(i.stop, end)
+            else:
+                yield merged;
+                start, end = i.start, i.stop;
+                merged = [i];
+        else:
+            yield merged
+            start, end = i.start, i.stop
+            merged = [i];
+            rname = (i.chrom, i.strand);
+    yield merged
 	
 	
 	
@@ -47,9 +47,10 @@ def doublebed2dict(bed):
 	for i in bed:
 		name = i.name.split("|")[0]
 		d[name].append(i);
-	return d;	
-	
-	
+	return d;
+
+
+
 def construct_gff_interval(chrom, start, stop, feature, score='0', strand='.', source='un', frame='.', attrs=[]):
 	attrs_str = "; ".join(["%s=%s" % (str(x[0]), str(x[1])) for x in attrs])
 	return create_interval_from_list( [chrom, source, feature, str(start+1), str(stop), score, strand, frame, attrs_str] );
@@ -83,16 +84,15 @@ def list2interval(l):
 		
 		
 def interval2seq(interval, reference):
-	if(interval.strand == '+'):
-		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
-	elif(interval.strand == '-'):
-		return str(reference[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())
-	else:
-		sys.stderr.write("Strand is not defined. Plus strand sequence will be returned\n")
-		return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
-	
-	
-	
+    if(interval.strand == '+'):
+        return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
+    elif(interval.strand == '-'):
+        return str(reference[interval.chrom][interval.start:interval.stop].seq.reverse_complement().upper())
+    else:
+        sys.stderr.write("Strand is not defined. Plus strand sequence will be returned\n")
+        return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
+
+
 def get_distance(i1, i2):
 	'''Calculates the distance between two intervals
 	
@@ -101,8 +101,18 @@ def get_distance(i1, i2):
 		
 		Returns int:  distance between two intervals
 	'''
-	return max(i1.start, i2.start) - min(i1.end, i2.end)	
-	
+	return max(i1.start, i2.start) - min(i1.end, i2.end)
+
+def read_comments(path):
+    a = []
+    with open(path) as f:
+        for l in f:
+            if(l.startswith("#")):
+                a.append(l.strip())
+            else:
+                return a;
+    return a
+
 	
 #testing section
 if(__name__ == "__main__"):
