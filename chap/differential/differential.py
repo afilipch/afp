@@ -24,9 +24,25 @@ parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maxim
 parser.add_argument('--fraction', nargs = '?', default=1.0, type = float, help = "Minimum fraction of replicates to harbor a valid peak");
 parser.add_argument('--mincov', nargs = '?', default=3.0, type = float, help = "Minimum mean (among replicates) coverage for a peak to be considered as expressed greatly than the other");
 parser.add_argument('--minfold', nargs = '?', default=2.0, type = float, help = "Minimum fold difference between two peaks to be considered as differential");
+parser.add_argument('--area', nargs = '?', default=False, const = True, type = bool, help = "If set, fold change is calculated based on area coverage, ontherwise based on top coverage");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args()
 
+
+def score_top_coverage(peak):
+    topcoverage = [float(x) for x in peak.attrs['topcoverage'].split(",")]
+    return np.mean([float(x) for x in topcoverage if x])
+
+
+def score_area_coverage(peak):
+    area_coverage = [float(x) for x in peak.attrs['area_coverage'].split(",")]
+    return np.mean([float(x) for x in area_coverage if x])
+
+
+if(args.area):
+    peak_score = score_area_coverage;
+else:
+    peak_score = score_top_coverage;
 
 
 def print_compiled(compiled, size):

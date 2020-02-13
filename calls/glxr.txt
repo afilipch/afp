@@ -52,7 +52,7 @@ for file in *.gff; do fastaFromBed -fi ~/genomic/coryne/nc_003450_3/genome.fasta
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks/motifs
 
 source miniconda2-bash-init
-meme fasta/glu_wt.merged.fa -oc fasta/glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -smaxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/glu_wt.merged.fa -oc fasta/glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 meme fasta/glu_ko_cyab.merged.fa -oc fasta/glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 meme fasta/ace_glu_ko_cyab.merged.fa -oc fasta/ace_glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 meme fasta/ace_glu_wt.merged.fa -oc meme/ace_glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001

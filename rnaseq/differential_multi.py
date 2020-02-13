@@ -124,16 +124,18 @@ for c, (elist1, elist2) in enumerate(combinations(expr_list, 2)):
     for expr1, expr2 in zip(elist1, elist2):
         fold, change = compare(expr1, expr2, args.minfold, args.minexpr)
         score = assign_score(expr1, expr2, fold, change)
-        fold_list[c].append((fold, score))
+        fold_list[c].append((fold, score, change))
         
  
-header = ['gene', 'pair', 'score'] + labels + ["|".join(x) for x in labels_combinations]
+header = ['gene', 'pair', 'score', 'change'] + labels + ["|".join(x) for x in labels_combinations]
 print("\t".join(header))
 for c, transcript in enumerate(transcripts):
     fold_list_local = [x[c] for x in fold_list]
+    #print(len(fold_list_local), len(labels_combinations))
     score, pos = gene_total_score(fold_list_local)
     label_pair = labels_combinations[pos]
-    a = [transcript.attrs['ID'], "|".join(label_pair), "%d" % score] + transcript.attrs['expression'].split(":") + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
+    change = fold_list_local[pos][2]
+    a = [transcript.attrs['ID'], "|".join(label_pair), "%d" % score, str(change)] + transcript.attrs['expression'].split(":") + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
     print("\t".join(a))
     
 
