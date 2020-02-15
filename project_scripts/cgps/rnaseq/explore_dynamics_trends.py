@@ -11,7 +11,6 @@ import copy
 import numpy as np;
 from sklearn.cluster import KMeans
 from pybedtools import BedTool, Interval
-from itertools import combinations, permutations
 import matplotlib.pyplot as plt;
 
 
@@ -19,7 +18,7 @@ import matplotlib.pyplot as plt;
 
 parser = argparse.ArgumentParser(description='Draws the chart of expression dynamics over time for phage VS non-phage genes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression file, tsv format");
-parser.add_argument('--minscore', nargs = '?', default = 50000, type = float,  help = "Minimum allowed differential score");
+#parser.add_argument('--minscore', nargs = '?', default = 50000, type = float,  help = "Minimum allowed differential score");
 parser.add_argument('--knum', nargs = '?', default = 6, type = int,  help = "Number of k-means clusters");
 parser.add_argument('--outdir', required = True, nargs = '?', type = str, help = "Path to the output plot folder");
 parser.add_argument('--format', default = 'png', nargs = '?', type = str, help = "Plot format");
@@ -28,6 +27,11 @@ args = parser.parse_args()
 TIMEPOINTS = 7;
 SPLIT_POS = 3;
 CLUSTER_TYPES = ['before', 'after', 'all']
+
+for c_type in CLUSTER_TYPES:
+    path = os.path.join(args.outdir, c_type)
+    if(not os.path.exists(path)):
+        os.mkdir(path)
 
 def transform(datum):
     norma = sum(datum)/100;
