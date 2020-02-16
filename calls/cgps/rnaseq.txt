@@ -23,4 +23,17 @@ python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py phage/assign
 
 cd ..
 python ~/afp/genomic/tss/assign_mappings_to_tss.py coverage/ --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --order 0h 05h 1h 3h 6h 9h 24h --outdir tss/transcripts/
-time python ~/afp/genomic/tss/select_differential_tss.py tss/transcripts/ --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --mindiff 0.2 --minexpr 1000
+python ~/afp/genomic/tss/select_differential_tss.py tss/transcripts/ --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --mindiff 0.2 --minexpr 200 --minfraction 1.5 --outdir tss/selected/
+
+
+
+# UCSC calls
+
+python ~/afp/mapping/coverage2bedgraph.py coverage/0h_1.minus.bed coverage/0h_1.plus.bed  coverage/0h_2.minus.bed coverage/0h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_0h description="RNA seq genomic coverage for 0h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/0h.bedgraph 
+python ~/afp/mapping/coverage2bedgraph.py coverage/05h_1.minus.bed coverage/05h_1.plus.bed  coverage/05h_2.minus.bed coverage/05h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_05h description="RNA seq genomic coverage for 05h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/05h.bedgraph
+python ~/afp/mapping/coverage2bedgraph.py coverage/1h_1.minus.bed coverage/1h_1.plus.bed  coverage/1h_2.minus.bed coverage/1h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_1h description="RNA seq genomic coverage for 1h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/1h.bedgraph 
+python ~/afp/mapping/coverage2bedgraph.py coverage/3h_1.minus.bed coverage/3h_1.plus.bed  coverage/3h_2.minus.bed coverage/3h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_3h description="RNA seq genomic coverage for 3h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/3h.bedgraph 
+python ~/afp/mapping/coverage2bedgraph.py coverage/6h_1.minus.bed coverage/6h_1.plus.bed  coverage/6h_2.minus.bed coverage/6h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_6h description="RNA seq genomic coverage for 6h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/6h.bedgraph 
+python ~/afp/mapping/coverage2bedgraph.py coverage/9h_1.minus.bed coverage/9h_1.plus.bed  coverage/9h_2.minus.bed coverage/9h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_9h description="RNA seq genomic coverage for 9h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/9h.bedgraph 
+python ~/afp/mapping/coverage2bedgraph.py coverage/24h_1.minus.bed coverage/24h_1.plus.bed  coverage/24h_2.minus.bed coverage/24h_2.plus.bed  --multiplier 100 --convert True --trackopts 'track name=cgps_24h description="RNA seq genomic coverage for 24h" color=60,150,237 type=bedGraph visibility=2' --normalize > ucsc/24h.bedgraph 
+
