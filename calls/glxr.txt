@@ -52,8 +52,8 @@ for file in *.gff; do fastaFromBed -fi ~/genomic/coryne/nc_003450_3/genome.fasta
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/peaks/motifs
 
 source miniconda2-bash-init
-meme fasta/glu_wt.merged.fa -oc fasta/glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
-meme fasta/glu_ko_cyab.merged.fa -oc fasta/glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/glu_wt.merged.fa -oc meme/glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
+meme fasta/glu_ko_cyab.merged.fa -oc meme/glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 meme fasta/ace_glu_ko_cyab.merged.fa -oc fasta/ace_glu_ko_cyab  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 meme fasta/ace_glu_wt.merged.fa -oc meme/ace_glu_wt  -dna  -nostatus -time 18000 -mod zoops -nmotifs 2 -minw 8 -maxw 30  -minsites 6 -revcomp  -evt 0.00001
 
@@ -103,7 +103,7 @@ python /home/IBT/filipchyk/afp/chap/merge_peaks.py glu_wt_rep1.annotated.gff glu
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/regions
 python ~/afp/chap/annotate.py regions.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --format png --outdir ../regions/ > regions.annotated.gff
 python ~/afp/chap/add_antisense_annotation.py regions.annotated.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff > regions.antisense.gff
-python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 1.5 > ~/mypapers/glxr/allin_table.tsv
+python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 1.5 --genome ~/genomic/coryne/nc_003450_3/genome.fasta  > ~/mypapers/glxr/allin_table.seq.tsv
 
 
 ##########################################################################################
@@ -113,6 +113,12 @@ python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp
 
 python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../../mailbox/global_coverage.svg --labels ../../data/peaks_to_label.csv
+
+
+# Draw a peak to TSS distance distribution
+FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp
+
+python ~/afp/project_scripts/glxr/distance_to_tss.py regions.annotated.gff --mincov 3  --outdir  ~/mypapers/glxr/figures/ --format svg
 
 
 

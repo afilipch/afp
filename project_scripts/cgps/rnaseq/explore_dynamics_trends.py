@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(description='Draws the chart of expression dyna
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression file, tsv format");
 #parser.add_argument('--minscore', nargs = '?', default = 50000, type = float,  help = "Minimum allowed differential score");
 parser.add_argument('--knum', nargs = '?', default = 6, type = int,  help = "Number of k-means clusters");
-parser.add_argument('--outdir', required = True, nargs = '?', type = str, help = "Path to the output plot folder");
+parser.add_argument('--outdir', nargs = '?', type = str, help = "Path to the output plot folder");
 parser.add_argument('--format', default = 'png', nargs = '?', type = str, help = "Plot format");
 args = parser.parse_args()
 
@@ -28,10 +28,6 @@ TIMEPOINTS = 7;
 SPLIT_POS = 3;
 CLUSTER_TYPES = ['before', 'after', 'all']
 
-for c_type in CLUSTER_TYPES:
-    path = os.path.join(args.outdir, c_type)
-    if(not os.path.exists(path)):
-        os.mkdir(path)
 
 def transform(datum):
     norma = sum(datum)/100;
@@ -81,9 +77,17 @@ for data in data_list:
         
 sys.stderr.write("\ntotal transcripts: %d\ndifferential transcripts: %d\n\n" % (total, len(data)))
 
+print(split_list[0])
+
+if(not args.outdir):
+    sys.exit()
 
 
 
+for c_type in CLUSTER_TYPES:
+    path = os.path.join(args.outdir, c_type)
+    if(not os.path.exists(path)):
+        os.mkdir(path)
 #############################################################################################################################
 ### DRAWING SECTION ###
 fontsize = 24
