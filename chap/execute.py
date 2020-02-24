@@ -44,7 +44,7 @@ parser.add_argument('--multi', nargs = '?', default = False, const = True, type 
 parser.add_argument('--annotation', nargs = '?', default=False, type = os.path.abspath, help = "Path to genbank annotation file in gff format.");
 parser.add_argument('--ucsc', nargs = '?', default="stub", type = str, help = "Name of the UCSC session for the experiment");
 parser.add_argument('--name', nargs = '?', default="stub", type = str, help = "Name of the project");
-
+parser.add_argument('--reads_format', nargs = '?', default = 'U', choices = ['U', 'f'], type = str, help = "Reads format: 'U' -> fastq, 'f' -> fasta");
 
 #bowtie2  and filtering options
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
@@ -124,7 +124,7 @@ def makefile_local(m_input,  control):
     
 
     # Processing bowite2 settings
-    bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads)
+    bs_list = get_bowtie_call(bowtie_settings, args.bowtie_args, args.index, m_input, name, threads=args.threads, reads_format=args.reads_format)
     bs_list = ['echo', '\'###bowtie\'', '>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
 
     # Map reads with bowtie2

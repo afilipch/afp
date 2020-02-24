@@ -15,7 +15,7 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 #parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta format");
 #parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
-#parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
+parser.add_argument('--paired', nargs = '?', const=True, default=False, type = bool, help = "Must to be set, if reads are paired");
 #parser.add_argument('--flank', nargs = '?', default=60, type = int, help = "Peak plank length");
 args = parser.parse_args();
 
@@ -41,24 +41,41 @@ with open(log_file) as f:
             
             
 ### BOWTIE2 processing ###
-bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmapped reads", "Mapped Discordantly"]
 
-def get_bowtie(name):
-    bowtie_list = [];
-    
-    ltemp = section2text[name][1:8]
-    for l in (ltemp[:4] + ltemp[6:]):
-        bowtie_list.append(int(l.split(" ")[0]))
+if(args.paired):
+    bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmapped reads", "Mapped Discordantly"]
+
+    def get_bowtie_paired(name):
+        bowtie_list = [];
         
-    bowtie_list[1] -= bowtie_list[4]
-    bowtie_list[1], bowtie_list[2], bowtie_list[3] = bowtie_list[2], bowtie_list[3], bowtie_list[1]
-    return bowtie_list, bowtie_list[0]
+        ltemp = section2text[name][1:8]
+        for l in (ltemp[:4] + ltemp[6:]):
+            bowtie_list.append(int(l.split(" ")[0]))
+            
+        bowtie_list[1] -= bowtie_list[4]
+        bowtie_list[1], bowtie_list[2], bowtie_list[3] = bowtie_list[2], bowtie_list[3], bowtie_list[1]
+        return bowtie_list, bowtie_list[0]
 
-bowtie_list, bowtie_total = get_bowtie('bowtie')
-if('bowtie_control' in section2text):
-    bowtie_control_list, bowtie_control_total = get_bowtie('bowtie_control')
+    bowtie_list, bowtie_total = get_bowtie_paired('bowtie')
+    if('bowtie_control' in section2text):
+        bowtie_control_list, bowtie_control_total = get_bowtie_paired('bowtie_control')
+    else:
+        bowtie_control_list = [];
+   
+   
 else:
-    bowtie_control_list = [];
+    bowtie_labels = ["Total reads", "Mapped uniquely", "Mapped non-uniquely", "Unmapped reads"]
+
+    def get_bowtie_single(name):
+        bowtie_list = [ int(x.split(" ")[0]) for x in section2text[name][1:5]]
+        bowtie_list[1], bowtie_list[2], bowtie_list[3] = bowtie_list[2], bowtie_list[3], bowtie_list[1]
+        return bowtie_list, bowtie_list[0]
+
+    bowtie_list, bowtie_total = get_bowtie_single('bowtie')
+    if('bowtie_control' in section2text):
+        bowtie_control_list, bowtie_control_total = get_bowtie_single('bowtie_control')
+    else:
+        bowtie_control_list = [];    
 
 
 

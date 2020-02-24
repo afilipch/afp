@@ -32,14 +32,15 @@ else:
     log_string = ''
 
 ### Read input data
-
+start, end = 4, 11
 with open(args.path) as f:
-    labels = next(f).strip().split("\t")[1:]
+    labels = next(f).strip().split("\t")[start:end]
     expr_list = [[] for i in range(len(labels))];
     #print(expr_list)
     for l in f:
-        a = l.strip().split("\t")
-        for c, el in enumerate(a[1:]):
+        a = l.strip().split("\t")[start:end]
+        print(a)
+        for c, el in enumerate(a):
             expr_list[c].append([ float(x) for x in el.split(",")])
             
 

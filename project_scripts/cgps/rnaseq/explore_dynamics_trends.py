@@ -6,6 +6,7 @@ import os
 import sys
 from collections import defaultdict
 import copy
+import glob
 
 
 import numpy as np;
@@ -18,14 +19,14 @@ import matplotlib.pyplot as plt;
 
 parser = argparse.ArgumentParser(description='Draws the chart of expression dynamics over time for phage VS non-phage genes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression file, tsv format");
-#parser.add_argument('--minscore', nargs = '?', default = 50000, type = float,  help = "Minimum allowed differential score");
-parser.add_argument('--knum', nargs = '?', default = 6, type = int,  help = "Number of k-means clusters");
+parser.add_argument('--minexpr', nargs = '?', default = 50, type = float,  help = "Minimum allowed expression in TPM");
+#parser.add_argument('--knum', nargs = '?', default = 6, type = int,  help = "Number of k-means clusters");
+parser.add_argument('--size', nargs = '?', default = 50, type = int,  help = "Number of elements per cluster");
 parser.add_argument('--outdir', nargs = '?', type = str, help = "Path to the output plot folder");
 parser.add_argument('--format', default = 'png', nargs = '?', type = str, help = "Plot format");
 args = parser.parse_args()
 
 TIMEPOINTS = 7;
-SPLIT_POS = 3;
 CLUSTER_TYPES = ['before', 'after', 'all']
 
 
@@ -48,46 +49,66 @@ def get_split_mean(data_split):
 transcripts = [];
 data = [];
 total = 0;
-
 with open(args.path) as f:
-    temp = next(f).strip().split("\t")
-    start = temp.index('change') + 1
-    xlabels = temp[start:start+TIMEPOINTS]
+    header = next(f).strip().split("\t")
+    start = header.index('change') + 1
+    xlabels = header[start:start+TIMEPOINTS]
+    header.insert(start, 'cluster')
+
     for l in f:
         total += 1;
         a = l.strip().split("\t")
-        if(a[start-1] == '1'):
-            data.append([np.mean([float(y) for y in x.split(",")]) for x in a[start:start+TIMEPOINTS]])
-            transcripts.append(a[:start])
-            #print(a[1])
+        #if(a[start-1] == '1'):
+        expr = [[float(y) for y in x.split(",")] for x in a[start:start+TIMEPOINTS]]
+        #print(expr)
+        if( (max([min(x) for x in expr]) >= args.minexpr and all([ max(x) < 2*min(x) + args.minexpr  for x in expr])) or a[start-1] == '1'):
+            mean_expr = [np.mean(x) for x in expr]
+            if(max(mean_expr[:start]) and max(mean_expr[start:])):
+                data.append(mean_expr)
+                transcripts.append(a)
 
-data_before = [transform(x[:SPLIT_POS]) for x in data]
-data_after = [transform(x[SPLIT_POS:]) for x in data]
+
+#data = np.array(data);
+norma = np.sum(np.array(data), axis=0)/1000000;
+converted_data = [];
+for datum in data:
+    converted_data.append([ x[0]/x[1] for x in zip(datum, norma)])
+data = converted_data  
+
+
+data_before = [transform(x[:start]) for x in data]
+data_after = [transform(x[start:]) for x in data]
 data_all = [transform(x) for x in data]
 
-#print(data_before)
-
+knum = int(len(data)/args.size) + 1
 data_list = [data_before, data_after, data_all]
 split_list = []
 for data in data_list:
-    kmeans = KMeans(n_clusters=args.knum, random_state=0).fit(data)
+    kmeans = KMeans(n_clusters=knum, random_state=0).fit(data)
     split_list.append(split_by_kmeans(data, kmeans.labels_));
 
-
+print("\t".join(header));
+for tr, c in zip(transcripts, kmeans.labels_):
+    tr.insert(start, str(c+1))
+    print("\t".join(tr));
         
 sys.stderr.write("\ntotal transcripts: %d\ndifferential transcripts: %d\n\n" % (total, len(data)))
 
-print(split_list[0])
 
 if(not args.outdir):
     sys.exit()
-
 
 
 for c_type in CLUSTER_TYPES:
     path = os.path.join(args.outdir, c_type)
     if(not os.path.exists(path)):
         os.mkdir(path)
+    else:
+        for f in glob.glob('%s/*' % path):
+            os.remove(f)
+        
+        
+        
 #############################################################################################################################
 ### DRAWING SECTION ###
 fontsize = 24
@@ -99,9 +120,9 @@ def draw_trend(data, name, cl_type, xlabels):
     if(cl_type == 'all'):
         xlabs = xlabels
     if(cl_type == 'before'):
-        xlabs = xlabels[:SPLIT_POS]
+        xlabs = xlabels[:start]
     if(cl_type == 'after'):
-        xlabs = xlabels[SPLIT_POS:]
+        xlabs = xlabels[start:]
         
     fig, ax = plt.subplots(figsize=(16,9))
     plt.tight_layout(rect=[0.1, 0.1, 0.9, 0.9])

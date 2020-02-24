@@ -18,13 +18,14 @@ parser = argparse.ArgumentParser(description='Generates artificial chap-seq read
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to genome, fasta file");
 parser.add_argument('--peaks', nargs = '?', required=True, type = str, help = "Path to the real peaks, gff format");
 
-parser.add_argument('--numreads', nargs = '?', default=1000000, type = int, help = "Number of reads to generate");
+parser.add_argument('--numreads', nargs = '?', default=400000, type = int, help = "Number of reads to generate");
+parser.add_argument('--numsamples', nargs = '?', default=50, type = int, help = "Number of samples to generate");
 parser.add_argument('--length', nargs = '?', default=300, type = int, help = "Length of the generated reads");
 parser.add_argument('--bs_width', nargs = '?', default=20, type = int, help = "Size of bindig sites");
 parser.add_argument('--fraction_peaks', nargs = '?', default=0.2, type = int, help = "Fraction of reads which belong to peaks");
 
 parser.add_argument('--mincov', nargs = '?', default=3, type = float, help = "Minimum strength of the peaks");
-#parser.add_argument('--num_peaks', nargs = '?', default=300, type = int, help = "Number of peaks to generate");
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args();
 
 def get_nonpeak_read(genome, chrnames, chrsizes, length):
@@ -51,7 +52,7 @@ def get_peak_read(peak, length, genome):
 
 def convert(a):
     header = "|".join([ str(x) for x in a[1:]])
-    return "@%s\n%s" % (header, a[0])
+    return ">%s\n%s" % (header, a[0])
 
 
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, 'fasta'));
@@ -67,12 +68,14 @@ for peak in peaks:
     
 peaks_probabilites = [float(x.attrs['topcoverage']) for x in peaks]
 
-for _ in range(args.numreads):
-    if(random.random()<=args.fraction_peaks):
-        selected_peak = select_by_probability(peaks, peaks_probabilites);
-        print(convert(get_peak_read(selected_peak, args.length, genome))) 
-    else:
-        print(convert(get_nonpeak_read(genome, chrnames, chrsizes, args.length)))
+for sc in range(args.numsamples):
+    with open(os.path.join(args.outdir, "sample_%d.fa" % (sc+1)), 'w') as f:
+        for _ in range(args.numreads):
+            if(random.random()<=args.fraction_peaks):
+                selected_peak = select_by_probability(peaks, peaks_probabilites);
+                f.write("%s\n" %  convert(get_peak_read(selected_peak, args.length, genome)) ) 
+            else:
+                f.write("%s\n" % convert(get_nonpeak_read(genome, chrnames, chrsizes, args.length)) )
 
 
 
