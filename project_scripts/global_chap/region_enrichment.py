@@ -21,11 +21,14 @@ parser.add_argument('--end', nargs = '?', required=True, type = int, help = "End
 parser.add_argument('--length', nargs = '?', required=True, type = int, help = "Length of the genome");
 args = parser.parse_args();
 
-region = BedTool([Interval('chr1', args.start, args.end, strand = '+', score = '0', name = 'region')])
+#region = BedTool([Interval('chr1', args.start, args.end, strand = '+', score = '0', name = 'region')])
+
+
 peakfiles = [os.path.join(args.path, f) for f in listdir(args.path) if isfile(os.path.join(args.path, f)) and 'annotated' in f]
 
-def get_enrichment(peakfile, region, length):
+def get_enrichment(peakfile, length):
     peaks = BedTool(peakfile)
+    region = BedTool([Interval(peaks[0].chrom, args.start, args.end, strand = '+', score = '0', name = 'region')])
     ilen = len(region[0])
     olen = length - ilen
     outside = [float(x.attrs['topcoverage']) for x in peaks.intersect(region, f = 0.5, v = True)]
@@ -52,4 +55,4 @@ def get_enrichment(peakfile, region, length):
     
 print("experiment\tnumber peaks inside\tnumber peaks outside\ttotal peak coverage inside\ttotal peak coverage outside\tmean peak coverage inside\tmean peak coverage outside\tmedian peak coverage inside\tmedian peak coverage outside\tpeak density ration\tpeak total coverage ratio\toverrepresented")
 for peakfile in peakfiles:
-    print(get_enrichment(peakfile, region, args.length));
+    print(get_enrichment(peakfile, args.length));

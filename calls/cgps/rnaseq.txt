@@ -5,18 +5,26 @@
 # differential expression 
 
 python ~/afp/rnaseq/compile_expression.py transcripts/ --order 0h 05h 1h 3h 6h 9h 24h --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff > differential/compiled.gff
+
 cd differential/
 python ~/afp/project_scripts/cgps/rnaseq/split_by_phage.py compiled.gff --outdir .
 python ~/afp/rnaseq/differential_multi.py nonphage.gff > nonphage/assigned.tsv
 python ~/afp/rnaseq/differential_multi.py phage.gff > phage/assigned.tsv
+
 cd phage
-python ~/afp/rnaseq/html_differetnial_genes.py assigned.tsv --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --name phage  --outdir html --ucsc philipchick/coryne --genes_dir .
+python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py  assigned.tsv --minexpr 50 --size 12 --outdir ../plots/trends/phage/ --format png > clustered.tsv
+
 cd ../nonphage/
-python ~/afp/rnaseq/html_differetnial_genes.py assigned.tsv --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --name phage  --outdir html --ucsc philipchick/coryne --genes_dir .
+python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py  assigned.tsv --minexpr 50 --size 100 --outdir ../plots/trends/nonphage/ --format png > clustered.tsv
+
 cd ..
+python ~/afp/project_scripts/cgps/rnaseq/html_clustered_differential.py nonphage/clustered.tsv --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --num_conditions 7  --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --outdir report/nonphage/trends_html/ --ucsc philipchick/cgps_rnaseq_dus --genes_dir ../../genes_html --plot_dir ../trends_plots/all
+python ~/afp/project_scripts/cgps/rnaseq/html_clustered_differential.py phage/clustered.tsv --annotation ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --num_conditions 7  --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --outdir report/phage/trends_html/ --ucsc philipchick/cgps_rnaseq_dus --genes_dir ../../genes_html --plot_dir ../trends_plots/all
+python ~/afp/project_scripts/cgps/rnaseq/html_total_clustered.py nonphage/clustered.tsv  --css ~/afp/afbio/html/table.css  --html_dir trends_html --plot_dir trends_plots/all > report/nonphage/trends.html
+python ~/afp/project_scripts/cgps/rnaseq/html_total_clustered.py phage/clustered.tsv  --css ~/afp/afbio/html/table.css  --html_dir trends_html --plot_dir trends_plots/all > report/phage/trends.html
+
 python ~/afp/project_scripts/cgps/rnaseq/total_expression_dynamics.py nonphage.gff phage.gff  --plot plots/expression_dynamics_total.png
-python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py nonphage/assigned.tsv  --knum 8 --outdir plots/trends/nonphage/ --format png
-python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py phage/assigned.tsv  --knum 8 --outdir plots/trends/phage/ --format png
+
 
 
 # TSS differential expression
