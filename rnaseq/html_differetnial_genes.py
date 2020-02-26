@@ -65,8 +65,7 @@ with doc.head:
 header.insert(1, 'UCSC')
 with doc:
     p(strong(_title))
-    input(type="text", id="inp1", onkeyup='my_search(1, "inp1", "myTable")', placeholder="Search for a genesymbol..")
-    #input(type="text", id="inp2", onkeyup='my_search(2, "inp2", "myTable")', placeholder="Search for a geneID..")
+    input(type="text", id="inp1", onkeyup='my_search(0, "inp1", "myTable")', placeholder="Search for a genesymbol..")
     with table(id = "myTable") as _table:
         _tr = tr()
         _tr.add([ th(x) for x in header])

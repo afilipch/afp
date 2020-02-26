@@ -137,7 +137,10 @@ def makefile_local(m_input,  control):
     # Convert mappings into coverage
     input_files = output_files;
     output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-    script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous}, inp = input_files)
+    arguments = {'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous};
+    if(args.paired):
+        arguments['--paired'] = True;
+    script = get_script('get_sam_stat_paired.py', mapping_package, arguments=arguments, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));   
     
     # Merge coverages coming from different strands
@@ -165,7 +168,10 @@ def makefile_local(m_input,  control):
         # Convert mappings into coverage
         input_files = output_files;
         output_files = [os.path.join('coverage', '%s.control.%s.bed' % (name, x)) for x in ['minus', 'plus']]
-        script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir_control, '--outcoverage': 'coverage'}, inp = input_files)
+        arguments = {'--genome': args.genome, '--outstat': log_dir_control, '--outcoverage': 'coverage'};
+        if(args.paired):
+            arguments['--paired'] = True;
+        script = get_script('get_sam_stat_paired.py', mapping_package, arguments=arguments, inp = input_files)
         mlist.append(dependence(input_files, output_files, script));   
         
         # Merge coverages coming from different strands
@@ -225,7 +231,10 @@ def makefile_local(m_input,  control):
     input_files = [log_dir, output_files]
     output_files = os.path.join(log_dir, 'report.html');
     final_files.append(output_files)
-    script = get_script('log_html.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css')}, inp = input_files[0], out = output_files)
+    arguments = {'--css': os.path.join(html_lib, 'table.css')}
+    if(args.paired):
+        arguments['--paired'] = True;
+    script = get_script('log_html.py', chap_package, arguments=arguments, inp = input_files[0], out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
     
