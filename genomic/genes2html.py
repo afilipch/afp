@@ -9,13 +9,15 @@ from pybedtools import BedTool;
 import dominate
 from dominate.tags import *
 from dominate.util import raw
-
+from Bio import SeqIO
 
 from afbio.html.methods import add_ucsc
 from math import log
+from afbio.pybedtools_af import interval2seq
 
 parser = argparse.ArgumentParser(description='Generates html pages for the provided annotated genes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the annotated genes");
+parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome");
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
@@ -62,7 +64,10 @@ genes = []
 for key, data in groups:
     genes.append(transcripts2gene(list(data)));
     
-    
+genome = SeqIO.to_dict(SeqIO.parse(args.genome, 'fasta'))
+#interval2seq(interval, reference)
+#print(genes[0]);
+#sys.exit()
 #for gene in genes:
     #print(gene)
     #print()
@@ -103,6 +108,9 @@ for gene in genes:
             with p():
                 b("Phage:")
                 raw("\t%s" % PHAGE[gene.attrs.get('phage')] )
+            with p():
+                b("Protein seq:")
+                raw("\t%s" %  interval2seq(interval, genome))
                 
 
                     

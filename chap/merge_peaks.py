@@ -6,16 +6,29 @@ import argparse
 import os
 import sys
 
+from pybedtools import BedTool
 
 from afbio.pybedtools_af import construct_gff_interval
 from afbio.peaks import find_shared_peaks, shared_peaks_stat_to_string
+from afbio.generators import get_only_files
 
 
 parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments/replicates');
-parser.add_argument('path', metavar = 'N', nargs = '+', type = str, help = "Path to all the detected peaks");
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the directory with all the detected peaks");
 parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maximal distance allowed between top positions of the peaks");
+parser.add_argument('--replicates', nargs = '?', default=False, const=True, type = bool, help = "If set, provided peaks are considered as having replicates");
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 args = parser.parse_args();
 
+
+def gather_files(files):
+    res = defaultdict(list)
+    for f in files:
+        name = "_".join(os.path(basename).split("_")[:-1])
+        res[name].append(f);
+    return res;
+    
+    
 
 def print_compiled(compiled, size):
     temp_d = dict(compiled)
@@ -32,7 +45,7 @@ def print_compiled(compiled, size):
     
     consensus = construct_gff_interval(compiled[0].chrom, start, stop, 'consensus', score='0', strand='.', source='.', frame='.', attrs=[('Name', pos), ('topcoverage', topcoverage), ('area_coverage', area_coverage)])
     
-    sys.stdout.write(str(consensus))
+    return str(consensus)
     
     #print(consensus)
     #for cs in compiled_processed:
@@ -77,33 +90,17 @@ def run_accross_chromosome(bedtools_chr, maxd, size):
 ### Execution Section
 
 
+files = [x for x in get_only_files(args.path) if "annotated" in x]
+blist = [BedTool(x) for x in files]
+size = len(blist)
+res_total, stat_total_counts = find_shared_peaks(blist, args.maxd)
+fname = 'all'
 
-
-#chr2bedtools = defaultdict(list);
-#for intervals in [BedTool(x) for x in args.path]:
-
-    #temp_d = defaultdict(list);
-    #for interval in intervals:
-        #temp_d[interval.chrom].append((interval));
-    #for chrom, local_intervals in temp_d.items():
-        ##print(len(local_intervals))
-        #chr2bedtools[chrom].append(local_intervals)
-        
-#bedtools_list = [x[1] for x in sorted(chr2bedtools.items(), key = lambda x: x[0])]
-
-
-#stat_total_counts = []
-#for bedtools_chr in bedtools_list:
-    #size = len(bedtools_chr)
-    #stat_counts = run_accross_chromosome(bedtools_chr, args.maxd, size)
-    #stat_total_counts.extend(stat_counts);
-
-size = len(args.path)
-res_total, stat_total_counts = find_shared_peaks(args.path, args.maxd)
-
-print("# %s" % ",".join([os.path.basename(x).split(".")[0] for x in args.path]))
-for compiled in res_total:
-    print_compiled(compiled, size)
+with open(os.path.join(args.outdir, "%s.gff" % fname), 'w') as f:
+    
+    f.write("# %s\n" % ",".join([os.path.basename(x).split(".")[0] for x in files]))
+    for compiled in res_total:
+        f.write(print_compiled(compiled, size))
     
 
 sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))

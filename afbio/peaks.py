@@ -181,11 +181,11 @@ def _find_shared_peaks_chromosome(bedtools_chr, maxd):
 
 
 
-def find_shared_peaks(multipath, maxd):
+def find_shared_peaks(blist, maxd):
     #Split by chromosome
     
     chr2bedtools = defaultdict(list);
-    for intervals in [BedTool(x) for x in multipath]:
+    for intervals in blist:
 
         temp_d = defaultdict(list);
         for interval in intervals:

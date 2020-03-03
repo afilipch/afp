@@ -49,9 +49,13 @@ def annotate_position(peak, tr_dict, maxd, inside):
     if(abs(mindistance) <= maxd):
         gtype = 'upstream'
         atg = mindistance + float(transcript.attrs['distance'])
-        attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs.get('cg', 'unknown')), ("tss", mindistance), ("atg", atg), ("gtype", gtype), ("anti", "1")]
+        old_attrs = peak.attrs
+        new_attrs = [("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs.get('cg', 'unknown')), ("tss", mindistance), ("atg", atg), ("gtype", gtype), ("anti", "1")]
+        for k, v in new_attrs:
+            old_attrs[k] = v;
+        
 
-        return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs)
+        return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=old_attrs.items())
     
     else:
         return None
