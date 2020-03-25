@@ -1,0 +1,4 @@
+python ~/afp/project_scripts/strp/select_human_transmembrane.py human/uniprot.fasta --table human/protein_intestine_membrane/proteins.tsv > human/protein_intestine_membrane/proteins.fa
+makeblastdb -in human/protein_intestine_membrane/proteins.fa -dbtype prot -parse_seqids -out human/protein_intestine_membrane/blast_db/db
+blastp -query microbiome/test.fa -db human/protein_intestine_membrane/blast_db/db -task blastp -num_threads 3 -evalue 1e-60 -out blast_out/test.xml -outfmt 5
+python ~/afp/project_scripts/strp/get_best_blastp_hits.py blast_out/test.xml --css ~/afp/afbio/html/table.css --outdir html/test --identity 0.4

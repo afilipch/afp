@@ -14,13 +14,13 @@ def gauss_second_kernel(sigma=1.0, truncate=4.0, steps=100000):
     return res;
 
 
-def down_stair_kernel(up=1, down=-1, steps=1000):
+def down_stair_kernel(up=1, down=-1, steps=1000, truncate=4.0):
     return [up]*(steps) + [down]*(steps)
 
-def up_stair_kernel(up=1, down=-1, steps=1000):
+def up_stair_kernel(up=1, down=-1, steps=1000, truncate=4.0):
     return [down]*(steps//2) + [up]*(steps//2)
 
-def triangle_kernel(steps=10000):
+def triangle_kernel(steps=10000, truncate=4.0):
     s1 = [1-x for x in np.linspace(0,2,num=steps)]
     s2 = [-1+x for x in np.linspace(0,2,num=steps)]
     return s1+s2

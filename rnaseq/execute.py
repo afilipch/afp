@@ -138,12 +138,26 @@ def makefile_local(m_input,  control):
     # Convert mappings into coverage
     input_files = output_files;
     output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['plus', 'minus']]
-    script = get_script('get_sam_stat_paired.py', mapping_package, arguments={'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous}, inp = input_files)
+    arguments = {'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous}
+    if(args.collapsed):
+        arguments['--collapsed'] = 'True'
+    script = get_script('get_sam_stat_paired.py', mapping_package, arguments=arguments, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));   
+    
+    
+    # UCSC coverage
+    for of, strand in zip(output_files, ['plus', 'minus']):
+        trackopts = "\'track name=%s_%s description=\"CHAP seq genomic coverage for sample %s\" %s\'" % (name, strand, name, " ".join(["%s=%s" % x for x in coverage_settings['trackopts'].items()]))
+        input_files = of
+        output_files = os.path.join('ucsc', '%s_%s.bedgraph' % (name, strand))
+        final_files.append(output_files)
+        script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));
+    
     
     # Assign TPM and annotate the mappings
     
-    input_files = output_files;
+    input_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['plus', 'minus']]
     output_files = os.path.join('transcripts', '%s.gff' % name)
     covpath = output_files
     script = get_script('assign_mappings.py', mapping_package, inp = input_files, out = output_files, arguments={'--transcripts': args.annotation, '--logdir': log_dir} )
@@ -151,12 +165,12 @@ def makefile_local(m_input,  control):
             
 
 
-    
+    final_files.append(output_files)
     #Get header and cleaner for the makefile
-    mlist.insert(0, get_header(output_files))
+    mlist.insert(0, get_header(final_files))
     mlist.append('clean:\n\techo "nothing to clean."\n');
 
-    return "\n\n".join(mlist), name, [output_files]
+    return "\n\n".join(mlist), name, final_files
 
 
 #######################################################################################################################

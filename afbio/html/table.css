@@ -28,6 +28,12 @@ input {
   margin-bottom: 12px; /* Add some space below the input */
 }
 
+
+font {
+    font-family: monospace;
+    font-size: 20px;
+    white-space:pre
+}
 /*.row {
   display: flex;
 }

@@ -23,6 +23,7 @@ parser.add_argument('--outstat', nargs = '?', required=True, type = str, help = 
 parser.add_argument('--outcoverage', nargs = '?', required=True, type = str, help = "Path to a folder for coverage");
 parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If set ambiguous mappings will be also counted");
 parser.add_argument('--paired', nargs = '?', default=False, const=True, type = bool, help = "has to be set if the mappings arise from paired-end reads");
+parser.add_argument('--collapsed', nargs = '?', default=False, const=True, type = bool, help = "has to be set to count for collapsed reads");
 #parser.add_argument('--multimappers', nargs = '?', default='', type = str, help = "Path to store multimapped reads. If not set, multimapped reads are discrarded");
 args = parser.parse_args();
 
@@ -91,6 +92,8 @@ for readmappings in generator_mappings(samfile):
     stat_list = readmappings2stat(readmappings, get_stat, args.ambiguous)
     if(stat_list):
         count = 1.0/len(stat_list)
+        if(args.collapsed):
+            count *= int(readmappings[0].query_name.split("_")[-1][1:] )
         for chrom, start, end, score, strand in stat_list:
             coverage[chrom, strand][start:end] += count;
             fragment_lengthes[end-start] += count;
