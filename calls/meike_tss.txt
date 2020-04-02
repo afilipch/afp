@@ -1,0 +1,3 @@
+python ~/afp/rnaseq/tss/convert_tss_2_bed.py tss_cov/cgwt_tss.plus.bed --strand + > tss_bed/cgwt_tss.bed
+python ~/afp/rnaseq/tss/convert_tss_2_bed.py tss_cov/cgwt_tss.minus.bed --strand - >> tss_bed/cgwt_tss.bed
+python ~/afp/rnaseq/tss/explore_tss.py tss_bed/cgwt_tss.bed  --genome ~/genomic/coryne/nc_003450_3/genome.fasta --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --outdir tss_plots/selected/ --selected ../../data/selected_genes.txt --format svg > selected_tss.tsv

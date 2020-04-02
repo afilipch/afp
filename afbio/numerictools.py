@@ -22,18 +22,18 @@ def select_by_probability(items, probabilities):
     
 
 
-def cdf(iterable):
-    from collections import Counter
-    '''Constructs cdf from given iterable with numeric entries
-            iterable iterable: entries have to be of numeric type
-    Returns list: each element is a tuple of two elements. 1st is any value from iterable, 2nd number of entries in iterable, which are less or equal to the 1st element.
-    '''
-    l = [];
-    sum = 0;
-    for k, v in sorted(Counter(iterable).items(), key = lambda x: x[0]):
-        sum+=v;
-        l.append((k, sum));
-    return l;
+#def cdf(iterable):
+    #from collections import Counter
+    #'''Constructs cdf from given iterable with numeric entries
+            #iterable iterable: entries have to be of numeric type
+    #Returns list: each element is a tuple of two elements. 1st is any value from iterable, 2nd number of entries in iterable, which are less or equal to the 1st element.
+    #'''
+    #l = [];
+    #sum = 0;
+    #for k, v in sorted(Counter(iterable).items(), key = lambda x: x[0]):
+        #sum+=v;
+        #l.append((k, sum));
+    #return l;
 
 
 

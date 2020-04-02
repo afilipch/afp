@@ -4,7 +4,7 @@ bowtie:
     very-sensitive-local: ['True', '--']
     rfg: ['9,5', '--']
     rdg: ['9,5', '--']
-    score-min: ['L,40,1.2', '--'] 
+    score-min: ['L,20,1.4', '--'] 
     k: ['8', '-']
     no-unal: ['True', '--']
     no-mixed: ['True', '--']
