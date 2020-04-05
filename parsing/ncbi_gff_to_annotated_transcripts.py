@@ -36,7 +36,7 @@ for ga in gene_annotation_list:
             else:
                 distance = parent.stop - ga.stop
             distance = 0;
-            aint = construct_gff_interval(parent.chrom, parent.start, parent.stop, 'gene', score='0', strand=parent.strand, source='ncbi_af', frame='.', attrs=[('ID', parent.attrs['Name']), ('genesymbol', parent.attrs.get('gene', 'None')), ('annotation', ga.attrs.get('Note', 'None')), ('product', ga.attrs.get('product', 'None')), ('cds', "%d:%d" % (ga.start+1, ga.stop)), ('tss_variants', '1'), ('distance', str(distance))  ] );
+            aint = construct_gff_interval(parent.chrom, parent.start, parent.stop, 'gene', score='0', strand=parent.strand, source='ncbi_af', frame='.', attrs=[('ID', parent.attrs['ID']), ('genesymbol', parent.attrs.get('gene', 'None')), ('annotation', ga.attrs.get('Note', 'None')), ('product', ga.attrs.get('product', 'None')), ('cds', "%d:%d" % (ga.start+1, ga.stop)), ('tss_variants', '1'), ('distance', str(distance))  ] );
             
             sys.stdout.write(str(aint));
 

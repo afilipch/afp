@@ -8,7 +8,7 @@ from pybedtools import BedTool
 
 from afbio.html.methods import add_ucsc
 
-parser = argparse.ArgumentParser(description='Creates html table for the annotated ChIP binding peaks');
+parser = argparse.ArgumentParser(description='Creates html table for the differentially expressed genes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the assigned differential table, tsv format");
 parser.add_argument('--annotation', nargs = '?', required=True, type = str, help = "Path to the gene annotation");
 parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
@@ -35,12 +35,17 @@ with open(args.path) as f:
         data.append(l.strip().split("\t"))
         
 data.sort(key = lambda x: float(x[2]), reverse=True)
+
+print(data[0])
 gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
 
 
 def annotate(d, gene2annotation):
     gene = gene2annotation[d[0]]
-    return [gene.attrs['genesymbol']] + d[1:], gene
+    name = gene.attrs['genesymbol']
+    if(name == 'None'):
+        name = gene.attrs['ID']
+    return [name] + d[1:], gene
     
 
 

@@ -1,0 +1,14 @@
+#! /usr/local/anaconda3/bin/python
+'''Converts ncbi gff annotation to annotated transcripts (custom annotation format)'''
+
+import argparse
+import os
+import sys
+
+from pybedtools import BedTool
+
+from afbio.pybedtools_af import construct_gff_interval;
+
+parser = argparse.ArgumentParser(description='Converts ncbi gff annotation to annotated transcripts (custom annotation format)');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the ncbi annotation file, gff format");
+args = parser.parse_args();

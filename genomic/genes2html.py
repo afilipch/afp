@@ -104,13 +104,13 @@ for gene in genes:
                 raw("\t%s" % gene.attrs['annotation'] )
             with p():
                 b("Function:")
-                raw("\t%s" % gene.attrs['function'] )
+                raw("\t%s" % gene.attrs.get('function', gene.attrs.get('product', 'None')) )
             with p():
                 b("Phage:")
                 raw("\t%s" % PHAGE[gene.attrs.get('phage')] )
             with p():
-                b("Protein seq:")
-                raw("\t%s" %  interval2seq(interval, genome))
+                b("Sequence:")
+                raw("\t%s" %  interval2seq(gene, genome))
                 
 
                     

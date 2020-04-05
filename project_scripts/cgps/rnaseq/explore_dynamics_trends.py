@@ -22,11 +22,12 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--minexpr', nargs = '?', default = 50, type = float,  help = "Minimum allowed expression in TPM");
 #parser.add_argument('--knum', nargs = '?', default = 6, type = int,  help = "Number of k-means clusters");
 parser.add_argument('--size', nargs = '?', default = 50, type = int,  help = "Number of elements per cluster");
+parser.add_argument('--take', nargs = 2, required = True, type = int,  help = "Number of timepoints for before and after clustering");
 parser.add_argument('--outdir', nargs = '?', type = str, help = "Path to the output plot folder");
 parser.add_argument('--format', default = 'png', nargs = '?', type = str, help = "Plot format");
 args = parser.parse_args()
 
-TIMEPOINTS = 7;
+TIMEPOINTS = sum(args.take);
 CLUSTER_TYPES = ['before', 'after', 'all']
 
 
@@ -58,12 +59,11 @@ with open(args.path) as f:
     for l in f:
         total += 1;
         a = l.strip().split("\t")
-        #if(a[start-1] == '1'):
         expr = [[float(y) for y in x.split(",")] for x in a[start:start+TIMEPOINTS]]
         #print(expr)
         if( (max([min(x) for x in expr]) >= args.minexpr and all([ max(x) < 2*min(x) + args.minexpr  for x in expr])) or a[start-1] == '1'):
             mean_expr = [np.mean(x) for x in expr]
-            if(max(mean_expr[:start]) and max(mean_expr[start:])):
+            if(max(mean_expr[:args.take[0]]) and max(mean_expr[args.take[0]:])):
                 data.append(mean_expr)
                 transcripts.append(a)
 
@@ -76,8 +76,8 @@ for datum in data:
 data = converted_data  
 
 
-data_before = [transform(x[:start]) for x in data]
-data_after = [transform(x[start:]) for x in data]
+data_before = [transform(x[:args.take[0]]) for x in data]
+data_after = [transform(x[args.take[0]:]) for x in data]
 data_all = [transform(x) for x in data]
 
 knum = int(len(data)/args.size) + 1

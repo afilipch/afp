@@ -34,6 +34,7 @@ def line2score(l):
     
 gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
 
+#print(gene2annotation)
 
 label2file = defaultdict(list)
 for f in sorted(get_only_files(args.path)):
@@ -76,12 +77,17 @@ for gene in genes:
 print("#labels=%s" % ",".join(labels))
 table_list.sort(key = lambda x: line2score(x), reverse = True)
 for l in table_list:
-    transcript = gene2annotation[l[0][5:]]
-    s_list = []
-    for a in l[1:]:
-        s_list.append([str(x) for x in a])
-    transcript.attrs['expression'] = ":".join([",".join(x) for x in s_list])
-    sys.stdout.write(str(transcript))
+    name = l[0]
+    transcript = gene2annotation.get(name)
+    if(transcript):
+        s_list = []
+        for a in l[1:]:
+            s_list.append([str(x) for x in a])
+        transcript.attrs['expression'] = ":".join([",".join(x) for x in s_list])
+        sys.stdout.write(str(transcript))
+    else:
+        sys.stderr.write("%s transcript was not found\n" % name)
+    
     
 
 #with open(os.path.join(args.outdir, 'table.raw.tsv'), 'w') as f:

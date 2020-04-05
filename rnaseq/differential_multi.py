@@ -24,14 +24,6 @@ parser.add_argument('--minfold', nargs = '?', default=2.0, type = float, help = 
 args = parser.parse_args()
 
 
-#with open(args.path) as f:
-    #labels, gene_expression_list = yaml.full_load(f)
-    
-#print(labels)
-#print(gene_expression_list[0])
-
-#sys.exit()
-
 
 def gene_total_score(mylist):
     return max([x[1] for x in mylist]), np.argmax([x[1] for x in mylist])
@@ -109,6 +101,7 @@ with open(args.path) as f:
     labels = next(f).strip().split("=")[1].split(",")
 
 
+
 transcripts = BedTool(args.path)
 expr_list = [[] for i in range(len(labels))];
 
@@ -117,6 +110,8 @@ for transcript in transcripts:
     for c, s in enumerate(transcript.attrs['expression'].split(":")):
         expr_list[c].append([float(x) for x in s.split(",")])
 
+#print(len(expr_list[0]));
+#sys.exit()
 
 labels_combinations = list(combinations(labels, 2))
 fold_list = [[] for x in labels_combinations]
@@ -131,7 +126,7 @@ header = ['gene', 'pair', 'score', 'change'] + labels + ["|".join(x) for x in la
 print("\t".join(header))
 for c, transcript in enumerate(transcripts):
     fold_list_local = [x[c] for x in fold_list]
-    #print(len(fold_list_local), len(labels_combinations))
+    ##print(len(fold_list_local), len(labels_combinations))
     score, pos = gene_total_score(fold_list_local)
     label_pair = labels_combinations[pos]
     change = fold_list_local[pos][2]

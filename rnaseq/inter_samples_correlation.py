@@ -32,14 +32,15 @@ else:
     log_string = ''
 
 ### Read input data
-start, end = 4, 11
+START = 4
 with open(args.path) as f:
-    labels = next(f).strip().split("\t")[start:end]
+    labels = [x for x in next(f).strip().split("\t")[START:] if "|" not in x]
+    stop = START + len(labels)
     expr_list = [[] for i in range(len(labels))];
     #print(expr_list)
     for l in f:
-        a = l.strip().split("\t")[start:end]
-        print(a)
+        a = [x for x in l.strip().split("\t")[START:stop]]
+        #print(a)
         for c, el in enumerate(a):
             expr_list[c].append([ float(x) for x in el.split(",")])
             
@@ -60,7 +61,7 @@ for sample, label in zip(expr_list, labels):
             
         pc, pval = pearsonr(a1, a2)
         #pc, pval = spearmanr(a1, a2)
-        print("%s\t%d\t%d\t%1.3f" % (label, c1+1, c2+1, pc))
+        #print("%s\t%d\t%d\t%1.3f" % (label, c1+1, c2+1, pc))
     #print()
 print()
 
@@ -100,7 +101,7 @@ timestamps = labels
 cmap="RdPu"
 
 fig, ax = plt.subplots()
-plt.tight_layout(rect=[0.05, 0, 1, 0.95])
+plt.tight_layout(rect=[0.05, 0, 1, 0.90])
 im = ax.imshow(cmatrix, cmap=cmap, vmax=1)
 cbar = ax.figure.colorbar(im, ax=ax, cmap=cmap)
 cbar.ax.set_ylabel("Pearson correlation%s" % log_string, rotation=-90, va="bottom")
