@@ -1,0 +1,48 @@
+# DIFFERENTIAL
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2
+python ~/afp/rnaseq/compile_expression.py transcripts/ --order inf_18h inf_23h inf_46h inf_68h wt_18h wt_46h --annotation ~/genomic/streptomyces_coelicolor/phage/sco2/transcripts.merged.gff > differential/compiled.gff
+
+cd results
+python ~/afp/rnaseq/differential_multi.py compiled.gff > assigned.tsv
+
+
+# TRENDS
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2/results/
+python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py  assigned.tsv --minexpr 100 --size 12 --outdir plots/ --format png --take 2 2 > trends/clustered.tsv
+
+cd trends
+python ~/afp/project_scripts/cgps/rnaseq/html_clustered_differential.py clustered.tsv --annotation ~/genomic/streptomyces_coelicolor/phage/sco2/transcripts.merged.gff --num_conditions 4  --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --outdir local --ucsc philipchick/strep_sco2 --genes_dir ../../genes_html --plot_dir ../plots/
+python ~/afp/project_scripts/cgps/rnaseq/html_total_clustered.py clustered.tsv  --css ~/afp/afbio/html/table.css  --html_dir local --plot_dir plots/ > trends.html
+
+
+
+# GENERAL PLOTS/
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2/results/
+
+grep -v phiSco2_Bielefeld compiled.gff  > nonphage.gff
+python ~/afp/project_scripts/cgps/rnaseq/total_expression_dynamics.py nonphage.gff sco2/compiled.gff  --plot general_overview_plots/expression_dynamics_total.png
+python ~/afp/rnaseq/inter_samples_correlation.py assigned.tsv --plot general_overview_plots/correlation.png
+
+
+# WT vs INF
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2/results/
+python ~/afp/project_scripts/larissa_strep/differential_wt_vs_inf.py compiled.gff > inf_vs_wt/assigned.tsv
+
+
+
+
+# ONLY PHAGE GENES ANALYSES
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2/results/
+
+head compiled.gff -n 1 > sco2/compiled.gff
+grep phiSco2_Bielefeld compiled.gff  >> sco2/compiled.gff
+
+FOLDER: /home/andrei/work/larissa_strep/projects/strep_sco2/results/sco2/
+
+python ~/afp/rnaseq/differential_multi.py compiled.gff > assigned.tsv
+python ~/afp/project_scripts/cgps/rnaseq/explore_dynamics_trends.py  assigned.tsv --minexpr 100 --size 12 --outdir plots/ --format png --take 2 2 > clustered.tsv
+
+cd trends
+python ~/afp/project_scripts/cgps/rnaseq/html_total_clustered.py clustered.tsv  --css ~/afp/afbio/html/table.css  --html_dir local --plot_dir plots/ > trends.html
+python ~/afp/project_scripts/cgps/rnaseq/html_clustered_differential.py clustered.tsv --annotation ~/genomic/streptomyces_coelicolor/phage/sco2/transcripts.merged.gff --num_conditions 4  --css ~/afp/afbio/html/table.css --js ~/afp/afbio/html/table.js --outdir local --ucsc philipchick/strep_sco2 --genes_dir ../../../genes_html --plot_dir ../plots/
+

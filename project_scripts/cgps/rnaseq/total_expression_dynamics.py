@@ -23,9 +23,15 @@ args = parser.parse_args()
 
 data = [];
 for path in args.path:
+    temp = [];
     with open(path) as f:
         xlabels = next(f).strip().split("=")[1].split(",")
-        data.append(  np.array([float(x) for x in next(f).strip().split("=")[1].split(",")])/1000000  )
+    temp = [0 for _ in xlabels];
+    for interval in BedTool(path):
+        for c, el in enumerate(interval.attrs['expression'].split(':')):
+            temp[c] += np.mean([float(x) for x in el.split(",")])
+    data.append(temp);
+        #data.append(  np.array([float(x) for x in next(f).strip().split("=")[1].split(",")])/1000000  )
         
 
 

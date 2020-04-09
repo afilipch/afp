@@ -28,9 +28,13 @@ args = parser.parse_args();
 
 
     
-def annotate(datum, gene2annotation):
-    gene = gene2annotation[datum[0]]
-    return [gene.attrs['genesymbol']] + datum[1:], gene
+def annotate(d, gene2annotation):
+    gene = gene2annotation[d[0]]
+    name = gene.attrs['genesymbol']
+    if(name == 'None'):
+        name = gene.attrs['ID']
+    ann = gene.attrs['product']
+    return [name, ann] + d[1:], gene
 
 
 gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
@@ -41,6 +45,8 @@ with open(args.path) as f:
     cl_index = header.index('cluster')
     header = header[:cl_index+args.num_conditions+1]
     header.insert(1, 'UCSC')
+    header.insert(2, 'product')
+    
     for l in f:
         a = l.strip().split("\t")[:cl_index+args.num_conditions+1]
         data_dict[int(a[cl_index])].append(a)

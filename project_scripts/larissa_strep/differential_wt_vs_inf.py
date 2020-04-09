@@ -110,13 +110,16 @@ for transcript in transcripts:
     for c, s in enumerate(transcript.attrs['expression'].split(":")):
         expr_list[c].append([float(x) for x in s.split(",")])
 
-#print(len(expr_list[0]));
-#sys.exit()
+#print(expr_list[0]);
+labels_combinations =  ('inf_18h', 'wt_18h') , ('inf_46h', 'wt_46h')
+custom_combinations = [labels.index(x) for x in labels_combinations[0]] , [labels.index(x) for x in labels_combinations[1]]
 
-labels_combinations = list(combinations(labels, 2))
-fold_list = [[] for x in labels_combinations]
-for c, (elist1, elist2) in enumerate(combinations(expr_list, 2)):
-    for expr1, expr2 in zip(elist1, elist2):
+
+
+#labels_combinations = list(combinations(labels, 2))
+fold_list = [[] for x in custom_combinations]
+for c, (c1, c2) in enumerate(custom_combinations):
+    for expr1, expr2 in zip(expr_list[c1], expr_list[c2]):
         fold, change = compare(expr1, expr2, args.minfold, args.minexpr)
         score = assign_score(expr1, expr2, fold, change)
         fold_list[c].append((fold, score, change))
@@ -130,7 +133,8 @@ for c, transcript in enumerate(transcripts):
     score, pos = gene_total_score(fold_list_local)
     label_pair = labels_combinations[pos]
     change = fold_list_local[pos][2]
-    a = [transcript.attrs['ID'], "|".join(label_pair), "%d" % score, str(change)] + transcript.attrs['expression'].split(":") + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
-    print("\t".join(a))
+    if(change):
+        a = [transcript.attrs['ID'], "|".join(label_pair), "%d" % score, str(change)] + transcript.attrs['expression'].split(":") + ["%1.2f" % x[0] if x[0] != 'NaN' else 'NaN' for x in fold_list_local]
+        print("\t".join(a))
     
 

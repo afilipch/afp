@@ -45,7 +45,8 @@ def annotate(d, gene2annotation):
     name = gene.attrs['genesymbol']
     if(name == 'None'):
         name = gene.attrs['ID']
-    return [name] + d[1:], gene
+    ann = gene.attrs['product']
+    return [name, ann] + d[1:], gene
     
 
 
@@ -66,8 +67,8 @@ with open(args.js) as f:
 with doc.head:
     style(_style)
 
-
 header.insert(1, 'UCSC')
+header.insert(2, 'product')
 with doc:
     p(strong(_title))
     input(type="text", id="inp1", onkeyup='my_search(0, "inp1", "myTable")', placeholder="Search for a genesymbol..")
