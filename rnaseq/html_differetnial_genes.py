@@ -6,7 +6,7 @@ from dominate.tags import *
 from dominate.util import raw
 from pybedtools import BedTool
 
-from afbio.html.methods import add_ucsc
+from afbio.html.methods import add_ucsc, ucsc_convert_chromosomes
 
 parser = argparse.ArgumentParser(description='Creates html table for the differentially expressed genes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the assigned differential table, tsv format");
@@ -36,8 +36,9 @@ with open(args.path) as f:
         
 data.sort(key = lambda x: float(x[2]), reverse=True)
 
-print(data[0])
-gene2annotation = dict([ (x.attrs['ID'], x) for x in BedTool(args.annotation)])
+annotation = BedTool(args.annotation)
+chrom_dict = ucsc_convert_chromosomes(annotation)
+gene2annotation = dict([ (x.attrs['ID'], x) for x in annotation])
 
 
 def annotate(d, gene2annotation):
@@ -79,7 +80,7 @@ with doc:
             newd, gene = annotate(d, gene2annotation)
             with tr():
                 td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, gene.name + ".html"), newd[0]) ))
-                td(raw('<a href=%s target="_blank">link</a>' % add_ucsc(gene, args.ucsc) ))
+                td(raw('<a href=%s target="_blank">link</a>' % add_ucsc(gene, args.ucsc, chr_dict=chrom_dict) ))
                 for el in newd[1:]:
                     a = el.split(",")
                     if(len(a)==1):

@@ -17,7 +17,7 @@ from afbio.sequencetools import coverage2dict
 parser = argparse.ArgumentParser(description='Annotates the mappings (bed format) and outputs their distribution among genomic feature types (coding genes, rRNA, tRNA and so on)');
 parser.add_argument('path', metavar = 'N', nargs = 2, type = str, help = "Path to the coverage files (plus and minus), bed format");
 parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the ncbi annotation, gff format");
-parser.add_argument('--stranded', nargs = '?', default=False, const = True, type = str, help = "If set the RNA-seq data are supposed to be stranded");
+#parser.add_argument('--stranded', nargs = '?', default=False, const = True, type = str, help = "If set the RNA-seq data are supposed to be stranded");
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--logdir', nargs = '?', required=True, type = str, help = "Path to the log output directory");
 args = parser.parse_args();
@@ -34,6 +34,7 @@ for d in covdict.values():
 transcripts = BedTool(args.transcripts)
 transcript_types = defaultdict(int);
 transcript2cov = {}
+rrna2cov = defaultdict(int)
 for transcript in transcripts:
     if(transcript[2] in ['gene', 'pseudogene']):
         local_cov = covdict[transcript.strand][transcript.chrom][transcript.start:transcript.stop]
@@ -41,13 +42,24 @@ for transcript in transcripts:
         transcript_types[transcript_type] += sum(local_cov)
         if(transcript_type == 'protein_coding'):
             transcript2cov[transcript.name] = np.mean(local_cov);
-        
+    elif(transcript[2] == 'rRNA'):
+        local_cov = covdict[transcript.strand][transcript.chrom][transcript.start:transcript.stop]
+        rrna2cov[transcript.attrs['product'].split(" ")[0]] += sum(local_cov);
+        #print(transcript)
+
+
+#print(sum(transcript2cov.values()))
+#print(rrna2cov)
+#print(transcript_types)
+#sys.exit()
+            
+
+
         
 scaling_factor = sum([x for x in transcript2cov.values()])/(10**6)
 for transcript in transcripts:
     if(transcript[2] in ['gene', 'pseudogene'] and transcript.attrs['gene_biotype'] == 'protein_coding'): 
         transcript.attrs['tpm'] = '%1.3f' % (transcript2cov[transcript.name]/scaling_factor)
-        #print(transcript.attrs['tpm'])
         sys.stdout.write(str(transcript))
         
         
@@ -56,10 +68,20 @@ transcript_types = dict([(x[0], x[1]*100/norma) for x in transcript_types.items(
 transcript_types['intergenic'] = 100 - sum(transcript_types.values())
 
 
-
-
-for kv in transcript_types.items():
-    sys.stderr.write("%s:\t%1.2f%%\n" % kv)
+scaling_factor = sum(rrna2cov.values())/(100)
+rrna2cov = [(x[0], x[1]/scaling_factor) for x in rrna2cov.items()]
+rrna2cov.sort(key =  lambda x: int(x[0][:-1]))
+with open(os.path.join(args.logdir, 'log.txt'), 'a') as f:
+    f.write("###types\n")
+    for kv in transcript_types.items():
+        f.write("%s\t%1.2f\n" % kv)
+        sys.stderr.write("%s:\t%1.2f%%\n" % kv)
+    sys.stderr.write("\nrRNA types\n")
+    for kv in rrna2cov:
+        sys.stderr.write("%s:\t%1.2f%%\n" % kv)
+        f.write("#%s\t%1.2f\n" % kv)
+        
+    
 
 
 ### Plot a piechart

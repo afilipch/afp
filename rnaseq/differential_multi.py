@@ -92,6 +92,10 @@ def compare(expr1, expr2, minfold, minexpr):
             fold, change = 'NaN', 2*simple_check_change(expr2, minexpr)
         else:
             fold, change = 'NaN', 0
+            
+    if(change == 2):
+        fold = 1/float(fold)
+        
     return fold, change
         
     

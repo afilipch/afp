@@ -58,8 +58,7 @@ parser.add_argument('--threads', nargs = '?', default = 1, type = int, help = "N
 
 args = parser.parse_args();
 
-#print(sys.argv)
-#sys.exit()
+
 
 #######################################################################################################################
 # Process input options
@@ -69,7 +68,7 @@ peak_filtering_settings = conf['peak_filtering_%s' % args.filtering]
 #######################################################################################################################
 # Set paths' constants
 
-chap_package = os.path.join(args.package, 'chap')
+rnaseq_package = os.path.join(args.package, 'rnaseq')
 mapping_package = os.path.join(args.package, 'mapping')
 html_lib = os.path.join(args.package, 'afbio', 'html')
 
@@ -112,6 +111,7 @@ with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
 def makefile_local(m_input,  control):
     #print(m_input)
     #print(control)
+    todel = []
     final_files = []
     mlist=[];
     if(type(m_input) == str):
@@ -131,6 +131,7 @@ def makefile_local(m_input,  control):
     # Map reads with bowtie2
     input_files = m_input
     output_files = os.path.join('sam', '%s.sam' % name)
+    todel.append(output_files)
     script = bs_list
     #print(script)
     mlist.append(dependence(input_files, output_files, script))
@@ -168,7 +169,8 @@ def makefile_local(m_input,  control):
     final_files.append(output_files)
     #Get header and cleaner for the makefile
     mlist.insert(0, get_header(final_files))
-    mlist.append('clean:\n\techo "nothing to clean."\n');
+    todel = "\n\t".join( ['rm %s' % x  for x in todel] )
+    mlist.append('clean:\n\t%s\n' % todel);
 
     return "\n\n".join(mlist), name, final_files
 
@@ -185,7 +187,7 @@ else:
     input_list = args.reads;
 if(args.paired):
     input_list = [(input_list[2*x], input_list[2*x+1]) for x in range(int(len(input_list)/2))]
-#print(input_list);
+
 
     
     
@@ -204,14 +206,10 @@ else:
         
             
 
-
-#input_list = [x for x in input_list]
-#sys.stderr.write("%s\n" % input_list)
-sample_names = [os.path.basename(x[0]).split(".")[0] for x in input_list]
-
-
-
- 
+if(args.paired):
+    sample_names = [os.path.basename(x[0]).split(".")[0] for x in input_list]
+else:
+    sample_names = [os.path.basename(x).split(".")[0] for x in input_list]
 mf_names = []
 all_outputs = []
 for m_input, control in zip(input_list, control_list):
@@ -222,8 +220,10 @@ for m_input, control in zip(input_list, control_list):
     with open(os.path.join(project_path, 'makefiles', mname), 'w') as mf:
         mf.write(local_makefile);
 
+
+
 #######################################################################################################################  
-# Create Master makefile
+### Create Master makefile ###
 
 
 mlist = [];
@@ -239,35 +239,27 @@ for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     mlist.append(dependence(input_files, output_files, script))
 
 if(args.multi):
-    all_coverages = [x[0] for x in all_outputs]
-    all_peaks = [x[1] for x in all_outputs]
+    #all_coverages = [x[0] for x in all_outputs]
+    #all_peaks = [x[1] for x in all_outputs]
+    
+    #input_files = mf_names
+    #output_files = os.path.join('regions', 'regions.gff')
+    #script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
+    #mlist.append(dependence(input_files, output_files, script));
+    
+    #input_files = output_files
+    #output_files = os.path.join('log', 'peaks_correlation.svg')
+    #script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
+    #mlist.append(dependence(input_files, output_files, script));
+    
     
     input_files = mf_names
-    output_files = os.path.join('regions', 'regions.gff')
-    script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    input_files = output_files
-    output_files = os.path.join('log', 'peaks_correlation.svg')
-    script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
-    mlist.append(dependence(input_files, output_files, script));
-    
-    
-    input_files = output_files
     output_files = os.path.join('log', 'report.html')
     final_files.append(output_files)
-    script = get_script('log_html_total.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names}, inp = 'log', out = output_files)
+    script = get_script('log_html_total.py', rnaseq_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names}, inp = 'log', out = output_files)
     mlist.append(dependence(input_files, output_files, script))    
     
-    #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff
-    
-    ###CHANGE
-    if(False and args.annotation):
-        input_files = os.path.join('regions', 'regions.gff')
-        output_files = os.path.join('regions', 'regions.annotated.gff')
-        final_files.append(output_files)
-        script = get_script('annotate.py', chap_package, arguments={'--maxshift': region_settings['maxshift'], '--flen': region_settings['flank'], '--genes': args.annotation}, inp = input_files, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));    
+   
 
         
         

@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt;
 
 parser = argparse.ArgumentParser(description='Explore evolution of the peaks over time');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the consensus regions, gff file");
-parser.add_argument('--names', nargs = '+', required=True, type = str, help = "Names of the provided samples, must be of the same order as values in \'zscores\' attribute of the provided consensus regions");
-parser.add_argument('--min-zscore', nargs = '?', default=1, type = float, help = "Minimum required zscore for both peaks to calculate correlation between them");
+parser.add_argument('--names', nargs = '+', type = str, help = "Names of the provided samples, must be of the same order as values in \'zscores\' attribute of the provided consensus regions");
+#parser.add_argument('--min-zscore', nargs = '?', default=1, type = float, help = "Minimum required zscore for both peaks to calculate correlation between them");
 parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Path to the output directory for the plots");
 parser.add_argument('--selection', nargs = '+', default=None, type = int, help = "If set only the selected (by number starting from one) sets of peak will be correlated");
 #parser.add_argument('--genes', nargs = '?', default='', type = str, help = "Path to the selected genes to check for correlation, tsv format");
@@ -29,23 +29,17 @@ args = parser.parse_args();
 
 ### Read input data
 
-LOWEST_ZSCORE = -10;
+#LOWEST_ZSCORE = -10;
 COV_THRESHOLD = 0;
-min_zscore = max(args.min_zscore, LOWEST_ZSCORE); 
+#min_zscore = max(args.min_zscore, LOWEST_ZSCORE); 
 regions = BedTool(args.path);
 
 
-def get_local_coverages(region, min_zscore):
-    temp_covs = [float(x) if x != 'None' else -1 for x in region.attrs['maxcov'].split(",")]
-    temp_zscores = [float(x) if x != 'None' else LOWEST_ZSCORE for x in region.attrs['zscores'].split(",")]
-    covs = [x[0] if x[1] >= min_zscore else -1 for x in zip(temp_covs, temp_zscores)]
-    #print(covs)
-    #print(region)
-    #print("________________________________________________________________________________________________________")
-    return covs;
+def get_local_coverages(region):
+    return [float(x) if x != 'None' else -1 for x in region.attrs['topcoverage'].split(",")]
 
 
-maxcovs = np.array([get_local_coverages(region, min_zscore) for region in regions])
+maxcovs = np.array([get_local_coverages(region) for region in regions])
 if(args.selection):
     selection = [x-1 for x in args.selection]
     maxcovs = maxcovs[:,selection]
@@ -77,8 +71,10 @@ for i, j in combinations(range(maxcovs.shape[1]), 2):
 
 ######################################################################################
 ### Draw a heatmap
-
-timestamps = args.names
+if(args.names):
+    timestamps = args.names
+else:
+    timestamps = [str(x) for x in range(1, cmatrix.shape[1]+1)]
 cmap="RdPu"
 
 fig, ax = plt.subplots()
