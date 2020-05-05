@@ -5,16 +5,12 @@
 import argparse
 import sys
 import os
-from os import listdir
-from os.path import isfile
+from collections import defaultdict
 
 from afbio.config.config import load_config;
 from afbio.makefiles import dependence, get_header, get_bowtie_call, get_script, get_bowtie_help
 
-##Read configuration
-#conf = load_config('chipchap')
-#bowtie_settings = conf['bowtie'];
-
+from afbio.generators import get_only_files
 
 
 parser = argparse.ArgumentParser(description='Creates makefile for the reads preprocessing')#, formatter_class = argparse.RawTextHelpFormatter);
@@ -26,56 +22,34 @@ parser.add_argument('--paired', nargs = '?', default = False, const=True, type =
 parser.add_argument('--table', nargs = '?', type = os.path.abspath, help = "Path to the table which connects the read file names to the meaningful names");
 args = parser.parse_args();
 
-def split_into_pairs(path, paired):
-    onlyfiles = [os.path.join(path, x) for x in listdir(path) if isfile(os.path.join(path, x))]
-    onlyfiles.sort();
-    if(paired):
-        return list(zip(onlyfiles[::2], onlyfiles[1::2]))
-    else:
-        return onlyfiles
 
-def get_names(table):
-    names = {}
-    with open(table) as f:
-        for l in f:
-            a = l.strip().split("\t")
-            names[a[0]] = a[1];
-    return names
+
+
 
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
-def makefile_local(mates, names, outdir, paired):
+def makefile_local(name2sample, outdir, paired):
     final_files = []
     mlist=[];
     
     if(paired):
-        for pair in mates:
-            rname = os.path.basename(pair[0])
-            name = names.get(rname)
-            if(name):
-                input_files = pair
-                output_files = [os.path.join(outdir, "%s.%d.fastq" % (name, x)) for x in (1,2)]
-                script = get_script('collapse_paired.py', seq_package, arguments={'--output': os.path.join(outdir,name)}, inp = input_files)
-                mlist.append(dependence(input_files, output_files, script));  
-                final_files.extend(output_files)
-            else:
-                sys.stderr.write("\n%s name is not found in the provided table\n" % rname)
+        for name, pair in name2sample.items():
+            input_files = pair
+            output_files = [os.path.join(outdir, "%s.%d.fastq" % (name, x)) for x in (1,2)]
+            script = get_script('collapse_paired.py', seq_package, arguments={'--output': os.path.join(outdir,name)}, inp = input_files)
+            mlist.append(dependence(input_files, output_files, script));  
+            final_files.extend(output_files)
+
     else:
-        for sample in mates:
-            name = names.get(os.path.basename(sample))
-            if(name):
-                input_files = sample
-                output_files = os.path.join(outdir, "%s.fastq" % name)
-                script = get_script('collapse_single.py', seq_package, arguments={'--output': os.path.join(outdir, name)}, inp = input_files)
-                mlist.append(dependence(input_files, output_files, script));  
-                final_files.append(output_files)
-            else:
-                sys.stderr.write("\n%s name is not found in the provided table\n" % sample)            
+        for sample, pair in name2sample.items():
+            input_files = sample
+            output_files = os.path.join(outdir, "%s.fastq" % name)
+            script = get_script('collapse_single.py', seq_package, arguments={'--output': os.path.join(outdir, name)}, inp = input_files)
+            mlist.append(dependence(input_files, output_files, script));  
+            final_files.append(output_files)
+           
     
-    #Get header and cleaner for the makefile
-    #sys.stderr.write("\n" + " ".join([x for x in final_files if 'control' not in x]) + "\n\n")
-    #sys.stderr.write(" ".join([x for x in final_files if 'control' in x]) + "\n\n")
     mlist.insert(0, get_header(final_files))
     mlist.append('clean:\n\techo "nothing to clean."\n');
 
@@ -83,9 +57,29 @@ def makefile_local(mates, names, outdir, paired):
 
 
 seq_package = os.path.join(args.package, 'sequencing')
-mates = split_into_pairs(args.path, args.paired)
-#print(mates)
-names = get_names(args.table)
-#print(names)
-print(makefile_local(mates, names, args.outdir, args.paired))
 
+sample2name = {}
+with open(args.table) as f:
+    for l in f:
+        a = l.strip().split("\t")
+        sample2name[a[0]] = a[1:];
+
+if(args.paired):
+    name2sample = defaultdict(lambda: [None]*2)
+    for sample in get_only_files(args.path):
+        a = sample2name.get(os.path.basename(sample))
+        if(a):
+            name2sample[a[0]][int(a[1])-1] = sample
+        else:
+            sys.stderr.write("Sample %s was not found in the provided table\n" % sample)
+else:
+    name2sample = {}
+    for sample in get_only_files(args.path):
+        a = sample2name.get(os.path.basename(sample))
+        if(a):
+            name2sample[a[0]] = sample
+        else:
+            sys.stderr.write("Sample %s was not found in the provided table\n" % sample)
+
+
+print(makefile_local(name2sample, args.outdir, args.paired))

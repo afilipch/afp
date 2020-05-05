@@ -26,8 +26,6 @@ args = parser.parse_args();
 if(os.stat(args.path).st_size == 0):
     sys.exit("###annotate\nInput file is empty, empty output is produced\n")
 
-STUB_TR = construct_gff_interval( "unknown", 0, 2, 'fake', score='0', strand="+", source='ff', frame='.', attrs= [("Name", "fake"), ("annotation", "None"), ("function", "None"), ("genesymbol", "fake"), ("distance", "NaN")])
-
 
 
 def annotate_position(peak, tr_dict, maxd, inside):

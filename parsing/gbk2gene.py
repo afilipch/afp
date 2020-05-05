@@ -1,5 +1,5 @@
 #! /usr/local/anaconda3/bin/python
-'''Exctracts coding sequences from ncbi gff annotation file'''
+'''Converts genebank file into gff'''
 
 import argparse
 import os
@@ -10,8 +10,8 @@ from Bio import SeqIO
 
 from afbio.pybedtools_af import construct_gff_interval;
 
-parser = argparse.ArgumentParser(description='Exctracts coding sequences from ncbi gff annotation file');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the ncbi annotation file, gff format");
+parser = argparse.ArgumentParser(description='Converts genebank file into gff');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genbank file");
 args = parser.parse_args();
 
 strand_dict = {1 : '+', -1 : '-'}

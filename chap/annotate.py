@@ -39,20 +39,45 @@ STUB_TR = construct_gff_interval( "unknown", 0, 2, 'fake', score='0', strand="+"
 
 ### Annotate genomically ###
 
+
+def get_anti(tr, mind):
+    return [('anti_gene', tr.name), ('anti_genesymbol', tr.attrs['genesymbol']),  ('anti_tss', str(mind))]
+    
+
 def annotate_position(peak, tr_dict, maxd, inside):
     center = int(peak.name)
-    if(peak.chrom not in tr_dict):
+    tr_plus, tr_minus = tr_dict.get(peak.chrom, [None, None])
+    if(not tr_plus):
         mindistance = float("NaN")
         gtype = "intergenic"
         transcript = STUB_TR
+        anti = get_anti(STUB_TR, 'NaN')
     
     else:
-        center = int(peak.name)
-        tr_plus, tr_minus = tr_dict[peak.chrom]
-        distances = [(tr, tr.start-center) for tr in tr_plus]
-        distances.extend([(tr, center-tr.stop+1) for tr in tr_minus]);
-        distances = [x for x in distances if x[1]>-1*inside]
-        transcript, mindistance = min(distances, key = lambda x: abs(x[1]))
+        distances_plus = [(tr, tr.start-center) for tr in tr_plus]
+        distances_minus = [(tr, center-tr.stop+1) for tr in tr_minus]
+       
+        distances_plus = [x for x in distances_plus if x[1]>-1*inside]
+        distances_minus = [x for x in distances_minus if x[1]>-1*inside]
+        
+        if(distances_plus):
+            transcript_plus, mindistance_plus = min(distances_plus, key = lambda x: abs(x[1]))
+        else:
+            transcript_plus, mindistance_plus = STUB_TR, float("inf")
+            
+        if(distances_minus):
+            transcript_minus, mindistance_minus = min(distances_minus, key = lambda x: abs(x[1]))
+        else:
+            transcript_minus, mindistance_minus = STUB_TR, float("inf")
+            
+            
+        if(mindistance_plus < mindistance_minus):
+            transcript, mindistance = transcript_plus, mindistance_plus
+            anti = get_anti(transcript_minus, mindistance_minus)
+        else:
+            transcript, mindistance = transcript_minus, mindistance_minus
+            anti = get_anti(transcript_plus, mindistance_plus)
+        
 
         if(abs(mindistance) <= maxd):
             gtype = 'upstream'
@@ -74,9 +99,7 @@ def annotate_position(peak, tr_dict, maxd, inside):
     if(str(atg) != "nan"):
         atg = "%d" % atg
     
-       
-    #attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
-    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs.get('cg', 'unknown')), ("tss", mindistance), ("atg", atg), ("gtype", gtype)]
+    attrs = [("Name", peak.name), ("annotation", transcript.attrs['annotation']), ("function", transcript.attrs['function']), ("gene", transcript.name), ("genesymbol", transcript.attrs['genesymbol']), ("cg", transcript.attrs.get('cg', 'unknown')), ("tss", mindistance), ("atg", atg), ("gtype", gtype)] + anti
     
     if(if_bed):
         return construct_gff_interval( peak.chrom, peak.start, peak.stop, 'annotated', score=peak.score, strand=transcript.strand, source='annotate.py', frame='.', attrs=attrs )

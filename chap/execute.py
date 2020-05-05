@@ -111,6 +111,7 @@ with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
 def makefile_local(m_input,  control):
     #print(m_input)
     #print(control)
+    todel = []
     final_files = []
     mlist=[];
     if(type(m_input) == str):
@@ -130,6 +131,7 @@ def makefile_local(m_input,  control):
     # Map reads with bowtie2
     input_files = m_input
     output_files = os.path.join('sam', '%s.sam' % name)
+    todel.append(output_files)
     script = bs_list
     #print(script)
     mlist.append(dependence(input_files, output_files, script))
@@ -161,6 +163,7 @@ def makefile_local(m_input,  control):
         # Map reads with bowtie2
         input_files = control
         output_files = os.path.join('sam', '%s.control.sam' % name)
+        todel.append(output_files)
         bs_list = ['echo', '\'###bowtie_control\'', '>>', log_file, ';'] + bs_list + ['2>> >(tee -a %s>&2)' % log_file]
         script = bs_list
         mlist.append(dependence(input_files, output_files, script))
@@ -208,7 +211,6 @@ def makefile_local(m_input,  control):
     mlist.append(dependence(input_files, output_files, script));
     
     # Create UCSC tracks
-    # python ~/afp/mapping/coverage2bedgraph.py coverage/time10_neb.normalized.bed --trackopts 'track name=time10_neb description="CHAP coverage for time10_neb sample" color=60,150,237 type=bedGraph visibility=2' --multiplier 100 --convert > todel.bedgrap
     trackopts = "\'track name=%s description=\"CHAP seq genomic coverage for sample %s\" %s\'" % (name, name, " ".join(["%s=%s" % x for x in coverage_settings['trackopts'].items()]))
     input_files = output_files
     output_files = os.path.join('ucsc', '%s.bedgraph' % name)
@@ -248,7 +250,8 @@ def makefile_local(m_input,  control):
     
     #Get header and cleaner for the makefile
     mlist.insert(0, get_header(final_files))
-    mlist.append('clean:\n\techo "nothing to clean."\n');
+    todel = "\n\t".join( ['rm %s' % x  for x in todel] )
+    mlist.append('clean:\n\t%s\n' % todel);
 
     return "\n\n".join(mlist), name, [normed_covpath] + [filtered_path]
 
@@ -319,17 +322,15 @@ for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     mlist.append(dependence(input_files, output_files, script))
 
 if(args.multi):
-    all_coverages = [x[0] for x in all_outputs]
-    all_peaks = [x[1] for x in all_outputs]
     
     input_files = mf_names
-    output_files = os.path.join('regions', 'regions.gff')
-    script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
+    output_files = os.path.join('regions', 'all.gff')
+    script = get_script('merge_peaks.py', chap_package, arguments={'--maxd': region_settings['max_distance'], '--outdir': 'regions'}, inp = 'peaks')
     mlist.append(dependence(input_files, output_files, script));
     
     input_files = output_files
     output_files = os.path.join('log', 'peaks_correlation.svg')
-    script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
+    script = get_script('correlate_peaks.py', chap_package, arguments={'--names': sample_names, '--plot': output_files}, inp = input_files)
     mlist.append(dependence(input_files, output_files, script));
     
     
@@ -339,17 +340,20 @@ if(args.multi):
     script = get_script('log_html_total.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names}, inp = 'log', out = output_files)
     mlist.append(dependence(input_files, output_files, script))    
     
-    #python /home/a_filipchyk/afp/chap/annotate.py regions/regions.gff --maxshift 50 --flen 50  --genes /home/a_filipchyk/genomic_data/coryne/annotation/improved_annotation_2017.gff
-    
-    ###CHANGE
-    if(False and args.annotation):
-        input_files = os.path.join('regions', 'regions.gff')
-        output_files = os.path.join('regions', 'regions.annotated.gff')
-        final_files.append(output_files)
-        script = get_script('annotate.py', chap_package, arguments={'--maxshift': region_settings['maxshift'], '--flen': region_settings['flank'], '--genes': args.annotation}, inp = input_files, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));    
 
+    if(args.annotation):
+        input_files = os.path.join('regions', 'all.gff')
+        output_files = os.path.join('regions', 'annotated.gff')
+        script = get_script('annotate.py', chap_package, arguments={'--maxd': annotation_settings['max_distance'], '--inside': annotation_settings['inside'], '--transcripts': args.annotation, '--outdir': 'log'}, inp = input_files, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));   
         
+        input_files = output_files
+        output_files = os.path.join('regions', 'annotated.tsv')
+        final_files.append(output_files)
+        script = get_script('annotated2tsv.py', chap_package, inp = input_files, out = output_files)
+        mlist.append(dependence(input_files, output_files, script));
+
+      
         
 #makefile header    
 mlist.insert(0, get_header(final_files, phonyfiles=mf_names))

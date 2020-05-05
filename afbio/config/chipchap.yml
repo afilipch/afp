@@ -4,7 +4,7 @@ bowtie:
     very-sensitive-local: ['True', '--']
     rfg: ['9,5', '--']
     rdg: ['9,5', '--']
-    score-min: ['L,20,1.4', '--'] 
+    score-min: ['L,32,1.4', '--'] 
     k: ['8', '-']
     no-unal: ['True', '--']
     no-mixed: ['True', '--']
@@ -32,10 +32,10 @@ coverage:
         visibility: '2'
     multiplier: 100
 annotation:
-    maxshift: 50
-    flen: 50
+    max_distance: 600
+    inside: 150
 region:
-    flank: 40
+    max_distance: 40
     zscore: 5
     min-zscore: 2
     maxshift: 40

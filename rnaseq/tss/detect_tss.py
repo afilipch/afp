@@ -26,11 +26,11 @@ args = parser.parse_args();
 
 def get_stat_single(s):
     if(s.is_reverse):
-        strand = '+'
-        start = s.reference_start
-    else:
         strand = '-'
         start = s.reference_end
+    else:
+        strand = '+'
+        start = s.reference_start
     chrom = s.reference_name
     return chrom, start, strand 
     
