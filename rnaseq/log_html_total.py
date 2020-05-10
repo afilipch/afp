@@ -16,6 +16,8 @@ parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
 parser.add_argument('--name', nargs = '?', default="experiment", type = str, help = "Name of the experiment");
 parser.add_argument('--order', nargs = '+', required=True, type = str, help = "Names of the provided samples in the order to be reported");
+parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Output directory");
+
 #parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
 args = parser.parse_args();
 
@@ -96,10 +98,21 @@ names = [os.path.basename(x) for x in folders]
 
 
 
-
+def convert_to_table(names, data):
+    res = [];
+    for name, sample_data in zip(names, data):
+        a = []
+        a.append(name)
+        a.append(str(sample_data['bowtie'][0]))
+        a.append("%1.1f" % (sample_data['bowtie'][1]/sample_data['bowtie'][0]*100))
+        a.append("%1.1f" % (sample_data['bowtie'][2]/sample_data['bowtie'][0]*100))
+        for label in types_labels:
+            a.append(str(sample_data['types'][label]))   
+        res.append(tuple(a));
+    return res;
         
 
-
+my_table = convert_to_table(names, data)
 
 
 
@@ -116,28 +129,23 @@ with open(args.js) as f:
     
 with doc:
     p(strong("Mapping Results"))
-    #input(type="text", id="myInput", onkeyup="my_search(4)", placeholder="Filter relation to CgpS..")
-    #input(type="number", id="myInputGreater", onkeyup="my_filter_greater(6)", placeholder="Filter AT content greater than..")
     with table(id = "myTable") as _table:
         _tr = tr()
         _tr.add([ th(x[1][0], onclick='sortTable(%d, %d)' % (x[0], x[1][1])) for x in enumerate(zip(labels, dtypes))  ])
-        for name, sample_data in zip(names, data):
-            #print(sample_data['bowtie'])
+        for el in my_table:
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(name, "report.html"), name) )) 
-                td(sample_data['bowtie'][0])
-                td("%1.1f" % (sample_data['bowtie'][1]/sample_data['bowtie'][0]*100))
-                td("%1.1f" % (sample_data['bowtie'][2]/sample_data['bowtie'][0]*100))
-                for label in types_labels:
-                    td(sample_data['types'][label])
-
-
-
-
-                
+                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(el[0], "report.html"), el[0]) )) 
+                for my_cell in el[1:]:
+                    td(my_cell)     
     _script = script(raw(plain_script), type='text/javascript')
 
-print(doc.render());
+with open(os.path.join(args.outdir, 'report.html'), 'w') as f:
+    f.write(doc.render());
+    
+with open(os.path.join(args.outdir, 'report.tsv'), 'w') as f:
+    f.write("\t".join(labels) + "\n");
+    for el in my_table:
+        f.write("\t".join(el) + "\n");
 
 
 

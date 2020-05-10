@@ -23,9 +23,17 @@ parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plots Format");
 args = parser.parse_args();
 
+#transcripts = dict([ (x.attrs['cg'][2:], x) for x in BedTool(args.transcripts) ])
+
+transcripts = {}
+for interval in BedTool(args.transcripts):
+    interval.start, interval.stop = [int(x) for x in interval.attrs['cds'].split(':')]
+    transcripts[interval.attrs['cg'][2:]] = interval
 
 
-transcripts = dict([ (x.attrs['cg'][2:], x) for x in BedTool(args.transcripts) ])
+
+
+
 tss_dict = defaultdict(list);
 for x in BedTool(args.path):
     tss_dict[(x.chrom, x.strand)].append( (x.start, float(x.score)) )
@@ -102,21 +110,27 @@ def draw_transcript_tss(group, local_tss, x_range, strand, name):
 print("\t".join(["gene block", "chrom", "start", "stop", "strand", "tss position:intensity"]))   
 for group in selected:
     if(all(group)):
-        strand = group[0].strand
-        chrom = group[0].chrom
-        if(strand == '+'):
-            x_range = range(min([x.start for x in group]) - args.upstream, max([x.stop for x in group]) + 10)
-        else:
-            x_range = range(min([x.start for x in group]) - 10, max([x.stop for x in group]) + args.upstream)
-        
-        local_tss = [x for x in tss_dict[(chrom, strand)] if x[0] in x_range]
         temp = [int(x.attrs['cg'][2:]) for x in group]
         if(len(temp)>1):
             name = "cg%d_%d" % (min(temp), max(temp))
         else: 
             name = group[0].attrs['cg']
+            
+        strand = group[0].strand
+        chrom = group[0].chrom
+        if(strand == '+'):
+            x_range = range(min([x.start for x in group]) - args.upstream, max([x.stop for x in group]) + 10)
+        else:
+            #if(name == 'cg2843_2846'):
+                #print(max([x.stop for x in group]) + args.upstream)
+            x_range = range(min([x.start for x in group]) - 10, max([x.stop for x in group]) + args.upstream)
+        
+        local_tss = [x for x in tss_dict[(chrom, strand)] if x[0] in x_range]
+
                 
         draw_transcript_tss(group, local_tss, x_range, strand, name)
+        #if(name == 'cg2843_2846'):
+            #print(local_tss)
         
         
         start = min([x.start for x in group])
