@@ -17,7 +17,7 @@ from afbio.pybedtools_af import construct_gff_interval, read_comments
 
 parser = argparse.ArgumentParser(description='Annotates the discovered peaks');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genomic regions, gff format");
-parser.add_argument('--transcripts', nargs = '?', required=True, type = str, help = "Path to the transcripts regions, gff format");
+parser.add_argument('--transcripts', nargs = '?',  type = str, help = "Path to the transcripts regions, gff format");
 parser.add_argument('--coverage', nargs = '?', type = str, help = "Path to the coverage track, bed format")
 parser.add_argument('--inside', nargs = '?', default=200, type = int, help = "Maximum allowed distance to TSS while inside a gene");
 parser.add_argument('--maxd', nargs = '?', default=800, type = int, help = "Maximum allowed distance to TSS");
@@ -111,19 +111,17 @@ def annotate_position(peak, tr_dict, maxd, inside):
 
 
 
-tr_dict = defaultdict(lambda: ([], []))
-
-for tr in BedTool(args.transcripts):
-    if(tr.strand == '+'):
-        tr_dict[tr.chrom][0].append(tr)
-    else:
-        tr_dict[tr.chrom][1].append(tr)
-
-
 comments = read_comments(args.path);
 peaks = BedTool(args.path);
-if_bed = args.path.split(".")[-1] == 'bed' 
+if_bed = args.path.split(".")[-1] == 'bed'
+tr_dict = defaultdict(lambda: ([], []))
 
+if(args.transcripts):
+    for tr in BedTool(args.transcripts):
+        if(tr.strand == '+'):
+            tr_dict[tr.chrom][0].append(tr)
+        else:
+            tr_dict[tr.chrom][1].append(tr) 
 
 annpeaks = [annotate_position(peak, tr_dict, args.maxd, args.inside) for peak in peaks]
 
@@ -145,11 +143,9 @@ def calculate_area_coverage(peak, coverage, covlimit, foldlimit):
         
 if(args.coverage):
     cov_dict = coverage2dict(args.coverage)
-    #cov_list = [coverage2dict(args.coverage, cpos=x) for x in range(3, 7)]
     for peak in annpeaks:
         peak.attrs['area_coverage'] = "%1.1f" % calculate_area_coverage(peak, cov_dict[peak.chrom], args.covlimit, args.foldlimit)
         peak.attrs['topcoverage'] =  "%1.3f" % cov_dict[peak.chrom][int(peak.name)]
-        #peak.attrs['other_coverage'] =  ",".join(["%1.3f" % x[peak.chrom][int(peak.name)] for x in cov_list])
         
 
 
@@ -162,6 +158,9 @@ for comment in comments:
 for peak in annpeaks:
     sys.stdout.write(str(peak));
     
+  
+  
+  
   
   
 ######################################################################################################
@@ -185,21 +184,47 @@ def fix_density(ax, bins, scale):
 ### Plot a piechart of target types ###
 if(not args.outdir):
     sys.exit()
+    
+if(args.transcripts):
+    fontsize = 16
+    colors = ['gold', 'lightblue', 'gray'];
+    labels = ['upstream', 'gene', 'intergenic']
+    sizes = Counter([x.attrs['gtype'] for x in annpeaks])
+    sizes = [sizes[x] for x in labels]
+    labels = ["%s (%d)" % x for x in zip(labels, sizes)]
 
-fontsize = 16
-colors = ['gold', 'lightblue', 'gray'];
-labels = ['upstream', 'gene', 'intergenic']
-sizes = Counter([x.attrs['gtype'] for x in annpeaks])
-sizes = [sizes[x] for x in labels]
-labels = ["%s (%d)" % x for x in zip(labels, sizes)]
+    plt.figure(figsize=(12,9))
+    plt.pie(sizes, explode=None, labels=labels, colors=colors, shadow=False, startangle=30, pctdistance=0.8, autopct="%1.1f%%", textprops={'fontsize': fontsize})
+    plt.axis('equal')
 
-plt.figure(figsize=(12,9))
-plt.pie(sizes, explode=None, labels=labels, colors=colors, shadow=False, startangle=30, pctdistance=0.8, autopct="%1.1f%%", textprops={'fontsize': fontsize})
-plt.axis('equal')
+    plt.title("Upstream: Peak is up to %d bp upstream and %d downstream to the closest TSS" % (args.maxd, args.inside), fontsize = fontsize)
+    plt.savefig(os.path.join(args.outdir, "peak_genomic_types.%s") % args.format, format = args.format)
+    plt.close()
+    
+    
+### Plot a distribution of peaks TSS distances ###
 
-plt.title("Upstream: Peak is up to %d bp upstream and %d downstream to the closest TSS" % (args.maxd, args.inside), fontsize = fontsize)
-plt.savefig(os.path.join(args.outdir, "peak_genomic_types.%s") % args.format, format = args.format)
-plt.close()
+    scores = [float(x.attrs['tss']) for x in annpeaks if x.attrs['tss'] != 'nan']
+    scores.sort();
+    selected_scores = [x for x in scores if x <= 300 and x >= -100]
+    #print(min(scores))
+    
+    fig, axes = plt.subplots(ncols=2, figsize = (22, 7), frameon=False)
+    fig.tight_layout(rect=[0.05, 0.1, 1, 1])
+    fig.subplots_adjust(wspace = 0.2)
+    for data, ax in zip([scores, selected_scores], axes):
+        _, bins, _ = ax.hist(data, bins = 20, density = True)
+        
+        ax.set_xlabel('TSS distance', fontsize=fontsize)
+        ax.set_ylabel('Fraction [%]', fontsize=fontsize)    
+        ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        fix_density(ax, bins, 0.05)
+        
+    
+    plt.savefig(os.path.join(args.outdir, "tss_hist.%s") % args.format, format = args.format)
+    plt.close()
 
 
 ### Plot a scatter of peaks topcoverage/area_coverage ###
@@ -248,29 +273,7 @@ if(args.coverage and len(annpeaks)>20):
     
     
     
-### Plot a distribution of peaks TSS distances ###
 
-    scores = [float(x.attrs['tss']) for x in annpeaks if x.attrs['tss'] != 'nan']
-    scores.sort();
-    selected_scores = [x for x in scores if x <= 300 and x >= -100]
-    #print(min(scores))
-    
-    fig, axes = plt.subplots(ncols=2, figsize = (22, 7), frameon=False)
-    fig.tight_layout(rect=[0.05, 0.1, 1, 1])
-    fig.subplots_adjust(wspace = 0.2)
-    for data, ax in zip([scores, selected_scores], axes):
-        _, bins, _ = ax.hist(data, bins = 20, density = True)
-        
-        ax.set_xlabel('TSS distance', fontsize=fontsize)
-        ax.set_ylabel('Fraction [%]', fontsize=fontsize)    
-        ax.tick_params(axis='both', labelsize=fontsize, top=False, right=False)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        fix_density(ax, bins, 0.05)
-        
-    
-    plt.savefig(os.path.join(args.outdir, "tss_hist.%s") % args.format, format = args.format)
-    plt.close()
 
 
 
