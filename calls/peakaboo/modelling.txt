@@ -4,9 +4,23 @@ FOLDER: /home/andrei/work/modelling/chap
 # Create files with real peaks
 python ~/afp/parsing/gff2tsv.py ~/work/hrra/chap/time_05h.annotated.gff --attrs topcoverage | awk '{ print $2 "\t" $3 "\t" $4 "\t" $1 "\t" $7 "\t" $5}' > data/hrra.bed
 
-# Generate reads based on the provided peaks
-python ~/afp/modelling/chap/chap_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --peaks ~/work/hrra/chap/time_05h.annotated.gff --numreads 800000 --lengths 150 --bs_width 20 --errors 0 1 2 3 5 7 10 --fraction_peaks 0.25 --mincov 3 --outdir error_range/ --numsamples 1
-
 # Create peakaboo project
 python /home/andrei/afp/chap/execute.py projects/error_range --package /home/andrei/afp/ --reads reads/error_range/ --index /home/andrei/genomic/coryne/nc_003450_3/index/NC_003450_3 --genome /home/andrei/genomic/coryne/nc_003450_3/genome.fasta  --threads 2 --ucsc stub --name test_150 --ambiguous --reads_format f
+
+
+
+### DOUBLETS ###
+
+# Generate doublet peaks
+
+python ~/afp/modelling/peakaboo/peaks_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --numpeaks 400 --doublets --doublet_ratio 1 > data/doublets/d1.bed
+python ~/afp/modelling/peakaboo/peaks_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --numpeaks 400 --doublets --doublet_ratio 2 > data/doublets/d2.bed
+python ~/afp/modelling/peakaboo/peaks_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --numpeaks 400 --doublets --doublet_ratio 3 > data/doublets/d3.bed
+python ~/afp/modelling/peakaboo/peaks_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --numpeaks 400 --doublets --doublet_ratio 4 > data/doublets/d4.bed
+python ~/afp/modelling/peakaboo/peaks_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --numpeaks 400 --doublets --doublet_ratio 5 > data/doublets/d5.bed
+
+
+# Generate doublet reads (length range)
+python ~/afp/modelling/peakaboo/reads_generator.py --genome ~/genomic/coryne/nc_003450_3/genome.fasta --peaks data/doublets/d2.bed --numreads 1000000 --lengths 50 75 100 150 300 --bs_width 20 --errors 2 --fraction_peaks 0.25 --mincov 3 --outdir reads/doublets/range_length --numsamples 1
+
 

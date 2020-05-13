@@ -224,7 +224,10 @@ def makefile_local(m_input,  control):
     #if(not multi):
     input_files = [filtered_path, normed_covpath]
     output_files = os.path.join('peaks', '%s.annotated.gff' % name)
-    script = get_script('annotate.py', chap_package, arguments={'--coverage': input_files[1], '--transcripts': args.annotation, '--outdir': log_dir}, inp = input_files[0], out = output_files)
+    local_arguments = {'--coverage': input_files[1], '--outdir': log_dir}
+    if(args.annotation):
+        local_arguments['--transcripts'] = args.annotation
+    script = get_script('annotate.py', chap_package, arguments=local_arguments, inp = input_files[0], out = output_files)
     mlist.append(dependence(input_files, output_files, script)); 
     
     
@@ -239,12 +242,12 @@ def makefile_local(m_input,  control):
     script = get_script('log_html.py', chap_package, arguments=arguments, inp = input_files[0], out = output_files)
     mlist.append(dependence(input_files, output_files, script));
     
-    
-    input_files = os.path.join('peaks', '%s.annotated.gff' % name)
-    output_files = os.path.join(log_dir, 'peaks.html'), os.path.join(log_dir, 'peaks.tsv');
-    final_files.extend(output_files)
-    script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir}, inp = input_files)
-    mlist.append(dependence(input_files, output_files, script));
+    if(args.annotation):
+        input_files = os.path.join('peaks', '%s.annotated.gff' % name)
+        output_files = os.path.join(log_dir, 'peaks.html'), os.path.join(log_dir, 'peaks.tsv');
+        final_files.extend(output_files)
+        script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir}, inp = input_files)
+        mlist.append(dependence(input_files, output_files, script));
 
 
     

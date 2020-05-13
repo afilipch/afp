@@ -31,7 +31,7 @@ def score_func(x):
 
 score_range = np.linspace(0, 10, 1001)
 score_probs = [score_func(x) for x in score_range]
-scores = random.choices(score_range, score_probs, k=args.numpeaks)
+scores = [3 + x for x in random.choices(score_range, score_probs, k=args.numpeaks)]
 
 genome = dict([(x.name, len(x)) for x in SeqIO.parse(args.genome, 'fasta')]);
 chrnames, chrsizes = list(zip(*genome.items()))
