@@ -4,6 +4,7 @@ import sys;
 import os;
 
 import yaml;
+from afbio.generators import get_only_files
 
 _confdir = os.path.dirname(os.path.realpath(__file__))
 
@@ -11,9 +12,11 @@ class LocalConfigError(Exception):
     pass;
 
 #CONFIGS is used for shortcuts while calling configuration file
-CONFIGS = {'samstat': 'samstat.yml', 'bedstat': 'bedstat.yml', 'chiflex': 'chiflex.yml', 'doublechiflex': 'doublechiflex.yml', 'chipchap': 'chipchap.yml', 'lrg': 'lrg.yml'}
-for k, v in CONFIGS.items():
-    CONFIGS[k] = os.path.join(_confdir, v)
+#CONFIGS = {'samstat': 'samstat.yml', 'bedstat': 'bedstat.yml', 'chiflex': 'chiflex.yml', 'doublechiflex': 'doublechiflex.yml', 'chipchap': 'chipchap.yml', 'lrg': 'lrg.yml'}
+
+CONFIGS = {}
+for path in get_only_files(_confdir):
+    CONFIGS[os.path.basename(path).split(".")[0]] = path
 
 
 def load_config(configuration):

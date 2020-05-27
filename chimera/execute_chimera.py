@@ -12,12 +12,9 @@ from afbio.config.config import load_config;
 from afbio.makefiles import dependence, get_header, get_bowtie_call, get_script, get_bowtie_help
 
 #Read configuration
-conf = load_config('chipchap')
+conf = load_config('chimera')
 bowtie_settings = conf['bowtie'];
-coverage_settings = conf['coverage']
-annotation_settings = conf['annotation']
-region_settings = conf['region']
-control_settings = conf['control']
+chimera_settings = conf['demultiplex_chimera']
 
 #Bowtie2 arguments preliminary parsing
 bowtie_help_str = "[%s]" % " ".join(["%s%s=%s" % (x[1][1], x[0], x[1][0]) for x in bowtie_settings.items()])
@@ -30,7 +27,7 @@ parser.add_argument('--package', nargs = '?', required=True, type = os.path.absp
 parser.add_argument('--reads', nargs = '+', required=True, type = os.path.abspath, help = "Path to sequencing reads. fastq/fasta file. Paired-end reads must be provided consecutively");
 parser.add_argument('--index', nargs = '?', required=True, type = os.path.abspath, help = "Path to the mapping reference bowtie2 indices");
 parser.add_argument('--genome', nargs = '?', required=True, type = os.path.abspath, help = "Path to the mapping references in fasta format");
-parser.add_argument('--control', nargs = '+', type = os.path.abspath, help = "Path to the genomic control fasta files used for the adjustment of multiple dna copies. The order of the files must be the same as for --reads option. If for some --reads files corresponding controls are absent, \'none\' arguments MUST be provided in the corresponding places");
+
 
 #Options for the mapping result postprocessing
 parser.add_argument('--collapsed', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed collapsed with collapse.pl script. Read count appendix of the read id will be used to calculate read support of the interactions")
@@ -49,8 +46,7 @@ parser.add_argument('--name', nargs = '?', default="stub", type = str, help = "N
 parser.add_argument('--bowtie_args', nargs = '+', default = [], type = str, help = "Bowtie settings for the first round of mapping. For example, if one wants to set \'-p 4\', use \'--local\' alignment mode, but not \'--norc\' option then \'p=4 local=True norc=False\' should be provided. Given attributes replace default(for Chiflex, NOT for Bowtie) ones. Default settings for the modes are: %s" % bowtie_help_str)
 parser.add_argument('--reads_format', nargs = '?', default = 'U', choices = ['U', 'f'], type = str, help = "Reads format: 'U' -> fastq, 'f' -> fasta");
 
-parser.add_argument('--filtering', nargs = '?', default="normal", choices=['loose', 'normal', 'strict'], type = str, help = "Strength of filtering, can be: 'loose', 'normal' or 'strict'");
-parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If, set ambiguous mappings will be also counted");
+
 
 #Performance option
 parser.add_argument('--threads', nargs = '?', default = 1, type = int, help = "Number of threads to use");
@@ -60,15 +56,11 @@ args = parser.parse_args();
 
 
 #######################################################################################################################
-# Process input options
-
-peak_filtering_settings = conf['peak_filtering_%s' % args.filtering]
-
-#######################################################################################################################
 # Set paths' constants
 
 rnaseq_package = os.path.join(args.package, 'rnaseq')
 mapping_package = os.path.join(args.package, 'mapping')
+chimera_package = os.path.join(args.package, 'chimera')
 html_lib = os.path.join(args.package, 'afbio', 'html')
 
 
@@ -76,7 +68,7 @@ html_lib = os.path.join(args.package, 'afbio', 'html')
 # Create folders
 
 project_path = args.path
-folders = ['sam', 'coverage', 'log', 'transcripts', 'makefiles', 'differential', 'ucsc']
+folders = ['sam', 'coverage', 'log', 'transcripts', 'makefiles', 'chimeras', 'ucsc']
 
 
 while(not args.only_makefile):
@@ -107,9 +99,7 @@ with open(os.path.join(project_path, 'log', 'info.txt'), 'w') as f:
 
 ########################################################################################################################
 ## Main function to create one-sample Makefile
-def makefile_local(m_input,  control):
-    #print(m_input)
-    #print(control)
+def makefile_local(m_input):
     todel = []
     final_files = []
     mlist=[];
@@ -135,33 +125,21 @@ def makefile_local(m_input,  control):
     #print(script)
     mlist.append(dependence(input_files, output_files, script))
     
-    # Convert mappings into coverage
-    input_files = output_files;
-    output_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['plus', 'minus']]
-    arguments = {'--genome': args.genome, '--outstat': log_dir, '--outcoverage': 'coverage', '--ambiguous': args.ambiguous}
-    if(args.collapsed):
-        arguments['--collapsed'] = 'True'
-    script = get_script('get_sam_stat_paired.py', mapping_package, arguments=arguments, inp = input_files)
-    mlist.append(dependence(input_files, output_files, script));   
+
+    # Demultiplex mapping hits into single and chimeric reads
+    input_files = output_files # SAM FILE
+    output_files = [os.path.join('sam', '%s.%s.bam' % (name, x)) for x in ['unique', 'unique_chimera']]
+    script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': name, '--score': chimera_settings['score'], '--score_chimera': chimera_settings['score_chimera'], '--maxgap': chimera_settings['maxgap'], '--s_distance': chimera_settings['s_distance'], '--ch_distance': chimera_settings['ch_distance']}, inp = input_files, package=chimera_package)
+    mlist.append(dependence(input_files, output_files, script))
+        
+    #Merge sam hits into chimeras in doublebed format
+    input_files = os.path.join('sam', '%s.unique_chimera.bam' % name) 
+    output_files = os.path.join('chimeras', '%s.unique.bed' % name) 
+    script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files, package=chimera_package)
+    mlist.append(dependence(input_files, output_files, script))
+
     
-    
-    # UCSC coverage
-    for of, strand in zip(output_files, ['plus', 'minus']):
-        trackopts = "\'track name=%s_%s description=\"CHAP seq genomic coverage for sample %s\" %s\'" % (name, strand, name, " ".join(["%s=%s" % x for x in coverage_settings['trackopts'].items()]))
-        input_files = of
-        output_files = os.path.join('ucsc', '%s_%s.bedgraph' % (name, strand))
-        final_files.append(output_files)
-        script = get_script('coverage2bedgraph.py', mapping_package, arguments={'--multiplier': coverage_settings['multiplier'], '--convert': True, '--trackopts': trackopts}, inp = input_files, out = output_files)
-        mlist.append(dependence(input_files, output_files, script));
-    
-    
-    # Assign TPM and annotate the mappings
-    
-    input_files = [os.path.join('coverage', '%s.%s.bed' % (name, x)) for x in ['plus', 'minus']]
-    output_files = os.path.join('transcripts', '%s.gff' % name)
-    covpath = output_files
-    script = get_script('assign_mappings.py', mapping_package, inp = input_files, out = output_files, arguments={'--transcripts': args.annotation, '--logdir': log_dir} )
-    mlist.append(dependence(input_files, output_files, script));
+
             
 
 
@@ -190,18 +168,7 @@ if(args.paired):
 
     
     
-if(args.control):
-    if( os.path.isdir(args.control[0]) ):
-        control_list = []
-        for path in args.control:
-            control_list.extend(list(sorted( [os.path.join(path, x) for x in listdir(path) if isfile(os.path.join(path, x))] )))
-        control_list.sort()
-    else:
-        control_list = args.control;
-    if(args.paired):
-        control_list = [(control_list[2*x], control_list[2*x+1]) for x in range(int(len(control_list)/2))]
-else:
-    control_list = [None]*len(input_list);
+
         
             
 
@@ -211,8 +178,8 @@ else:
     sample_names = [os.path.basename(x).split(".")[0] for x in input_list]
 mf_names = []
 all_outputs = []
-for m_input, control in zip(input_list, control_list):
-    local_makefile, mname, local_output =  makefile_local(m_input, control)
+for m_input in input_list:
+    local_makefile, mname, local_output =  makefile_local(m_input)
     mname = 'makefile_%s' % mname
     mf_names.append(mname);
     all_outputs.append(local_output);
@@ -238,20 +205,6 @@ for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     mlist.append(dependence(input_files, output_files, script))
 
 if(args.multi):
-    #all_coverages = [x[0] for x in all_outputs]
-    #all_peaks = [x[1] for x in all_outputs]
-    
-    #input_files = mf_names
-    #output_files = os.path.join('regions', 'regions.gff')
-    #script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
-    #mlist.append(dependence(input_files, output_files, script));
-    
-    #input_files = output_files
-    #output_files = os.path.join('log', 'peaks_correlation.svg')
-    #script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
-    #mlist.append(dependence(input_files, output_files, script));
-    
-    
     input_files = mf_names
     output_files = os.path.join('log', 'report.html')
     final_files.append(output_files)
@@ -272,36 +225,154 @@ with open(os.path.join(project_path, 'Makefile'), 'w') as mf:
     mf.write("\n\n".join(mlist));
 
 
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################################################################################################################
+#Function to create top level Makefile
+#def makefile_main():
+
+
+
+	
+	##Map reads with bowtie2
+	#input_files = output_files
+	#output_files = os.path.join('sam', '%s.mapped.sam' % args.name)
+	#script = get_bowtie_call(bowtie_settings, args.bowtie, args.reference, input_files, args.name)
+	#mlist.append(dependence(input_files, output_files, script))
+	#clean.append(output_files)
+	
 
 
 		
+	#else:
+		##demultiplex mapping hits into single and chimeric reads
+		#input_files = output_files # SAM FILE
+		#output_files = [os.path.join('sam', '%s.%s.bam' % (args.name, x)) for x in ['unique', 'unique_chimera', 'control_chimera', 'control']]
+		#script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': args.name, '--score': conf['demultiplex_chimera']['score'], '--score_chimera': conf['demultiplex_chimera']['score_chimera'], '--maxgap': conf['demultiplex_chimera']['maxgap'], '--s_distance': conf['demultiplex_chimera']['s_distance'], '--ch_distance': conf['demultiplex_chimera']['ch_distance']}, inp = input_files, package=chimera_package)
+		#mlist.append(dependence(input_files, output_files, script))
+			
+		##Merge sam hits into chimeras in doublebed format
+		#input_files = os.path.join('sam', '%s.unique_chimera.bam' % args.name) 
+		#output_files = os.path.join('chimeras', 'unique.bed') 
+		#script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files, package=chimera_package)
+		#mlist.append(dependence(input_files, output_files, script))
 		
+
 		
+
+			
+			
+		#if(annotate_with_genome):
+			#input_files = uniquef
+			#output_files = os.path.join('chimeras', 'unique.annotated.gff')
+			#script = get_script('annotate_novel.py', arguments={'--reference': genome_path}, inp = input_files, out=output_files, package=chimera_package)
+			#mlist.append(dependence(input_files, output_files, script));
+		
+			#input_files = output_files
+			#output_files = [os.path.join('chimeras', 'unique.annotated.%s.gff' % x) for x in interaction_types]
+			#script = get_script('stratify_gff.py', arguments={'--attributes': 'ntype', '--output': 'chimeras', '--rtypes': " ".join(interaction_types)}, inp = input_files, package=chimera_package)
+			#mlist.append(dependence(input_files, output_files, script));
+
+
+
+
+
+########################################################################################################################
+##Function to create interaction Makefile		
+#def makefile_interaction():
+	#mlist=[];
+	#final_files = [];
+	
+	#for itype in ['inter', 'intra']:
+		#input_files =  [os.path.join('chimeras', '%s.annotated.%s.gff' % (x, itype)) for x in ['unique', 'control']]
+		#output_files = os.path.join('interactions', 'filtered.%s.gff' % itype) 
+		#script = get_script('filter_chimera.py', arguments={'-s': input_files[0], '-c' : input_files[1], '--features': " ".join(conf['filter_chimera']['features']), '--fdr': conf['filter_chimera']['fdr']}, out = output_files, package=chimera_package)
+		#mlist.append(dependence(input_files, output_files, script))
+		
+		#input_files =  output_files
+		#output_files = os.path.join('interactions', 'sorted.%s.gff' % itype) 
+		#script = get_script('sort.py', inp=input_files, out = output_files, package=chimera_package)
+		#mlist.append(dependence(input_files, output_files, script));
+		
+		#input_files =  output_files
+		#output_files = os.path.join('interactions', 'interactions.%s.gff' % itype),  os.path.join('interactions', 'rid2iid.%s.bed' % itype)
+		#script = get_script('collapse2interaction.py', arguments={'-od': output_files[1], '--name': "%s_%s" % (args.name, itype), '--distance': conf['collapse2interaction']['distance']}, inp=input_files, out = output_files[0], package=chimera_package)
+		#mlist.append(dependence(input_files, output_files, script));
+		#output_files = os.path.join('interactions', 'interactions.%s.gff' % itype)
+		
+		#input_files = output_files
+		#output_files = os.path.join('interactions', 'interactions.%s.itype.gff' % itype)
+		#script = get_script('spilt2subtypes.py', inp = input_files, out = output_files, package=interaction_package)
+		#mlist.append(dependence(input_files, output_files, script));
+				
+		#if(args.exons):
+			#input_files = output_files, args.exons
+			#output_files = os.path.join('interactions', 'interactions.%s.itype.ktype.gff' % itype)
+			#if(args.stranded):
+				#cargs = arguments={'--exons': input_files[1], '--stranded': ''}
+			#else:
+				#cargs = arguments={'--exons': input_files[1]}
+			#script = get_script('annotate_chimera.py', arguments=cargs, inp = input_files[0], out=output_files, package=chimera_package)
+			#mlist.append(dependence(input_files, output_files, script));
+		
+		#if(args.annotation):
+			#input_files = output_files, args.annotation
+			#output_files = os.path.join('interactions', 'annotated.%s.gff' % itype)
+			#script = get_script('annotate_bed_with_gff3.py', arguments={'--gff3': input_files[1]}, inp = input_files[0], out=output_files, package=chimera_package)
+			#mlist.append(dependence(input_files, output_files, script));
+			
+		#final_files.append(output_files)
+	
+	##makefile header
+	#mlist.insert(0, get_header(final_files))
+	## makefie cleaner
+	#mlist.append('clean:\n\techo "nothing to clean."\n');	
+	#return "\n\n".join(mlist)
+
+
+
+
+
+

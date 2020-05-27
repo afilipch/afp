@@ -1,0 +1,42 @@
+modes_order:
+    interaction: 1
+    splicing: 2
+    clustering: 3
+
+bowtie:
+    very-sensitive-local: ['True', '--']
+    rfg: ['9,5', '--']
+    rdg: ['9,5', '--']
+    ignore-quals: ['True', '--']
+    local: ['True', '--'] 
+    min-score: ['L,20,0.5', '--'] 
+    k: ['4', '-']
+    no-unal: ['True', '--'] 
+    f: ['False', '-']
+    p: ['2', '-']    
+  
+        
+demultiplex_sam:
+    score: 'as_qstart'
+    bestdistance: 12
+       
+demultiplex_chimera:
+    score: 'as_qstart'
+    score_chimera: 'as_gap'
+    maxgap: 8
+    s_distance: 12
+    ch_distance: 14 
+    
+filter_alignment:
+    fdr: 0.05
+    features: ['AS', 'qstart']
+ 
+filter_chimera: 
+    fdr: 0.05
+    features: ['AS1', 'AS2', 'gap']    
+    
+collapse2interaction: 
+    distance: -10    
+    
+    
+    

@@ -7,6 +7,7 @@ import os;
 import itertools;
 from afbio import sequencetools
 from collections import *
+import pysam
 
 
 fastq = namedtuple('fastq', 'id, seq, sign, qual')
@@ -162,14 +163,9 @@ def generator_mirna(paths, seed_start=1, seed_stop=7):
             yield Mirna(seqrecord.id, str(seqrecord.seq.upper()), seed_start = seed_start, seed_stop = seed_stop)
 
 
-def generator_segments(path, key_score= lambda x: x.AS, add_nr_tag=False, secondmate=False, converted=False):
+def generator_segments(path, key_score= lambda x: x.AS, add_nr_tag=False, secondmate=False):
     '''Generates all mapping hits for a single read from a given sam/bam file (path to it)'''
-
-    import pysam;
-    if(converted):
-        from nrlbio.samlib import BackwardWrapper as CWrapper
-    else:
-        from nrlbio.samlib import ArWrapper as CWrapper
+    from afbio.samtools_af import ArWrapper as CWrapper
     
     samfile = pysam.Samfile(path)
     arwlist = [];
@@ -178,7 +174,7 @@ def generator_segments(path, key_score= lambda x: x.AS, add_nr_tag=False, second
     for segment in samfile.fetch(until_eof=True):
         if(not segment.is_unmapped):
             name = samfile.getrname(segment.tid)
-            arw = CWrapper(segment, rname, score_function=key_score, add_nr_tag=add_nr_tag, secondmate=secondmate)
+            arw = CWrapper(segment, name, score_function=key_score, add_nr_tag=add_nr_tag, secondmate=secondmate)
             
             if(current_name and current_name != arw.qname):
                 yield arwlist

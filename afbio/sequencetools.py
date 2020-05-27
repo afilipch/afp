@@ -213,6 +213,24 @@ def coverage2dict(coverage, cpos=2):
     for key, val in data.groupby(0):
         d[key] = np.array(val[cpos])
     return d;
+
+
+def seqrecord2seq(seqrecord, start, end, strand=None):
+    '''Extracts sequence from Bio.SeqRecord for a given strand and position.
+
+        seqrecord Bio.SeqRecord: sequence record to extract sequence from
+        start int: start(0-based inclusive) on the seqrecord  the sequence extracted
+        end int: end(0-based exclusive) on the seqrecord  the sequence extracted
+        strand '+'|'-'|None: strand of the sequence. If it is set to '-', then reverse conmplement of the sequence will be returned
+    '''
+        
+    if(strand == '+'):
+        return str(seqrecord[start:end].seq.upper())
+    elif(strand == '-'):
+        return str(seqrecord[start:end].seq.reverse_complement().upper())
+    else:
+        sys.stderr.write("WARNING: Strand is not properly defined. Plus strand sequence will be returned\n")
+        return str(seqrecord[start:end].seq.reverse_complement().upper())
         
     
     

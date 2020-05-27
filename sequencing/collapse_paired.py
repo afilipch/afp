@@ -15,6 +15,7 @@ from afbio.generators import generator_fastq
 parser = argparse.ArgumentParser(description='Collapses identical reads for paired-end sequening protocol');
 parser.add_argument('path', metavar = 'N', nargs = 2, type = str, help = "Path to the sequencing reads");
 parser.add_argument('--output', nargs = '?', required=True, type = str, help = "Path to the output files. Only a basename should be provided. For example if \"sample1\" is provided, then output is saved to \"sample1.1.fastq\" and \"sample1.2.fastq\" ");
+parser.add_argument('--log', nargs = '?', type = str, help = "Path to the log file");
 #parser.add_argument('--ftype', nargs = '?', choices = ['fastq', 'fasta'], default = 'fastq', type = str, help = "Type of the sequences. Can be \'fasta\' or \'fastq\'");
 args = parser.parse_args()
 
@@ -60,11 +61,22 @@ with open(args.output + ".1.fastq", 'w') as f1, open(args.output + ".2.fastq", '
 ###output additional info:
 bins = ['1', '2-10', '11-100', '101-1000', '1001-10000', '>10000']
 counts = [x[0] for x in seq2info.values()]
+
 sys.stderr.write("%d reads were collapsed in %d reads\nCompression rate: %1.2f\n\nDistribution of read duplication:\ncollapse factor | number of reads\n" % (sum(counts), len(counts), sum(counts)/len(counts)))
+
+
 binned = Counter([ceil(log10(x)) for x in counts]);
 binned = [x[1] for x in sorted(binned.items(), key=lambda x: x[0])]
 
+stat = ["%d reads were collapsed in %d reads\nCompression rate: %1.2f\n\nDistribution of read duplication:\ncollapse factor | number of reads\n" % (sum(counts), len(counts), sum(counts)/len(counts))]
 for label, num in zip(bins, binned):
-    sys.stderr.write("%s:\t%d\n" % (label, num))
+    stat.append("%s:\t%d" % (label, num))
+    
+if(args.log):
+    with open(args.log, 'w') as f:
+        f.write("\nFiles %s and %s are processed\n\n" % tuple(args.path))
+        f.write("\n".join(stat) + "\n" + "-"*120)
+        
+sys.stderr.write("\n".join(stat) + "\n")
 
 

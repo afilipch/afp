@@ -11,7 +11,7 @@ from afbio.config.config import load_config;
 from afbio.makefiles import dependence, get_header, get_bowtie_call, get_script, get_bowtie_help
 
 from afbio.generators import get_only_files
-
+from time import gmtime, strftime
 
 parser = argparse.ArgumentParser(description='Creates makefile for the reads preprocessing')#, formatter_class = argparse.RawTextHelpFormatter);
 #Required options
@@ -19,7 +19,8 @@ parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path
 parser.add_argument('--package', nargs = '?', type = os.path.abspath, required = True, help = "Path to the afp package");
 parser.add_argument('--outdir', nargs = '?', type = str, required = True, help = "Path to the output directory");
 parser.add_argument('--paired', nargs = '?', default = False, const=True, type = bool, help = "If set, reads are assumed to be paired-end")
-parser.add_argument('--table', nargs = '?', type = os.path.abspath, help = "Path to the table which connects the read file names to the meaningful names");
+parser.add_argument('--table', nargs = '?', required = True, type = os.path.abspath, help = "Path to the table which connects the read file names to the meaningful names");
+parser.add_argument('--log', nargs = '?', required = True, type = os.path.abspath, help = "Path to the log file");
 args = parser.parse_args();
 
 
@@ -37,7 +38,7 @@ def makefile_local(name2sample, outdir, paired):
         for name, pair in name2sample.items():
             input_files = pair
             output_files = [os.path.join(outdir, "%s.%d.fastq" % (name, x)) for x in (1,2)]
-            script = get_script('collapse_paired.py', seq_package, arguments={'--output': os.path.join(outdir,name)}, inp = input_files)
+            script = get_script('collapse_paired.py', seq_package, arguments={'--output': os.path.join(outdir,name), '--log': args.log}, inp = input_files)
             mlist.append(dependence(input_files, output_files, script));  
             final_files.extend(output_files)
 
@@ -45,7 +46,7 @@ def makefile_local(name2sample, outdir, paired):
         for sample, pair in name2sample.items():
             input_files = sample
             output_files = os.path.join(outdir, "%s.fastq" % name)
-            script = get_script('collapse_single.py', seq_package, arguments={'--output': os.path.join(outdir, name)}, inp = input_files)
+            script = get_script('collapse_single.py', seq_package, arguments={'--output': os.path.join(outdir, name), '--log': args.log}, inp = input_files)
             mlist.append(dependence(input_files, output_files, script));  
             final_files.append(output_files)
            
@@ -83,3 +84,7 @@ else:
 
 
 print(makefile_local(name2sample, args.outdir, args.paired))
+with open(args.log, 'w') as f:
+    timestr = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    f.write("Time created: %s\n\nProject call: python %s\n" % (timestr, " ".join(sys.argv)) );
+

@@ -20,9 +20,23 @@ parser = argparse.ArgumentParser(description='Compares multiple rna-seq samples 
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression table, tsv format");
 parser.add_argument('--minexpr', nargs = '?', default=20, type = float, help = "Minimum mean (among replicates) coverage for a gene to be considered as expressed greatly than the other");
 parser.add_argument('--minfold', nargs = '?', default=2.0, type = float, help = "Minimum fold difference between two genes to be considered as differential");
-#parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
+
+parser.add_argument('--scoring', nargs = '?', default='conservative', choices = ['conservative', 'explorative'], type = str, help = "Scoring type with more focus on robustness or interesting candidates");
 args = parser.parse_args()
 
+
+def scoring_conservative(coeff, e):
+    return coeff*e
+
+def scoring_explorative(coeff, e):
+    return coeff*(e**(0.5))#(np.log2(e+2))
+
+
+if(args.scoring == 'conservative'):
+    scoring = scoring_conservative;
+if(args.scoring == 'explorative'):
+    scoring = scoring_explorative;
+    
 
 
 def gene_total_score(mylist):
@@ -46,7 +60,7 @@ def assign_score(expr1, expr2, fold, change, maxfold=20):
     else:
         coeff = myfold;
         
-    return coeff*e
+    return scoring(coeff, e)
 
 
 

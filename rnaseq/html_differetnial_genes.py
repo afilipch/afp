@@ -14,8 +14,8 @@ parser.add_argument('--annotation', nargs = '?', required=True, type = str, help
 parser.add_argument('--js', nargs = '?', required=True, type = str, help = "Path to javascript functions");
 parser.add_argument('--css', nargs = '?', required=True, type = str, help = "Path to css style sheet");
 parser.add_argument('--ucsc', nargs = '?', required=True, type = str, help = "Name of the UCSC session");
-parser.add_argument('--name', nargs = '?', default="unknown", type = str, help = "Name of the sample");
-parser.add_argument('--top', nargs = '?', default=300, type = int, help = "Shows only [top] peaks");
+parser.add_argument('--name', nargs = '?', default="unknown", type = str, help = "Name of the experiment");
+parser.add_argument('--top', nargs = '?', default=300, type = int, help = "Shows only [top] changed genes");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory (tsv and html files will be written there)")
 parser.add_argument('--genes_dir', nargs = '?', required=True, type = str, help = "Path to the directory with genes html reports")
 args = parser.parse_args();
@@ -36,6 +36,8 @@ with open(args.path) as f:
         
 data.sort(key = lambda x: float(x[2]), reverse=True)
 
+data = data[:args.top]
+
 annotation = BedTool(args.annotation)
 chrom_dict = ucsc_convert_chromosomes(annotation)
 gene2annotation = dict([ (x.attrs['ID'], x) for x in annotation])
@@ -43,7 +45,7 @@ gene2annotation = dict([ (x.attrs['ID'], x) for x in annotation])
 
 def annotate(d, gene2annotation):
     gene = gene2annotation[d[0]]
-    name = gene.attrs['genesymbol']
+    name = gene.attrs.get('genesymbol', 'None')
     if(name == 'None'):
         name = gene.attrs['ID']
     ann = gene.attrs['product']
