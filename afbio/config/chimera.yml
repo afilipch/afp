@@ -23,9 +23,11 @@ demultiplex_sam:
 demultiplex_chimera:
     score: 'as_qstart'
     score_chimera: 'as_gap'
-    maxgap: 8
+    maxgap: 2
     s_distance: 12
     ch_distance: 14 
+    splice_distance: 10000
+    maxoverlap: 4
     
 filter_alignment:
     fdr: 0.05

@@ -15,8 +15,8 @@ from afbio.generators import generator_segments
 
 parser = argparse.ArgumentParser(description='Assignes to each read if it comes from mapping to real or control reference. Convolutes backward converted reads. Filters out non-unique and not the best hits');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "path to sam/bam file");
-parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
-parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
+#parser.add_argument('-o', '--output', nargs = '?', default = "sam", type = str, help = "path to the output folder");
+#parser.add_argument('-n', '--name', nargs = '?', required = True, type = str, help = "name for output files, should reflect nature of mapping reference");
 
 parser.add_argument('-mg', '--maxgap', nargs = '?', default = 4, type = int, help = "Max gap allowed between parts of chimera. It is also used to calculate chimera score. The more the maxgap, the less important is the gap.");
 parser.add_argument('-mo', '--maxoverlap', nargs = '?', default = 6, type = int, help = "Max overlap allowed between parts of chimera. It is also used to calculate chimera score. The more the maxoverlap, the less important is the overlap.");
@@ -89,12 +89,12 @@ def get_single(arws, chimera, s_distance):
 #then they are written to a new destination, according to their source: real, or control
 
 
-with open(os.path.join(args.output, "%s.chimera.bed" % args.name), "w") as f:
-    for c, arwlist in enumerate(generator_segments(args.path)):
-        chimera = get_chimeras(arwlist, args.maxgap, args.maxoverlap, args.ch_distance, args.splice_distance, args.reassign)
-        chimera, single = get_single(arwlist, chimera, args.s_distance)
-        if(chimera):
-            f.write('%s\n' % chimera.doublebed());
+#with open(os.path.join(args.output, "%s.chimera.bed" % args.name), "w") as f:
+for c, arwlist in enumerate(generator_segments(args.path)):
+    chimera = get_chimeras(arwlist, args.maxgap, args.maxoverlap, args.ch_distance, args.splice_distance, args.reassign)
+    chimera, single = get_single(arwlist, chimera, args.s_distance)
+    if(chimera):
+        sys.stdout.write('%s\n' % chimera.doublebed());
             
         #if(c and c % 100000 == 0):
             #sys.stderr.write('Reads processed:\t%d\n' % c);

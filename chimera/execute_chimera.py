@@ -61,6 +61,7 @@ args = parser.parse_args();
 rnaseq_package = os.path.join(args.package, 'rnaseq')
 mapping_package = os.path.join(args.package, 'mapping')
 chimera_package = os.path.join(args.package, 'chimera')
+bin_package = os.path.join(args.package, 'bin')
 html_lib = os.path.join(args.package, 'afbio', 'html')
 
 
@@ -68,7 +69,7 @@ html_lib = os.path.join(args.package, 'afbio', 'html')
 # Create folders
 
 project_path = args.path
-folders = ['sam', 'coverage', 'log', 'transcripts', 'makefiles', 'chimeras', 'ucsc']
+folders = ['sam', 'coverage', 'log', 'interactions', 'makefiles', 'chimeras', 'ucsc']
 
 
 while(not args.only_makefile):
@@ -128,18 +129,29 @@ def makefile_local(m_input):
 
     # Demultiplex mapping hits into single and chimeric reads
     input_files = output_files # SAM FILE
-    output_files = [os.path.join('sam', '%s.%s.bam' % (name, x)) for x in ['unique', 'unique_chimera']]
-    script = get_script('demultiplex_chimera.py', arguments={'--output': 'sam', '--name': name, '--score': chimera_settings['score'], '--score_chimera': chimera_settings['score_chimera'], '--maxgap': chimera_settings['maxgap'], '--s_distance': chimera_settings['s_distance'], '--ch_distance': chimera_settings['ch_distance']}, inp = input_files, package=chimera_package)
+    output_files = os.path.join('chimeras', '%s.bed' % name) 
+    script = get_script('demultiplex_chimera.py', arguments={'--maxgap': chimera_settings['maxgap'], '--s_distance': chimera_settings['s_distance'], '--ch_distance': chimera_settings['ch_distance'], '--splice_distance': chimera_settings['splice_distance'], '--maxoverlap': chimera_settings['maxoverlap']}, inp = input_files, out = output_files, package=chimera_package)
+    mlist.append(dependence(input_files, output_files, script))
+
+    #Annotate chimeras with their types
+    input_files = output_files 
+    output_files = os.path.join('chimeras', '%s.annotated.gff' % name) 
+    script = get_script('annotate_novel.py', arguments={'--reverse': True, '--reference': args.genome}, inp = input_files, out = output_files, package=chimera_package)
+    mlist.append(dependence(input_files, output_files, script))
+    
+    #Annotate chimeras with their types
+    input_files = output_files 
+    output_files = os.path.join('chimeras', '%s.sorted.gff' % name) 
+    script = get_script('sort.py', arguments={}, inp = input_files, out = output_files, package=bin_package)
     mlist.append(dependence(input_files, output_files, script))
         
     #Merge sam hits into chimeras in doublebed format
-    input_files = os.path.join('sam', '%s.unique_chimera.bam' % name) 
-    output_files = os.path.join('chimeras', '%s.unique.bed' % name) 
-    script = get_script('merged2chimeras.py', arguments={}, inp = input_files, out = output_files, package=chimera_package)
+    input_files = output_files 
+    output_files = os.path.join('interactions', '%s.gff' % name) 
+    script = get_script('collapse2interaction.py', arguments={'--name': name, '--dictionary': os.path.join('interactions', '%s.dict.tsv' % name) }, inp = input_files, out = output_files, package=chimera_package)
     mlist.append(dependence(input_files, output_files, script))
 
     
-
             
 
 

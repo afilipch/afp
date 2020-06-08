@@ -56,6 +56,9 @@ detected.sort(key = lambda x: x[0])
 recovery = find_closest(original, detected);
 print(pearsonr([x[0][1] for x in recovery], [x[1][1] for x in recovery]))
 
+
+print(recovery[0])
+
 #for el in recovery[:100]:
     #print(el)
 

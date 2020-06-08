@@ -77,6 +77,8 @@ for interval in bedfile:
     iid2intervals[iid].append(interval);
 
 
+
+outlist = [];
 with open(args.dictionary, 'w') as odf:
     for c, intervals in enumerate(iid2intervals.values()):
         
@@ -85,13 +87,14 @@ with open(args.dictionary, 'w') as odf:
         name_right = "%s|1" % name
         
         intervals_left = [x for x in intervals if x.name.split("|")[-1] == '0']
-        sys.stdout.write(str(merge(intervals_left, name_left)));
-        
         intervals_right = [x for x in intervals if x.name.split("|")[-1] == '1']
-        sys.stdout.write(str(merge(intervals_right, name_right)));
+        outlist.append(( merge(intervals_left, name_left), merge(intervals_right, name_right) ))
         
         for li in intervals_left:		
             odf.write("%s\t%s\n" % (li.name.split("|")[0], name))
+            
+for pair in sorted(outlist, key = lambda x: int(x[0].attrs['n_uniq']), reverse = True):
+    sys.stdout.write("%s%s" % pair)
         
         
         

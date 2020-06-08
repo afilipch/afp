@@ -24,6 +24,7 @@ parser.add_argument('--lengths', nargs = '+', default=[300], type = int, help = 
 parser.add_argument('--bs_width', nargs = '?', default=20, type = int, help = "Size of bindig sites");
 parser.add_argument('--fraction_peaks', nargs = '?', default=0.2, type = float, help = "Fraction of reads which belong to peaks");
 parser.add_argument('--errors', nargs = '+', default=[0], type = int, help = "Sequence error rate in integer percents");
+parser.add_argument('--doublets', nargs = '?', default=0, type = int, help = "If doublets are generated this number will be assigned to the sample name");
 
 parser.add_argument('--mincov', nargs = '?', default=3, type = float, help = "Minimum strength of the peaks");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
@@ -103,7 +104,11 @@ peaks_probabilites = [float(peak.score) for x in peaks]
 for length in args.lengths:
     for error in args.errors:
         for sc in range(args.numsamples):
-            with open(os.path.join(args.outdir, "sample_%d_%d_%d.fa" % (length, error, sc+1)), 'w') as f:
+            if(args.doublets):
+                path = 'doublets%d_%d_%d_%d.fa' % (args.doublets, length, error, sc+1)
+            else:
+                path = 'sample_%d_%d_%d.fa' % (length, error, sc+1)
+            with open(os.path.join(args.outdir, path ), 'w') as f:
                 mmrate = FACTOR*error
                 for _ in range(args.numreads):
                     if(random.random()<=args.fraction_peaks):

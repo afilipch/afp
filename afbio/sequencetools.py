@@ -139,7 +139,7 @@ def multifind(string, substring, overlap = False):
 
 def split2chunks(seq, length):
     """ Yield successive length-sized chunks from seq"""
-    for i in xrange(0, len(seq), length):
+    for i in range(0, len(seq), length):
         yield seq[i:i+length]
 
 	
