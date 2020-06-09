@@ -25,4 +25,7 @@ python ~/afp/modelling/peakaboo/reads_generator.py --peaks data/doublets/d2.bed 
 python /home/andrei/afp/chap/execute.py projects/doublets_length_ratio_2 --package /home/andrei/afp/ --reads reads/doublets/length_range_ratio_2/ --index /home/andrei/genomic/coryne/nc_003450_3/index/NC_003450_3 --genome /home/andrei/genomic/coryne/nc_003450_3/genome.fasta --threads 2 --ucsc stub --name doublets_length_ratio_2 --ambiguous --reads_format f
 
 # Analyse doublepeaks recovery
+# Length
 python ~/afp/modelling/peakaboo/check_doublets.py --detected peaks/ --original ../../data/doublets/d2.bed --outdir plots --format png --maxd 100 --mode length
+# Ratio
+python ~/afp/modelling/peakaboo/check_doublets.py --detected peaks/ --original ../../data/doublets --outdir plots --format svg --maxd 100 --mode ratio --detection_fraction 75

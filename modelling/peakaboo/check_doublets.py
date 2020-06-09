@@ -140,22 +140,22 @@ elif(args.mode == 'ratio'):
         xticks, yvals = process_detected(path, original);
         length2step.append(( int(name),  find_step_for_sample(yvals, xticks, name, args.detection_fraction) ))
         draw_single(yvals, xticks, name);
-        if(name == '4'):
-            detected = [(int(x.name), float(x.attrs['topcoverage'])) for x in BedTool(path)]
-            detected.sort(key = lambda x: x[0])
-            recovery = find_closest(original, detected);
-            #print(original)
+        #if(name == '4'):
+            #detected = [(int(x.name), float(x.attrs['topcoverage'])) for x in BedTool(path)]
+            #detected.sort(key = lambda x: x[0])
+            #recovery = find_closest(original, detected);
+            ##print(original)
             
-            length2recovery = defaultdict(list)
-            for r1, r2 in split2chunks(recovery, 2):
-                #print(r1);
-                #print(r2)
-                #print()
-                if(r1[2]<=args.maxd and r2[2]<=args.maxd):
-                    length2recovery[r2[0][0] - r1[0][0]].append( int(r1[1] != r2[1]) )
-                elif(r1[2]<=args.maxd or r2[2]<=args.maxd):
-                    length2recovery[r2[0][0] - r1[0][0]].append(0)
-            print(length2recovery)
+            #length2recovery = defaultdict(list)
+            #for r1, r2 in split2chunks(recovery, 2):
+                ##print(r1);
+                ##print(r2)
+                ##print()
+                #if(r1[2]<=args.maxd and r2[2]<=args.maxd):
+                    #length2recovery[r2[0][0] - r1[0][0]].append( int(r1[1] != r2[1]) )
+                #elif(r1[2]<=args.maxd or r2[2]<=args.maxd):
+                    #length2recovery[r2[0][0] - r1[0][0]].append(0)
+            #print(length2recovery)
         
     xlabel = 'Double peak ratio'     
         
