@@ -1,11 +1,24 @@
 # /usr/bin/python
 '''collections of classes and functions to solve diverse numerical problems'''
 from math import log
-from itertools import chain
+from itertools import chain, islice
 import random
 
 import numpy as np;
 from bisect import bisect_left
+
+
+
+def sliding_window(seq, n):
+    "Returns a sliding window (of width n) over data from the iterable"
+    "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
 
 
 def select_by_probability(items, probabilities):
@@ -312,10 +325,24 @@ def find_elements_order(mylist):
     return [ (mylist.count(x)-1)/2 + temp.index(x) for x in mylist]
     
     
-
+def get_accumulated_derivatives(xvalues, yvalues, window):
+    """derivative averaged over a window of data"""
+    return [(x[0] - x[1])/(x[2]-x[3]) for x in zip(yvalues[2*window:], yvalues, xvalues[2*window:], xvalues)]
     
         
-        
+def  smooth_with_averaging(vals, window):
+    '''converts vals into the averages over the regions with flanks equal to window
+            vals list: list of consecutive values
+            window int: length of the flank. that is average is taken over window*2+1
+    '''
+    for w in range(window):
+        yield np.mean(vals[:w*2+1])
+    for el in sliding_window(vals, window*2+1):
+        yield(np.mean(el))
+    for w in range(window-1, -1, -1):
+        yield np.mean(vals[-w*2-1:])
+    
+    
         
     
     
@@ -330,11 +357,10 @@ def find_elements_order(mylist):
 	
 #testing section
 if(__name__ == "__main__"):
-    mylist = [2,3,4, 1, 6, 1, 3, 7, 2]
-    print(mylist);
-    print(find_elements_order(mylist))
+    #mylist = [2,3,4, 1, 6, 1, 3, 7, 2]
+    #print(mylist);
+    #print(find_elements_order(mylist))
     
-    
-    
-	
-	
+    a = list(range(20)) + [30]
+    for el in smooth_with_averaging(a, 4):
+        print(el)
