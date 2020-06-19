@@ -121,11 +121,15 @@ def add_uniprot_ref(name):
 
 
 def seed_to_html(hsp, seed, aln_marks, _style):
+    organism, uniprot, tq_start, tq_end = hsp.query.id.split(":")
+    name = "_".join((organism, uniprot))
+    
     h_start = hsp.hit_start + seed[0];
     h_end = hsp.hit_start + seed[1];
-    q_start = hsp.query_start + seed[0];
-    q_end = hsp.query_start + seed[1];
-    _ , uniprot, name = hsp.hit.id.split("|")
+    q_start = hsp.query_start + seed[0] + int(tq_start);
+    q_end = hsp.query_start + seed[1] + int(tq_start);
+    #print(hsp.query.id)
+    #_ , uniprot, name = hsp.hit.id.split("|")
     
     doc = dominate.document(title="Query: %s Hit: %s Hit Range: %d-%d" % (hsp.query.id, name, h_start, h_end) )
     with doc.head:
@@ -138,7 +142,7 @@ def seed_to_html(hsp, seed, aln_marks, _style):
             raw("%d-%d" % (q_start, q_end) )           
         with p():
             b("Hit: ")
-            raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(uniprot), name) )
+            raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(name), hsp.hit.id) )
             b("Range: ")
             raw("%d-%d" % (h_start, h_end) ) 
         with p():
@@ -167,11 +171,11 @@ def seed_to_html(hsp, seed, aln_marks, _style):
                 br()
                 raw(''.join(ugly_fonts[1]))
                 
-    fname = "%s_%s_%d_%d.html" % (hsp.query.id, name, h_start, h_end)
+    fname = "%s_%s_%d_%d.html" % (name, hsp.hit.id, q_start, q_end)
     fpath = os.path.join(LOCAL_HTML_PATH, fname)
     with open(fpath, 'w') as f:        
         f.write(doc.render())
-    return (hsp.query.id, hsp.hit.id, fname, q_start, q_end, h_start, h_end, identity, seed[2])
+    return name, hsp.query.id, hsp.hit.id, fname, q_start, q_end, h_start, h_end, identity, seed[2]
         
         
 ########### EXECUTION SECTION
@@ -180,35 +184,32 @@ with open(args.css) as css:
     _style = css.read()
     
 res_list = []
-try:
-    for qresult in SearchIO.parse(args.path, 'blast-xml'):
-        for hits in qresult:
-            for hsp_l in hits:
-                for hsp in hsp_l:
-                    seeds = split_aln(hsp, args.minscore)
-                    if(seeds):
-                        print(seeds)
-                    for seed in seeds:
-                        aln_marks, identity = convert_split(hsp, seed)
-                        res = seed_to_html(hsp, seed, aln_marks, _style)
-                        res_list.append(res)
-except:
-    sys.stderr.write("\nerror of xml parser skipped\n%d items were already collected\n" % len(res_list))
+
+for qresult in SearchIO.parse(args.path, 'blast-xml'):
+    for hits in qresult:
+        for hsp_l in hits:
+            for hsp in hsp_l:
+                seeds = split_aln(hsp, args.minscore)
+                for seed in seeds:
+                    aln_marks, identity = convert_split(hsp, seed)
+                    res = seed_to_html(hsp, seed, aln_marks, _style)
+                    res_list.append(res)
+
   
-#print(len(res_list))
+
+
 
 res_dict = defaultdict(list)
 for el in res_list:
-    res_dict[el[1]].append(el)
+    res_dict[el[0]].append(el[1:])
     
 gene_level_res = []
 header = "Query", "Hit", "Link", "q_start", "q_end", "h_start", "h_end", "Identity [%]", "Score"
-for hit, local_list in res_dict.items():
-    name_ = hit.split("|")[-1]
-    gene_level_res.append(( hit, len(local_list), sum([x[-1] for x in local_list]) ))
+for name, local_list in res_dict.items():
+    gene_level_res.append(( name, len(local_list), sum([x[-1] for x in local_list]) ))
     local_list.sort(key = lambda x: x[-1], reverse = True)
-    with open(os.path.join(LOCAL_GENES_PATH, '%s.html' % name_), 'w') as f:
-        doc = dominate.document(title="%s: similarity blast ppredictions" % os.path.basename(args.outdir))
+    with open(os.path.join(LOCAL_GENES_PATH, '%s.html' % name), 'w') as f:
+        doc = dominate.document(title="%s: similarity blastp predictions" % os.path.basename(args.outdir))
         with doc.head:
             style(_style)
         with doc:
@@ -216,10 +217,9 @@ for hit, local_list in res_dict.items():
                 _tr = tr()
                 _tr.add([td(x) for x in header])
                 for query, hit, fname, q_start, q_end, h_start, h_end, identity, score in local_list:
-                    _ , uniprot, name = hit.split("|")
                     with tr():
-                        td(query)
-                        td(raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(uniprot), name) ))
+                        td(raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(name), name) ))
+                        td(hit)
                         td(raw('<a href=%s target="_blank">link</a>' % os.path.join('../local', fname) ))
                         td(q_start)
                         td(q_end)
@@ -240,10 +240,9 @@ with doc:
     with table(id = "myTable") as _table:
         _tr = tr()
         _tr.add([td(x) for x in header])
-        for hit, num, score in gene_level_res:
-            _ , uniprot, name = hit.split("|")
+        for name, num, score in gene_level_res:
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(uniprot), name) ))
+                td(raw('<a href=%s target="_blank">%s</a>' % (add_uniprot_ref(name), name) ))
                 td(raw('<a href=%s target="_blank">link</a>' % os.path.join('genes', "%s.html" % name) ))
                 td(num)
                 td("%1.1f" % score)
@@ -259,7 +258,7 @@ with open(os.path.join(args.outdir, 'blastp_genes.html'), 'w') as f:
 res_list.sort(key = lambda x: x[-1], reverse = True)
 with open(os.path.join(args.outdir, 'blastp_local_hits.tsv'), 'w') as f:
     for res in res_list:
-        f.write("\t".join(list(res[:2]) + [str(x) for x in res[3:]]) + "\n")
+        f.write("\t".join(list(res[1:3]) + [str(x) for x in res[4:]]) + "\n")
                 
 
             
