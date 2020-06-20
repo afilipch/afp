@@ -10,7 +10,9 @@ from collections import defaultdict
 import numpy as np;
 from scipy.stats import sem
 import matplotlib.pyplot as plt;
-
+#from matplotlib.patches import Circle
+from matplotlib.lines import Line2D
+from itertools import  zip_longest
 #from afbio.sequencetools import sliding_window
 from afbio.numerictools import get_accumulated_derivatives,  smooth_with_averaging
 
@@ -22,15 +24,17 @@ parser.add_argument('--concentration', nargs = '?', required=True, type = str, h
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory for the plots");
 parser.add_argument('--format', nargs = '?', required=False, default = 'svg', type = str, help = "Format of the plots");
 parser.add_argument('--ylimit', nargs = '?', const=True, default = False, type = bool, help = "If set, universal limit for Y-axis is used");
-parser.add_argument('--derivative_window', nargs = '?', default=10, type = int, help = "Depth of the derivative");
-parser.add_argument('--smooth_window', nargs = '?', default=10, type = int, help = "Flank length of the data smoothing");
-parser.add_argument('--min_fraction', nargs = '?', default=0.05, type = float, help = "Min fraction of the max growth speed to set a threshold for start and end of an exponential phase");
+parser.add_argument('--derivative_window', nargs = '?', default=1, type = int, help = "Depth of the derivative");
+parser.add_argument('--smooth_window', nargs = '?', default=1, type = int, help = "Flank length of the data smoothing");
+parser.add_argument('--minfraction', nargs = '?', default=0.05, type = float, help = "Min fraction of the max growth speed to set a threshold for start and end of an exponential phase");
 parser.add_argument('--norm', nargs = '?', default=False, const=True, type = bool, help = "If set, data are normalized to the maximal intensity for each replicate individually");
 args = parser.parse_args();
 
 # set globals
 COLORS = ['palevioletred', 'mediumvioletred', 'darksalmon']
+RAINBOW_COLORS = ["darkmagenta", "midnightblue", "cornflowerblue", "seagreen", "mediumturquoise", "darkgoldenrod", "tomato", "saddlebrown"]
 FONTSIZE, LINEWIDTH = 28, 4
+
 
     
 
@@ -67,10 +71,10 @@ def proces_lines(lines):
 
 ### GLOBAL PARAMETERS ###
 
-def get_statistics(xvalues, yvalues, window, min_fraction):
+def get_statistics(xvalues, yvalues, window, minfraction):
     derivatives = get_accumulated_derivatives(xvalues, yvalues, window)
     growth_max_value = max(derivatives)
-    limit = min_fraction*growth_max_value
+    limit = minfraction*growth_max_value
     
     growth_max_index = np.argmax(derivatives);
     growth_start = [x[0] for x in enumerate(derivatives) if x[1]>=limit][0]
@@ -85,7 +89,7 @@ def get_statistics(xvalues, yvalues, window, min_fraction):
     return xvalues[growth_start+window], xvalues[growth_max_index + window], xvalues[growth_end + window], growth_max_value, growth_total_speed, plateau_value, acceleration_max
 
 
-def process_sample_with_replicates(data, times, window, min_fraction):
+def process_sample_with_replicates(data, times, window, minfraction):
 
     merged = merge_replicates(np.array(data))
     if( not any(merged)):
@@ -93,7 +97,7 @@ def process_sample_with_replicates(data, times, window, min_fraction):
     
     local_list = [];
     for yvalues in data: 
-        growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, yvalues, window, min_fraction)
+        growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, yvalues, window, minfraction)
         local_list.append(( growth_start, growth_max_index-growth_start, growth_end-growth_start, growth_total_speed, growth_max_value, plateau_value, (growth_max_index-growth_start)/(growth_end-growth_start), acceleration_max ))
     
     #print(len(local_list))
@@ -105,21 +109,35 @@ def process_sample_with_replicates(data, times, window, min_fraction):
 
 ### REPLICATES CONVERGENCY ###
 
-def findstart(xvalues, yvalues, window, min_fraction):
+def findstart(xvalues, yvalues, window, minfraction):
     derivatives = get_accumulated_derivatives(xvalues, yvalues, window)
-    limit = min_fraction*max(derivatives)
+    limit = minfraction*max(derivatives)
     return [x[0] for x in enumerate(derivatives) if x[1]>=limit][0]
 
 #def smooth_with_averaging(vals, window):
     #derivatives = get_accumulated_derivatives(xvalues, yvalues, window)
-    #limit = min_fraction*max(derivatives)
+    #limit = minfraction*max(derivatives)
     #return [x[0] for x in enumerate(derivatives) if x[1]>=limit][0]
 
-def converge_replicates(data, times, derivative_window, min_fraction, smooth_window):
-    starts = [findstart(times, x, derivative_window, min_fraction) for x in data]
+def converge_replicates(data, times, derivative_window, minfraction, smooth_window):
+    starts = [findstart(times, x, derivative_window, minfraction) for x in data]
+    common_start = int(np.mean(starts));
+    tails = [  x[0][ max(0, x[1] - common_start): x[1] ] for x in zip(data, starts) ]
+    tails = [x[::-1] for x in tails]
+    common_tail = [np.mean([x for x in y if x != None]) for y in zip_longest(*tails)]
+    common_tail = common_tail[::-1]
+    #for l in zip_longest(*tails):
+        #print(np.mean([x for x in l if x != None]))
+    
     aligned_data = [x[0][x[1]:] for x in zip(data, starts)]
-    smoothed_data = [list(smooth_with_averaging(x, smooth_window)) for x in data]
-    return smoothed_data, aligned_data
+    minlen = min([len(x) for x in aligned_data])
+    aligned_data = [common_tail + list(x[:minlen]) for x in aligned_data]
+    
+    arr = np.array(aligned_data)
+    #errors = sem(arr, axis = 0)
+    #print(len(errors))
+    #sys.exit()
+    return aligned_data, np.mean(arr, axis=0), sem(arr, axis = 0)
     
 
 
@@ -143,7 +161,7 @@ def draw_technical(times, merged, sample, channel, format_, ylimit, data_limit=4
     ax2 = ax1.twinx()
     ax2.plot(times, derivatives, color = COLORS[1], label = "derivative")
     
-    growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, merged, args.derivative_window, args.min_fraction)
+    growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, merged, args.derivative_window, args.minfraction)
     ax2.axvline(growth_start)
     ax2.axvline(growth_max_index)
     ax2.axvline(growth_end)
@@ -156,7 +174,7 @@ def draw_technical(times, merged, sample, channel, format_, ylimit, data_limit=4
     plt.clf()
     
     
-def draw_convergent(times, converged_data, sample, channel, format_, data_limit=400):
+def draw_convergent(times, converged_data, converged_mean, converged_sem, sample, channel, format_, data_limit=400):
     fig, ax = plt.subplots(figsize=(16,9))    
     ax.spines['top'].set_visible(False)
     ax.tick_params(axis='both', labelsize=FONTSIZE)
@@ -165,9 +183,40 @@ def draw_convergent(times, converged_data, sample, channel, format_, data_limit=
     
     for datum, color in zip(converged_data, COLORS):
         ax.plot(times[:data_limit], datum[:data_limit], color = color) 
+    #draw averaged trend with error shadows
+    ax.plot(times[:data_limit], converged_mean[:data_limit], 'k', color='#3F7F4C')
+    ax.fill_between(times[:data_limit], converged_mean[:data_limit]-converged_sem[:data_limit], converged_mean[:data_limit]+converged_sem[:data_limit], alpha=0.5, edgecolor='#3F7F4C', facecolor='#7EFF99', linewidth=0)
+    
     plt.savefig(os.path.join(args.outdir, "converged_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
     plt.close()
+    plt.clf() 
+    
+
+def draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, format_, colors = RAINBOW_COLORS, data_limit=400):
+    fig, ax = plt.subplots(figsize=(16,9))    
+    ax.spines['top'].set_visible(False)
+    ax.tick_params(axis='both', labelsize=FONTSIZE)
+    plt.ylabel('ThT Fluorescence Intensity [a.u.]', fontsize = FONTSIZE)
+    plt.xlabel('Time [h]', fontsize = FONTSIZE)    
+    
+    #dl = data_limit + max(start_list)
+    x = times[:data_limit]
+    
+    handles = []
+    for converged_mean, converged_sem, color in zip(converged_mean_list, converged_sem_list, colors):
+        y = converged_mean[:data_limit]
+        errors = converged_sem[:data_limit]       
+        ax.plot(x, y, 'k', color=color, linewidth = LINEWIDTH/2)
+        ax.fill_between(x, y-errors, y+errors, alpha=0.5, edgecolor=color, facecolor=color, linewidth=0)
+        #handles.append(Circle( (0.5,0.5), radius=0.1, facecolor=color, edgecolor=color) )
+        handles.append(Line2D([0], [0], marker='o', color="white", markerfacecolor=color, markersize=FONTSIZE*0.8) )
+    #ax.axhline(0, color="white", linewidth = LINEWIDTH)
+    plt.legend(handles=handles, labels=labels, loc='upper left', frameon = False, fontsize=FONTSIZE*0.8)
+    
+    plt.savefig(os.path.join(args.outdir, "all_converged_channel%d.%s" % (channel, format_)), format = format_)
+    plt.close()
     plt.clf()    
+    
 
 
     
@@ -205,6 +254,12 @@ names = []
 DATA_LIMIT = 400
 for channel, lines in enumerate(channel2lines.values(), start=1):
     times, sample2data = proces_lines(lines);
+    
+    converged_mean_list = [];
+    converged_sem_list = [];
+    labels = [];
+    #start_list = [];
+    
     if(args.ylimit):
         temp = [];
         for data in sample2data.values():
@@ -214,20 +269,31 @@ for channel, lines in enumerate(channel2lines.values(), start=1):
     else:
         ylimit = False
         
-    for sample, _ in sample2concentration:
+    for sample, concentration in sample2concentration:
         names.append(sample);
         data = sample2data[sample]
+        if(args.smooth_window > 1):
+            #print(data[0][-10:])
+            data = [list(smooth_with_averaging(x, args.smooth_window))[:-2*args.smooth_window] for x in data]
+            #print(data[0][-10:])
         if(args.norm):
             data = [np.array(x)-min(x) for x in data]
             data = [x/max(x) for x in data]
-        stat, errors, merged = process_sample_with_replicates(data, times, args.derivative_window, args.min_fraction)
+            #print([len(x) for x in data])
+        stat, errors, merged = process_sample_with_replicates(data, times, args.derivative_window, args.minfraction)
         statistic_dict[channel].append(stat)
         error_dict[channel].append(errors)
         
-        converged_data, stub = converge_replicates(data, times, args.derivative_window, args.min_fraction, args.smooth_window)
-        
-        draw_convergent(times, converged_data, sample, channel, args.format, data_limit=400)
+        converged_data, converged_mean, converged_sem = converge_replicates(data, times, args.derivative_window, args.minfraction, args.smooth_window)
+        converged_mean_list.append(converged_mean);
+        converged_sem_list.append(converged_sem)
+        labels.append("c_%1.2f" % concentration)
+        #start_list.append(start)
+ 
+        draw_convergent(times, converged_data, converged_mean, converged_sem, sample, channel, args.format, data_limit=400)
         draw_technical(times, merged, sample, channel, args.format, ylimit, data_limit=400)
+        
+    draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, args.format, data_limit=400)
         
 
     
