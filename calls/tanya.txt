@@ -1,0 +1,1 @@
+python ~/afp/project_scripts/tanya/metrics_trends.py data/20200525_IAPP_wt_CC_de_novo_OK_merged.txt --concentration data/20200525_wt_CC_concentrations.txt --format svg --outdir projects/test/ --smooth_window 10 --minfraction 0.05 --norm --derivative_window 4

@@ -1,110 +1,47 @@
 #! /home/a_filipchyk/soft/home/a_filipchyk/anaconda3/bin/python
-'''Finds consensus regions for the peaks found in different experiments/replicates'''
+'''Creates representation of binding peaks intersection tables'''
 
 
 import argparse
 import os
 import sys
 
-from pybedtools import BedTool
-
-from afbio.pybedtools_af import construct_gff_interval
-from afbio.peaks import find_shared_peaks, shared_peaks_stat_to_string
 from afbio.generators import get_only_files
 
 
-parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments/replicates');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the directory with all the detected peaks");
-parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maximal distance allowed between top positions of the peaks");
-parser.add_argument('--replicates', nargs = '?', default=False, const=True, type = bool, help = "If set, provided peaks are considered as having replicates");
-parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
-parser.add_argument('--name', nargs = '?', required='all', type = str, help = "Name of the output file");
+parser = argparse.ArgumentParser(description='Creates representation of binding peaks intersection tables');
+parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the directory with all the intersection tables");
 args = parser.parse_args();
 
-
-def gather_files(files):
-    res = defaultdict(list)
-    for f in files:
-        name = "_".join(os.path(basename).split("_")[:-1])
-        res[name].append(f);
-    return res;
-    
-    
-
-def print_compiled(compiled, size):
-    temp_d = dict(compiled)
-    compiled_processed = [temp_d.get(x, None) for x in range(size)]
-    
-    area_coverage = ",".join([x.attrs['area_coverage'] if x else '0' for x in compiled_processed])
-    topcoverage=",".join([x.attrs['topcoverage'] if x else '0' for x in compiled_processed])
-    compiled_processed = [x for x in compiled_processed if x]
-    
-    compiled = [x[1] for x in sorted(compiled, key = lambda x: x[0])]
-    pos = int(sum([int(x.name)*float(x.attrs['topcoverage']) for x in compiled_processed])/sum([float(x.attrs['topcoverage']) for x in compiled_processed]))
-    start = min([x.start for x in compiled_processed])
-    stop = min([x.stop for x in compiled_processed])
-    
-    consensus = construct_gff_interval(compiled[0].chrom, start, stop, 'consensus', score='0', strand='.', source='.', frame='.', attrs=[('Name', pos), ('topcoverage', topcoverage), ('area_coverage', area_coverage)])
-    
-    return str(consensus)
-    
-    #print(consensus)
-    #for cs in compiled_processed:
-        #print(cs)
-    #print()
-    #print("*"*150)
-    
-
-            
-            
-def run_accross_chromosome(bedtools_chr, maxd, size):
-    stat_counts = []
-    marked = [];
-    for c, intervals in enumerate(bedtools_chr):
-        for interval in intervals:
-            marked.append((c, interval))
-    marked.sort(key = lambda x: int(x[1].name));
-    #for m in marked:
-        #print(m[0], m[1].name)
-    selections = [];
-    current_selection = [marked[0]];
-    for m in marked[1:]:
-        if(current_selection and int(m[1].name) - int(current_selection[0][1].name) <= maxd):
-            current_nums = [x[0] for x in current_selection]
-            if(m[0] not in current_nums):
-                current_selection.append(m)
-        else:
-            print_compiled(current_selection, size);
-            stat_counts.append(len(current_selection))
-            current_selection = [m]
-    else:
-        print_compiled(current_selection, size)
-        stat_counts.append(len(current_selection))
-        
-    return stat_counts
-            
-
-    
-    
-        
-########################################################################################################    
-### Execution Section
+def print_table(table, header, row):
+    if(header):
+        print('\t'.join(['DBP'] + [x[0] for x in table]))
+    print('\t'.join([row] + [x[1] for x in table]))
 
 
-files = [x for x in get_only_files(args.path) if "annotated" in x]
-blist = [BedTool(x) for x in files]
-size = len(blist)
-res_total, stat_total_counts = find_shared_peaks(blist, args.maxd)
-#fname = 'all'
+fnames = get_only_files(args.path);
+fnames.sort(key = lambda x: int(os.path.basename(x).split('.')[0]) )
+for fname in fnames:
+    with open(fname) as f:
+        label = os.path.basename(fname).split('.')[0]
+        print(label)
+        a = next(f).strip().split("\t")
+        table = [a[1:]]
+        curname = a[0];
+        header = True
+        for l in f:
+            a = l.strip().split("\t")
+            if(a[0] != curname):
+                print_table(table, header, curname)
+                table = [a[1:]]
+                header = False
+                curname = a[0]
+            else:
+                table.append(a[1:])
 
-with open(os.path.join(args.outdir, "%s.gff" % args.name), 'w') as f:
-    
-    f.write("# %s\n" % ",".join([os.path.basename(x).split(".")[0] for x in files]))
-    for compiled in res_total:
-        f.write(print_compiled(compiled, size))
-    
 
-sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
+
+
 
     
 
