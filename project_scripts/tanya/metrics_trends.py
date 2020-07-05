@@ -5,6 +5,7 @@ import argparse
 import sys
 import os
 from collections import defaultdict
+from pathlib import Path
 
 #import pandas as pd;
 import numpy as np;
@@ -27,13 +28,34 @@ parser.add_argument('--ylimit', nargs = '?', const=True, default = False, type =
 parser.add_argument('--derivative_window', nargs = '?', default=1, type = int, help = "Depth of the derivative");
 parser.add_argument('--smooth_window', nargs = '?', default=1, type = int, help = "Flank length of the data smoothing");
 parser.add_argument('--minfraction', nargs = '?', default=0.05, type = float, help = "Min fraction of the max growth speed to set a threshold for start and end of an exponential phase");
+parser.add_argument('--outliers', nargs = '+', default = [], type = str, help = "Outlier tracks to be removed. Must be provided in format \'[channnel]![sample]![replicate num]\'")
 parser.add_argument('--norm', nargs = '?', default=False, const=True, type = bool, help = "If set, data are normalized to the maximal intensity for each replicate individually");
 args = parser.parse_args();
 
 # set globals
 COLORS = ['palevioletred', 'mediumvioletred', 'darksalmon']
-RAINBOW_COLORS = ["darkmagenta", "midnightblue", "cornflowerblue", "seagreen", "mediumturquoise", "darkgoldenrod", "tomato", "saddlebrown"]
+RAINBOW_COLORS = ["darkmagenta", "midnightblue", "cornflowerblue", "mediumturquoise", "seagreen", "yellowgreen", "darkgoldenrod", "tomato", "saddlebrown", "darkorange", "gold", "khaki"]
 FONTSIZE, LINEWIDTH = 28, 4
+
+#print(args.outliers)
+outliers = [tuple(x.split("!")) for x in args.outliers]
+
+#Path(args.outdir).mkdir(parents=True, exist_ok=True)
+
+dir_technical = os.path.join(args.outdir, 'technical'); 
+Path(dir_technical).mkdir(parents=True, exist_ok=True)
+
+dir_replicates_converged = os.path.join(args.outdir, 'replicates_converged'); 
+Path(dir_replicates_converged).mkdir(parents=True, exist_ok=True)
+
+dir_replicates_real = os.path.join(args.outdir, 'replicates_real'); 
+Path(dir_replicates_real).mkdir(parents=True, exist_ok=True)
+
+dir_converged = os.path.join(args.outdir, 'converged'); 
+Path(dir_converged).mkdir(parents=True, exist_ok=True)
+
+dir_metrics = os.path.join(args.outdir, 'metrics'); 
+Path(dir_metrics).mkdir(parents=True, exist_ok=True)
 
 
     
@@ -143,25 +165,27 @@ def converge_replicates(data, times, derivative_window, minfraction, smooth_wind
 
 ### GRAPHICS FUNCTIONS ###
 
-def draw_technical(times, merged, sample, channel, format_, ylimit, data_limit=400):
+def draw_technical(times, merged, window, sample, channel, format_, ylimit, outdir, data_limit=400):
     
     fig, ax1 = plt.subplots(figsize=(16,9))
+    derivatives = get_accumulated_derivatives(times, merged, window)
+    derivatives = [0]*window + derivatives + [0]*window
+    
+    growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, merged, window, args.minfraction)
     if(data_limit):
         times = times[:data_limit]
         merged = merged[:data_limit]
-        
+        derivatives = derivatives[:data_limit]
+
     ax1.plot(times, merged, color = COLORS[0], label = "signal") 
     ax1.spines['top'].set_visible(False)
     ax1.tick_params(axis='both', labelsize=FONTSIZE)
     plt.ylabel('ThT Fluorescence Intensity [a.u.]', fontsize = FONTSIZE)
     plt.xlabel('Time [h]', fontsize = FONTSIZE)    
     
-    derivatives = get_accumulated_derivatives(times, merged, args.derivative_window)
-    derivatives = [0]*args.derivative_window + derivatives + [0]*args.derivative_window
     ax2 = ax1.twinx()
     ax2.plot(times, derivatives, color = COLORS[1], label = "derivative")
     
-    growth_start, growth_max_index, growth_end, growth_max_value, growth_total_speed, plateau_value, acceleration_max = get_statistics(times, merged, args.derivative_window, args.minfraction)
     ax2.axvline(growth_start)
     ax2.axvline(growth_max_index)
     ax2.axvline(growth_end)
@@ -169,12 +193,12 @@ def draw_technical(times, merged, sample, channel, format_, ylimit, data_limit=4
     if(ylimit):
         ax1.set_ylim(0, ylimit);
     plt.legend(frameon=False)
-    plt.savefig(os.path.join(args.outdir, "technical_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
+    plt.savefig(os.path.join(outdir, "technical_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
     plt.close()
     plt.clf()
     
     
-def draw_convergent(times, converged_data, converged_mean, converged_sem, sample, channel, format_, data_limit=400):
+def draw_convergent_replicates(times, converged_data, converged_mean, converged_sem, sample, channel, format_, outdir, data_limit=400):
     fig, ax = plt.subplots(figsize=(16,9))    
     ax.spines['top'].set_visible(False)
     ax.tick_params(axis='both', labelsize=FONTSIZE)
@@ -187,12 +211,31 @@ def draw_convergent(times, converged_data, converged_mean, converged_sem, sample
     ax.plot(times[:data_limit], converged_mean[:data_limit], 'k', color='#3F7F4C')
     ax.fill_between(times[:data_limit], converged_mean[:data_limit]-converged_sem[:data_limit], converged_mean[:data_limit]+converged_sem[:data_limit], alpha=0.5, edgecolor='#3F7F4C', facecolor='#7EFF99', linewidth=0)
     
-    plt.savefig(os.path.join(args.outdir, "converged_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
+    #print(outdir)
+    plt.savefig(os.path.join(outdir, "converged_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
     plt.close()
     plt.clf() 
     
+    
+def draw_real_replicates(times, data, sample, channel, format_, outdir, data_limit=400):
+    fig, ax = plt.subplots(figsize=(16,9))    
+    ax.spines['top'].set_visible(False)
+    ax.tick_params(axis='both', labelsize=FONTSIZE)
+    plt.ylabel('ThT Fluorescence Intensity [a.u.]', fontsize = FONTSIZE)
+    plt.xlabel('Time [h]', fontsize = FONTSIZE)    
+    
+    for datum, color in zip(data, COLORS):
+        ax.plot(times[:data_limit], datum[:data_limit], color = color) 
+    
+    #print(outdir)
+    plt.savefig(os.path.join(outdir, "real_%s_channel%d.%s" % (sample, channel, format_)), format = format_)
+    plt.close()
+    plt.clf() 
+    
+    
+    
 
-def draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, format_, colors = RAINBOW_COLORS, data_limit=400):
+def draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, format_, outdir, colors = RAINBOW_COLORS, data_limit=400):
     fig, ax = plt.subplots(figsize=(16,9))    
     ax.spines['top'].set_visible(False)
     ax.tick_params(axis='both', labelsize=FONTSIZE)
@@ -212,8 +255,8 @@ def draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, 
         handles.append(Line2D([0], [0], marker='o', color="white", markerfacecolor=color, markersize=FONTSIZE*0.8) )
     #ax.axhline(0, color="white", linewidth = LINEWIDTH)
     plt.legend(handles=handles, labels=labels, loc='upper left', frameon = False, fontsize=FONTSIZE*0.8)
-    
-    plt.savefig(os.path.join(args.outdir, "all_converged_channel%d.%s" % (channel, format_)), format = format_)
+    #print(outdir)
+    plt.savefig(os.path.join(outdir, "all_converged_channel%d.%s" % (channel, format_)), format = format_)
     plt.close()
     plt.clf()    
     
@@ -258,6 +301,7 @@ for channel, lines in enumerate(channel2lines.values(), start=1):
     converged_mean_list = [];
     converged_sem_list = [];
     labels = [];
+    
     #start_list = [];
     
     if(args.ylimit):
@@ -272,14 +316,26 @@ for channel, lines in enumerate(channel2lines.values(), start=1):
     for sample, concentration in sample2concentration:
         names.append(sample);
         data = sample2data[sample]
+        
+        #print(channel, sample.split(" ")[1])
+        if(outliers):
+            #print(outliers)
+            #print((channel, sample.split(" ")[1], str(1)))
+            #print()
+            data = [x[1] for x in enumerate(data) if (str(channel), sample.split(" ")[1], str(x[0]+1)) not in outliers]
+        
+        
         if(args.smooth_window > 1):
             #print(data[0][-10:])
             data = [list(smooth_with_averaging(x, args.smooth_window))[:-2*args.smooth_window] for x in data]
             #print(data[0][-10:])
+        data_limit = min(int(len(data[0])*0.6), DATA_LIMIT)
+        draw_real_replicates(times, data, sample, channel, args.format, dir_replicates_real, data_limit=data_limit)
+        
         if(args.norm):
             data = [np.array(x)-min(x) for x in data]
             data = [x/max(x) for x in data]
-            #print([len(x) for x in data])
+
         stat, errors, merged = process_sample_with_replicates(data, times, args.derivative_window, args.minfraction)
         statistic_dict[channel].append(stat)
         error_dict[channel].append(errors)
@@ -287,13 +343,14 @@ for channel, lines in enumerate(channel2lines.values(), start=1):
         converged_data, converged_mean, converged_sem = converge_replicates(data, times, args.derivative_window, args.minfraction, args.smooth_window)
         converged_mean_list.append(converged_mean);
         converged_sem_list.append(converged_sem)
-        labels.append("c_%1.2f" % concentration)
+        labels.append("c_%1.4f" % concentration)
         #start_list.append(start)
- 
-        draw_convergent(times, converged_data, converged_mean, converged_sem, sample, channel, args.format, data_limit=400)
-        draw_technical(times, merged, sample, channel, args.format, ylimit, data_limit=400)
         
-    draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, args.format, data_limit=400)
+        data_limit = min(int(len(converged_data[0])*0.6), DATA_LIMIT)
+        draw_convergent_replicates(times, converged_data, converged_mean, converged_sem, sample, channel, args.format, dir_replicates_converged, data_limit=data_limit)
+        draw_technical(times, merged, args.derivative_window, sample, channel, args.format, ylimit, dir_technical, data_limit=data_limit)
+        
+    draw_all_convergent(times, converged_mean_list, converged_sem_list, labels, channel, args.format, dir_converged, data_limit=data_limit)
         
 
     
@@ -333,7 +390,7 @@ for channel, statistic_list in statistic_dict.items():
         ax1.errorbar(x_range, statistic, yerr=errors, linestyle='', capsize=12, linewidth=LINEWIDTH/2, capthick=LINEWIDTH/2, color='black')
 
         
-        plt.savefig(os.path.join(args.outdir, "%s_channel%d.%s" % (stype, channel, args.format)), format = args.format)
+        plt.savefig(os.path.join(dir_metrics, "%s_channel%d.%s" % (stype, channel, args.format)), format = args.format)
         plt.close()
         plt.clf()
     
