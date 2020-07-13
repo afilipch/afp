@@ -1,0 +1,9 @@
+# FOLDER: projects/hrra/selected/coverage
+
+(base) andrei@andrei-Hyrican-PC-H310M-PRO-D:/hdd/projects/hrra/selected/coverage$ python ~/afp/graphics/represent_peaks_2.py --coverage time_pre.normalized.bed time_05h.normalized.bed time_2h.normalized.bed time_4h.normalized.bed time_9h.normalized.bed time_24h.normalized.bed --outdir ../../aileen/plots/selected/ --annotation /hdd/genomic/coryne/nc_003450_3/annotation.gff3  --flen 250 --format pdf --regions ../../aileen/data/selected_regions.bed
+
+
+
+# FOLDER: projects/dtxr/projects/run210620/coverage
+
+python ~/afp/graphics/represent_peaks_2.py --coverage wt_0_05h.normalized.bed  wt_0_4h.normalized.bed  wt_100_05h.normalized.bed  wt_100_4h.normalized.bed  wt_36_05h.normalized.bed  --outdir ../../../plots/selected/ --annotation /hdd/genomic/coryne/nc_003450_3/annotation.gff3  --flen 250 --format pdf --regions ../../../data/selected_regions.bed 

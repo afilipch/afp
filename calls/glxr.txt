@@ -113,6 +113,10 @@ python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp
 
 python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../../mailbox/global_coverage.svg --labels ../../data/peaks_to_label.csv
+OR
+time python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../mailbox/global_pattern.eps --regions regions/regions.annotated.gff  --min_intensity 10
+
+
 
 
 # Draw a peak to TSS distance distribution
