@@ -116,7 +116,9 @@ python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../
 OR
 time python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plot ../mailbox/global_pattern.eps --regions regions/regions.annotated.gff  --min_intensity 10
 
-
+#Draw peak intensities heatmap:
+FOLDER: /hdd/mypapers/glxr
+python ~/afp/project_scripts/glxr/heatmap.py tables/249_glxr_binding_sites.csv --plot figures/heatmap.tiff
 
 
 # Draw a peak to TSS distance distribution
