@@ -147,10 +147,10 @@ def compare_multiple_peaks(compiled, pairs, minfold, mincov):
         
 size = len(args.path)
 pairs = list(permutations(range(size), 2))
-print(pairs)
 
 condition_names = [os.path.basename(x).split(".")[0] for x in args.path]
-res_total, stat_total_counts = find_shared_peaks(args.path, args.maxd)
+blist = [BedTool(x) for x in args.path]
+res_total, stat_total_counts = find_shared_peaks(blist, args.maxd)
 sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
 
 pos2pairs = defaultdict(list);
@@ -159,7 +159,9 @@ for compiled in res_total:
         pos2pairs[p].append((peak1, peak2))
     
 for p in pairs:
-    name = "%s_GREATER_%s.gff" % (condition_names[p[0]], condition_names[p[1]])
+    label = "%s_GREATER_%s" % (condition_names[p[0]], condition_names[p[1]])
+    name = "%s.gff" % label
+    sys.stderr.write("%s:\t%d\n" % (label, len(pos2pairs[p])))
     with open(os.path.join(args.outdir, name), 'w') as f:
         for peak1, peak2 in pos2pairs[p]:
             f.write(str(pair2interval(peak1, peak2)))

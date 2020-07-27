@@ -5,6 +5,7 @@
 import argparse
 import os
 import sys
+from collections import defaultdict
 
 from pybedtools import BedTool
 
@@ -16,17 +17,21 @@ from afbio.generators import get_only_files
 parser = argparse.ArgumentParser(description='Finds consensus regions for the peaks found in different experiments/replicates');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the directory with all the detected peaks");
 parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maximal distance allowed between top positions of the peaks");
-parser.add_argument('--replicates', nargs = '?', default=False, const=True, type = bool, help = "If set, provided peaks are considered as having replicates");
+parser.add_argument('--replicates', nargs = '+', default = [], type = str, help = "If set, provided peaks are considered as having replicates");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
-parser.add_argument('--name', nargs = '?', required='all', type = str, help = "Name of the output file");
+parser.add_argument('--name', nargs = '?', default='all', type = str, help = "Name of the output file");
 args = parser.parse_args();
 
 
-def gather_files(files):
+def gather_files(path, replicates, name):
     res = defaultdict(list)
+    files = [x for x in get_only_files(path) if "annotated" in x]
+    
     for f in files:
-        name = "_".join(os.path(basename).split("_")[:-1])
-        res[name].append(f);
+        for r in replicates:
+            if(os.path.basename(f).startswith(r)):
+                res[r].append(f);
+    res[name] = files
     return res;
     
     
@@ -91,20 +96,20 @@ def run_accross_chromosome(bedtools_chr, maxd, size):
 ### Execution Section
 
 
-files = [x for x in get_only_files(args.path) if "annotated" in x]
-blist = [BedTool(x) for x in files]
-size = len(blist)
-res_total, stat_total_counts = find_shared_peaks(blist, args.maxd)
-#fname = 'all'
+file_dict = gather_files(args.path, args.replicates, args.name)
+for dname, files in file_dict.items():
+    blist = [BedTool(x) for x in files]
+    size = len(blist)
+    res_total, stat_total_counts = find_shared_peaks(blist, args.maxd)
 
-with open(os.path.join(args.outdir, "%s.gff" % args.name), 'w') as f:
+    with open(os.path.join(args.outdir, "%s.gff" % dname), 'w') as f:
+        
+        f.write("# %s\n" % ",".join([os.path.basename(x).split(".")[0] for x in files]))
+        for compiled in res_total:
+            f.write(print_compiled(compiled, size))
     
-    f.write("# %s\n" % ",".join([os.path.basename(x).split(".")[0] for x in files]))
-    for compiled in res_total:
-        f.write(print_compiled(compiled, size))
-    
-
-sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
+    sys.stderr.write("\n%s\n" % dname);
+    sys.stderr.write(shared_peaks_stat_to_string(stat_total_counts, size))
 
     
 

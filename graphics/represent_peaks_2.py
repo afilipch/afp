@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt;
 import os
 from collections import defaultdict
 from matplotlib.patches import Rectangle
+from afbio.sequencetools import coverage2dict
+
 
 from pybedtools import BedTool, Interval
 import pandas as pd
@@ -20,18 +22,22 @@ parser.add_argument('--custom', nargs = '?', default=False, const=True, type = b
 parser.add_argument('--flen', nargs = '?', default=40, type = int, help = "Length of the peak\'s flanks to be drawn");
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
 parser.add_argument('--overlap', nargs = '?', default=0.5, type = float, help = "Minimal reciprocal overlap fraction required for the peaks to be considered as the same peak");
-parser.add_argument('--normalize', nargs = '?', default=False, const=True, type = str, help = "If set, normalized coverage is output");
+#parser.add_argument('--normalize', nargs = '?', default=False, const=True, type = str, help = "If set, normalized coverage is output");
 args = parser.parse_args();
 
-def getcoverage(path, normalize):
-    coverage = pd.read_csv(path, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
-    if(normalize):
-        coverage = coverage/np.mean(coverage);
-    return coverage
+regions = BedTool(args.regions)
+exp_names = [os.path.basename(x).split(".")[0] for x in args.coverage]
+
+
+#def getcoverage(path, normalize):
+    #coverage = pd.read_csv(path, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
+    #if(normalize):
+        #coverage = coverage/np.mean(coverage);
+    #return coverage
 
 
 regions = BedTool(args.regions)
-coveragesets = [getcoverage(x, args.normalize) for x in args.coverage]
+coveragesets = [list(coverage2dict(x).values())[0] for x in args.coverage]
 
 
 def splitcoverage(region, coveragesets, flank):
@@ -77,18 +83,18 @@ def draw_annotation(ax, locan, hlim):
 
 ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4])    
     
-if(args.normalize):
-    ylabel = 'normalized read coverage (num of means)'
-else:
-    ylabel = 'read coverage'
+#if(args.normalize):
+    #ylabel = 'normalized read coverage (num of means)'
+#else:
+ylabel = 'read coverage'
 
 
-def getplot(signal_noise_local, size, start, end, path, fignum, locan, zscore):
+def getplot(signal_noise_local, size, start, end, path, fignum, locan, zscore, exp_names):
     fig, axes = plt.subplots(nrows=size, ncols = 1, sharex=False, sharey=True, figsize = (16, 5*(size+1)), frameon=False)
     plt.suptitle("Top %s peak with z-score %s" % (ordinal(fignum), zscore), fontsize = 'xx-large')
     plt.tight_layout(rect=[0.1, 0.15, 0.95, 0.96], h_pad = 4)
     xticklocs, xticklabels = setticks(start, end)
-    for ax, (signal, noise) in zip(axes, signal_noise_local):
+    for ax, (signal, noise), exp_name in zip(axes, signal_noise_local, exp_names):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.get_xaxis().tick_bottom()
@@ -99,6 +105,7 @@ def getplot(signal_noise_local, size, start, end, path, fignum, locan, zscore):
         ax.set_xlim(start, end)
         ax.set_xticks(xticklocs)
         ax.set_xticklabels(xticklabels)
+        ax.set_ylabel(exp_name)
     
     ansize = len(locan)
     box = axes[-1].get_position()
@@ -162,7 +169,7 @@ for c, (region, snl) in enumerate(zip(regions, signal_noise_sets)):
     locan.sort(key=lambda x: x[3]);
     #sys.stdout.write(str(region))
     os.path.join(args.outdir, "peak%d" % (c+1))
-    getplot(snl, size, region.start, region.end, os.path.join(args.outdir, "%s.%s" % (region.name, args.format)), c+1, locan, max([float(x) for x in region.score.split(",") if x != 'None']))
+    getplot(snl, size, region.start, region.end, os.path.join(args.outdir, "%s.%s" % (region.name, args.format)), c+1, locan, max([float(x) for x in region.score.split(",") if x != 'None']), exp_names)
     if(not (c+1) % 10):
         sys.stderr.write("%d peaks are processed\n" % (c+1))
     #sys.exit()
