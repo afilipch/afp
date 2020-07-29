@@ -20,12 +20,14 @@ parser.add_argument('--maxd', nargs = '?', default=60, type = int, help = "Maxim
 parser.add_argument('--replicates', nargs = '+', default = [], type = str, help = "If set, provided peaks are considered as having replicates");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 parser.add_argument('--name', nargs = '?', default='all', type = str, help = "Name of the output file");
+#parser.add_argument('--order', nargs = '+', type = str, help = "Names of the provided samples in the order to be reported");
 args = parser.parse_args();
 
 
 def gather_files(path, replicates, name):
     res = defaultdict(list)
     files = [x for x in get_only_files(path) if "annotated" in x]
+    files.sort()
     
     for f in files:
         for r in replicates:

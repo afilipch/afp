@@ -62,11 +62,6 @@ def print_compiled(compiled, size):
     
     return consensus;
     
-    #print(consensus)
-    #for cs in compiled_processed:
-        #print(cs)
-    #print()
-    #print("*"*150)
     
     
     
