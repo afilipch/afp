@@ -18,18 +18,29 @@ import matplotlib.pyplot as plt;
 #from afbio.pybedtools_af import construct_gff_interval
 
 
-parser = argparse.ArgumentParser(description='Explore evolution of the peaks over time');
+parser = argparse.ArgumentParser(description='Explore the correlation of samples (along with replicates) for the gene expression');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the differential table, tsv file");
 parser.add_argument('--mincov', nargs = '?', default=10, type = float, help = "Minimum required coverage [TPM]");
-parser.add_argument('--log', nargs = '?', default=False, const = True, type = bool, help = "If set, log transformation is applied");
+parser.add_argument('--ctype', nargs = '?', default='pearson', choices = ['pearson', 'pearson_log2', 'spearman'], type = str, help = "correlation type: pearson, pearson_log2 or spearman");
+#parser.add_argument('--log', nargs = '?', default=False, const = True, type = bool, help = "If set, log transformation is applied");
 parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Path to the plot");
 args = parser.parse_args();
 
-
-if(args.log):
-    log_string = ' log(n+1)'
+if(args.ctype == 'pearson'):
+    cor_func = pearsonr;
+    clabel = 'pearson'
+elif(args.ctype == 'pearson_log2'):
+    cor_func = lambda a1, a2: pearsonr( [ np.log10(x+1) for x in a1], [ np.log2(x+1) for x in a2] )
+    clabel = 'pearson log2'
 else:
-    log_string = ''
+    cor_func = spearmanr;
+    clabel = 'spearman'
+
+
+#if(args.log):
+    #log_string = ' log(n+1)'
+#else:
+    #log_string = ''
 
 ### Read input data
 START = 4
@@ -45,7 +56,6 @@ with open(args.path) as f:
             expr_list[c].append([ float(x) for x in el.split(",")])
             
 
-print("sample\tbatch\tbatch\tPearson R%s" % log_string)
 expr_list = [np.array(x) for x in expr_list]
 for sample, label in zip(expr_list, labels):
     for c1, c2 in combinations(range(sample.shape[1]), 2):
@@ -55,12 +65,11 @@ for sample, label in zip(expr_list, labels):
                 a1.append(el1)
                 a2.append(el2)
                 
-        if(args.log):
-            a1 = [np.log(x+1) for x in a1]
-            a2 = [np.log(x+1) for x in a2]
+        #if(args.log):
+            #a1 = [np.log(x+1) for x in a1]
+            #a2 = [np.log(x+1) for x in a2]
             
-        pc, pval = pearsonr(a1, a2)
-        #pc, pval = spearmanr(a1, a2)
+        pc, pval = cor_func(a1, a2)
         #print("%s\t%d\t%d\t%1.3f" % (label, c1+1, c2+1, pc))
     #print()
 print()
@@ -75,7 +84,7 @@ print()
 ### Find correlation coefficients
 
 inter_samples = (np.array([np.mean(x, axis=1) for x in expr_list])).transpose()
-print("sample1\tsample2\tPearson R%s" % log_string)
+print("sample1\tsample2\t%s" % clabel)
 cmatrix = np.zeros( (inter_samples.shape[1], inter_samples.shape[1]));
 for i in range(cmatrix.shape[0]):
     cmatrix[i] = 1
@@ -84,10 +93,10 @@ for i in range(cmatrix.shape[0]):
 
 for i, j in combinations(range(inter_samples.shape[1]), 2):
     with_signal = np.array( [(x[0], x[1]) for x in zip(inter_samples[:,i], inter_samples[:,j]) if max(x)>args.mincov])
-    if(args.log):
-        with_signal = np.array([(np.log(x[0]+1), np.log(x[1]+1)) for x in with_signal])
+    #if(args.log):
+        #with_signal = np.array([(np.log(x[0]+1), np.log(x[1]+1)) for x in with_signal])
         
-    pc, pval = pearsonr(with_signal[:,0], with_signal[:,1])
+    pc, pval = cor_func(with_signal[:,0], with_signal[:,1])
     cmatrix[i,j] = pc
     cmatrix[j,i] = pc
     print("%s\t%s\t%1.3f" % (labels[i], labels[j], pc) )
@@ -101,10 +110,10 @@ timestamps = labels
 cmap="RdPu"
 
 fig, ax = plt.subplots()
-plt.tight_layout(rect=[0.05, 0, 1, 0.90])
+plt.tight_layout(rect=[0.1, 0.00, 0.9, 0.8])
 im = ax.imshow(cmatrix, cmap=cmap, vmax=1)
 cbar = ax.figure.colorbar(im, ax=ax, cmap=cmap)
-cbar.ax.set_ylabel("Pearson correlation%s" % log_string, rotation=-90, va="bottom")
+cbar.ax.set_ylabel("%s correlation" % clabel, rotation=-90, va="bottom")
 
 ax.set_xticks(np.arange(len(timestamps)))
 ax.set_yticks(np.arange(len(timestamps)))

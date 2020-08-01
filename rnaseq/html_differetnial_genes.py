@@ -102,7 +102,7 @@ with open(os.path.join(args.outdir, args.name + ".html" ), 'w') as f:
     
 
 with open(os.path.join(args.outdir, args.name + ".tsv"), 'w') as f:
-    f.write("%s\n" % "\t".join(header[1:]));
+    f.write("%s\n" % "\t".join(header[:1] + header[2:]));
     for d in data:
         newd, gene = annotate(d, gene2annotation)
         f.write("%s\n" % "\t".join(newd));

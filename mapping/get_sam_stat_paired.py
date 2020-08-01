@@ -19,7 +19,7 @@ from afbio.generators import generator_single_mappings, generator_paired_mapping
 parser = argparse.ArgumentParser(description='Converts sam records with multimappers into bedfile');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the sam file");
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the reference genome, fasta format");
-parser.add_argument('--outstat', nargs = '?', required=True, type = str, help = "Path to a folder for statistics");
+parser.add_argument('--outstat', nargs = '?', required=False, type = str, help = "Path to a folder for statistics");
 parser.add_argument('--outcoverage', nargs = '?', required=True, type = str, help = "Path to a folder for coverage");
 parser.add_argument('--ambiguous', nargs = '?', default=0, const=1, type = int, help = "If set ambiguous mappings will be also counted");
 parser.add_argument('--paired', nargs = '?', default=False, const=True, type = bool, help = "has to be set if the mappings arise from paired-end reads");
@@ -91,7 +91,10 @@ samfile = pysam.AlignmentFile(args.path)
 for readmappings in generator_mappings(samfile):
     stat_list = readmappings2stat(readmappings, get_stat, args.ambiguous)
     if(stat_list):
-        count = 1.0/len(stat_list)
+        if(args.ambiguous ==  2):
+            count = 1;
+        else:
+            count = 1.0/len(stat_list)
         if(args.collapsed):
             count *= int(readmappings[0].query_name.split("_")[-1][1:] )
         for chrom, start, end, score, strand in stat_list:
@@ -150,8 +153,6 @@ def rnase_plot(ndict, output, title, normed=False):
     plt.clf()
     return xticklabels, bars
     
-rnase_plot(s_nucls, os.path.join(args.outstat, '%s.rnase.5prime.png' % basename), "%s 5'end cut frequences" % basename, normed=True)
-rnase_plot(e_nucls, os.path.join(args.outstat, '%s.rnase.3prime.png' % basename), "%s 3'end cut frequences" % basename, normed=True)
         
 
 
@@ -183,8 +184,11 @@ def draw_small_scale_distr(distr, output, title, xlabel, normed = False, fontsiz
     plt.clf()
     return list(brange), bars
     
-draw_small_scale_distr(fragment_lengthes, os.path.join(args.outstat, '%s.fragment_lengthes.png' % basename), "%s fragment length distribution" % basename, 'length', normed=True)
-draw_small_scale_distr(scores, os.path.join(args.outstat, '%s.scores.png' % basename), "%s alignment score distribution" % basename, 'score', normed=True)
+if(args.outstat):
+    rnase_plot(s_nucls, os.path.join(args.outstat, '%s.rnase.5prime.png' % basename), "%s 5'end cut frequences" % basename, normed=True)
+    rnase_plot(e_nucls, os.path.join(args.outstat, '%s.rnase.3prime.png' % basename), "%s 3'end cut frequences" % basename, normed=True)
+    draw_small_scale_distr(fragment_lengthes, os.path.join(args.outstat, '%s.fragment_lengthes.png' % basename), "%s fragment length distribution" % basename, 'length', normed=True)
+    draw_small_scale_distr(scores, os.path.join(args.outstat, '%s.scores.png' % basename), "%s alignment score distribution" % basename, 'score', normed=True)
 
 
 #####################################################################################################################################

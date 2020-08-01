@@ -43,8 +43,8 @@ def makefile_local(name2sample, outdir, paired):
             final_files.extend(output_files)
 
     else:
-        for sample, pair in name2sample.items():
-            input_files = sample
+        for name, pair in name2sample.items():
+            input_files = pair
             output_files = os.path.join(outdir, "%s.fastq" % name)
             script = get_script('collapse_single.py', seq_package, arguments={'--output': os.path.join(outdir, name), '--log': args.log}, inp = input_files)
             mlist.append(dependence(input_files, output_files, script));  

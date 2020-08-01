@@ -19,6 +19,7 @@ parser.add_argument('--rrna', nargs = '?', required=True, type = str, help = "Pa
 parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "Path to the genome, fasta file");
 parser.add_argument('--minfraction', nargs = '?', default=1, type = float, help = "Minimal required fraction/multiplier (of the mean rRNA coverage) for a particular position to be counted as nondepleted");
 parser.add_argument('--minlength', nargs = '?', default=20, type = float, help = "Minimal required length of non-depleted regions");
+parser.add_argument('--outtype', nargs = '?', choices=['fa', 'tsv'], default='tsv', type = str, help = "Type of the output file, fasta or tsv");
 args = parser.parse_args();
 
 strand_conv = {'plus': '+', 'minus': '-'} 
@@ -51,16 +52,20 @@ covlimit = args.minfraction*(rrna_sum/rrna_length)
 
 
 
-def print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome):
+def print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome, outtype='tsv'):
     start = r_start + cur_start
     stop = r_start + pos
     seq = genome[chrom][start: stop].seq
     if(strand == '-'):
         seq = seq.reverse_complement()
-    print( "\t".join(( chrom, str(start), str(stop), strand, name, type_, "%1.1f" % np.mean(cov[cur_start: pos]), str(seq) )) )
+    if(outtype == 'tsv'):
+        print( "\t".join(( chrom, str(start), str(stop), strand, name, type_, "%1.1f" % np.mean(cov[cur_start: pos]), str(seq) )) )
+    elif('fa'):
+        print(">%s\n%s" % (":".join(( chrom, str(start), str(stop), strand, name, type_, "%1.1f" % np.mean(cov[cur_start: pos]))) , seq )  )
     
 
-print( "\t".join(( "chromosome", "start", "stop", "strand", "rRNA_ID", "type", "mean_coverage", 'sequence' )) )
+if(args.outtype == 'tsv'):
+    print( "\t".join(( "chromosome", "start", "stop", "strand", "rRNA_ID", "type", "mean_coverage", 'sequence' )) )
 for chrom, r_start, r_stop, name, strand, type_, cov in rrna2coverage:
     in_region = cov[0] >= covlimit
     cur_start = 0;
@@ -73,12 +78,12 @@ for chrom, r_start, r_stop, name, strand, type_, cov in rrna2coverage:
             if(in_region):
                 in_region = False;
                 if(pos - cur_start >= args.minlength):
-                    print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome)
+                    print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome, outtype = args.outtype)
     else:
         if(in_region):
             pos = len(cov)
             if(pos - cur_start >= args.minlength):
-                print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome)
+                print_out(chrom, r_start, r_stop, cur_start, pos, strand, name, type_, cov, genome, outtype = args.outtype)
         
                 
     

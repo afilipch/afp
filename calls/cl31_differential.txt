@@ -1,0 +1,34 @@
+### RNA-seq differential analyses for induced coryne glutamicum with and without cl31 phage ###
+
+#FOLDER:  /hdd/projects/ribo_rna
+python /home/andrei/afp/rnaseq/execute.py projects/main --package /home/andrei/afp --reads reads/processed/ --index ../../genomic/coryne/nc_003450_3/cl31/index/nc3450_cl31 --genome ../../genomic/coryne/nc_003450_3/cl31/nc3450_cl31.fa --multi --ucsc philipchick/cl31 --ambiguous --threads 7 --annotation ../../genomic/coryne/nc_003450_3/cl31/nc3450_cl31.ncbi.gff --collapsed --name cl31
+
+
+
+### Basic calls and statistics ###
+
+#FOLDER: /hdd/projects/ribo_rna/projects/main
+python ~/afp/rnaseq/compile_expression.py transcripts/ --order biwt_minus biwt_plus mb001_minus mb001_plus --annotation /hdd/genomic/coryne/nc_003450_3/cl31/nc3450_cl31.transcripts.gff > differential/compiled.gff
+#FOLDER: /hdd/projects/ribo_rna/projects/main/differential
+python ~/afp/rnaseq/differential_multi.py compiled.gff > assigned.tsv
+python ~/afp/project_scripts/cl31/total_expression_barplots.py genomic/compiled.gff cgpN/compiled.gff cl31/compiled.gff --outdir plots --format svg
+python ~/afp/rnaseq/inter_samples_correlation.py assigned.tsv --ctype pearson_log2  --plot plots/samples_pearson_log2.svg
+
+### Split transcripts by their origins ###
+head compiled.gff -n 1 > cl31/compiled.gff
+grep 453-Cg-phage-CL31_S7_L001_R1_001_contig_1 compiled.gff > cl31/compiled.gff
+
+head compiled.gff -n 1 > genomic/compiled.gff
+grep 453-Cg-phage-CL31_S7_L001_R1_001_contig_1 compiled.gff -v > genomic/todel.gff
+intersectBed -a genomic/temp.gff -b /hdd/genomic/coryne/nc_003450_3/phages.bed -v >> genomic/compiled.gff
+
+head compiled.gff -n 1 > cgpN/compiled.gff
+intersectBed -a compiled.gff -b /hdd/genomic/coryne/nc_003450_3/phages.bed -u >> cgpN/compiled.gff
+
+
+### Differential analyses (the same for all origin types) ###
+
+#FOLDER: /hdd/projects/ribo_rna/projects/main/differential/cl31
+
+python ~/afp/rnaseq/differential_multi.py compiled.gff > assigned.tsv
+python ~/afp/rnaseq/html_differetnial_genes.py assigned.tsv --annotation /hdd/genomic/coryne/nc_003450_3/cl31/nc3450_cl31.transcripts.gff  --js ~/afp/afbio/html/table.js --css ~/afp/afbio/html/table.css --ucsc philipchick/cl31 --name cl31 --top 200 --outdir results --genes_dir ../../html_genes/

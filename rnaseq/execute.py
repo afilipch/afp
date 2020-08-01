@@ -238,24 +238,11 @@ for mf_name, mf_path, input_names in zip(mf_names, mf_multipath, input_list):
     mlist.append(dependence(input_files, output_files, script))
 
 if(args.multi):
-    #all_coverages = [x[0] for x in all_outputs]
-    #all_peaks = [x[1] for x in all_outputs]
-    
-    #input_files = mf_names
-    #output_files = os.path.join('regions', 'regions.gff')
-    #script = get_script('merge_peaks.py', chap_package, arguments={'--coverage': all_coverages, '--zscore': region_settings['zscore'], '--flank': region_settings['flank']}, inp = all_peaks, out = output_files)
-    #mlist.append(dependence(input_files, output_files, script));
-    
-    #input_files = output_files
-    #output_files = os.path.join('log', 'peaks_correlation.svg')
-    #script = get_script('correlate_peaks.py', chap_package, arguments={'--min-zscore': region_settings['min-zscore'], '--names': sample_names, '--plot': output_files}, inp = input_files)
-    #mlist.append(dependence(input_files, output_files, script));
-    
     
     input_files = mf_names
-    output_files = os.path.join('log', 'report.html')
-    final_files.append(output_files)
-    script = get_script('log_html_total.py', rnaseq_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names}, inp = 'log', out = output_files)
+    output_files = [os.path.join('log', 'report.%s' % x) for x in ('html', 'tsv')] 
+    final_files.extend(output_files)
+    script = get_script('log_html_total.py', rnaseq_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--name': args.name, '--order': sample_names, '--outdir': 'log'}, inp = 'log')
     mlist.append(dependence(input_files, output_files, script))    
     
    
