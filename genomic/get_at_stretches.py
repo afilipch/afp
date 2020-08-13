@@ -10,18 +10,6 @@ from collections import Counter;
 
 from afbio.sequencetools import sliding_window
 
-parser = argparse.ArgumentParser(description='Detects AT-rich sequences along the provided genome');
-parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genome, fasta format");
-parser.add_argument('--anchor', nargs = '?', default=6, type = int, help = "Length of AT only anchor sequence");
-parser.add_argument('--maxgc', nargs = '?', default=2, type = int, help = "Max allowed number of GC inside the stretch");
-parser.add_argument('--minat', nargs = '?', default=0.75, type = float, help = "Min allowed AT content inside the flanks with GC");
-parser.add_argument('--minlength', nargs = '?', default=8, type = int, help = "Min allowed length of a discovered AT stretch");
-args = parser.parse_args();
-
-
-
-testseq2 = "GCGTATATATATATGGAATATGATAAAAAATATATATATAAATAGGAATTAACATATACGTACTCGACTC"
-
 
 
 def compare_fraction(seq, minat):
@@ -107,48 +95,53 @@ def get_extensions(seq, start, length, maxgc, minat):
                 break;
         else:
             variants.append((fc, len(backward)))
-            
-    #print(variants)
-    #print([calculate_at_extensions(forward, backward, maxgc, x) for x in variants])
+
     bestvar = max(variants, key = lambda x: calculate_at_extensions(forward, backward, maxgc, x))
-    #print(bestvar)
     return start-sum([ x[1] for x in backward[:bestvar[1]] ]), start + length + sum([ x[1] for x in forward[:bestvar[0]] ]) 
     
             
         
-    
-    
-    
+def get_at_rich_stretches(seq, anchor_length, minlength, maxgc_num, minat_fraction):
+    upper_limit = 0
+    for position, window in enumerate(sliding_window(seq, anchor_length)):
+        if(position >= upper_limit and 'G' not in window and 'C' not in window):
+            start, end = get_extensions(seq[upper_limit:], position-upper_limit, anchor_length, maxgc_num, minat_fraction)
+            start = max(start, 0)
+            if(end-start >= minlength):
+                adstart = start + upper_limit
+                adend = end + upper_limit
+                upper_limit = adend;
+                #print(start, end)
+                lseq = seq[adstart:adend]
+                yield ( adstart, adend, lseq, (lseq.count("A") + lseq.count('T')) / len(lseq), lseq.count('G') + lseq.count('C') )
 
-#print(extend_anchor_forward(testseq2, 30, 6, args.maxgc, args.minat));
-#print(extend_anchor_backward(testseq2, 30, 6, args.maxgc, args.minat));
-#start, end = get_extensions(testseq2, 30, 6, args.maxgc, args.minat)
-#print()
-#print(testseq2)
-#print(testseq2[start:end])
                     
         
 
 
-upper_limit = 0;
-for seqrec in SeqIO.parse(args.path, 'fasta'):
-    seq = seqrec.seq.upper();
-    for position, window in enumerate(sliding_window(seq, args.anchor)):
-        if(position >= upper_limit and 'G' not in window and 'C' not in window):
-            start, end = get_extensions(seq[upper_limit:], position-upper_limit, args.anchor, args.maxgc, args.minat)
-            if(end-start >= args.minlength):
-                adstart = start + upper_limit
-                adend = end + upper_limit
-                upper_limit = adend;
-                lseq = seq[adstart:adend]
-                print( "%s\t%d\t%d\tr%d_%d\t%d\t+" % ('chr1', adstart, adend, adstart, adend, lseq.count('G') + lseq.count('C')))
 
 
 
+if (__name__ == '__main__'):
+    parser = argparse.ArgumentParser(description='Detects AT-rich sequences along the provided genome');
+    parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genome, fasta format");
+    parser.add_argument('--anchor', nargs = '?', default=6, type = int, help = "Length of AT only anchor sequence");
+    parser.add_argument('--maxgc', nargs = '?', default=2, type = int, help = "Max allowed number of GC inside the stretch");
+    parser.add_argument('--minat', nargs = '?', default=0.75, type = float, help = "Min allowed AT content inside the flanks with GC");
+    parser.add_argument('--minlength', nargs = '?', default=8, type = int, help = "Min allowed length of a discovered AT stretch");
+    args = parser.parse_args();
+    
+    for seqrec in SeqIO.parse(args.path, 'fasta'):
+        seq = seqrec.seq.upper();
+        for adstart, adend, lseq, at_fraction, gc_count in get_at_rich_stretches(seq, args.anchor, args.minlength, args.maxgc, args.minat):
+                print( "%s\t%d\t%d\t%s\t%1.1f\t%d" % (seqrec.chrom, adstart, adend, lseq, at_fraction*100, gc_count) )    
 
 
 
-
-
-
-        
+    #testseq2 = "GCGTATATATATATGGAATATGATAAAAAATATATATATAAATAGGAATTAACATATACGTACTCGACTC"
+    #print(extend_anchor_forward(testseq2, 30, 6, args.maxgc, args.minat));
+    #print(extend_anchor_backward(testseq2, 30, 6, args.maxgc, args.minat));
+    #start, end = get_extensions(testseq2, 30, 6, args.maxgc, args.minat)
+    #print()
+    #print(testseq2)
+    #print(testseq2[start:end])

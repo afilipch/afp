@@ -44,12 +44,13 @@ gene2annotation = dict([ (x.attrs['ID'], x) for x in annotation])
 
 
 def annotate(d, gene2annotation):
+    name = d[0];
     gene = gene2annotation[d[0]]
-    name = gene.attrs.get('genesymbol', 'None')
-    if(name == 'None'):
-        name = gene.attrs['ID']
-    ann = gene.attrs['product']
-    return [name, ann] + d[1:], gene
+    
+    alt_name = gene.attrs.get('cg', 'none')
+    genesymbol = gene.attrs.get('genesymbol', name)
+    product = gene.attrs['product']
+    return [name, alt_name, genesymbol, product] + d[1:], gene
     
 
 
@@ -70,8 +71,10 @@ with open(args.js) as f:
 with doc.head:
     style(_style)
 
-header.insert(1, 'UCSC')
-header.insert(2, 'product')
+header = header[:1] + ['alt_name', 'genesymbol', 'UCSC', 'product'] + header[1:]
+
+
+
 with doc:
     p(strong(_title))
     input(type="text", id="inp1", onkeyup='my_search(0, "inp1", "myTable")', placeholder="Search for a genesymbol..")
@@ -81,7 +84,9 @@ with doc:
         for d in data:
             newd, gene = annotate(d, gene2annotation)
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, gene.name + ".html"), newd[0]) ))
+                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, newd[2] + ".html"), newd[0]) ))
+                td(newd[1]);
+                td(newd[2]);
                 td(raw('<a href=%s target="_blank">link</a>' % add_ucsc(gene, args.ucsc, chr_dict=chrom_dict) ))
                 for el in newd[1:]:
                     a = el.split(",")
@@ -102,7 +107,7 @@ with open(os.path.join(args.outdir, args.name + ".html" ), 'w') as f:
     
 
 with open(os.path.join(args.outdir, args.name + ".tsv"), 'w') as f:
-    f.write("%s\n" % "\t".join(header[:1] + header[2:]));
+    f.write("%s\n" % "\t".join(header[:3] + header[4:]));
     for d in data:
         newd, gene = annotate(d, gene2annotation)
         f.write("%s\n" % "\t".join(newd));

@@ -12,43 +12,24 @@ from afbio.sequencetools import coverage2dict
 from pybedtools import BedTool, Interval
 import pandas as pd
 
-parser = argparse.ArgumentParser(description='Represents peaks evolution in course of time-series experiments');
-parser.add_argument('--regions', nargs = '?', required=True, type = str, help = "Path to the consensus regions");
-parser.add_argument('--coverage', nargs = '+', required=True, type = str, help = "Path to the coverage files, the order of the given files must correspond to the time series");
+parser = argparse.ArgumentParser(description='Creates a plot based on bedgraph track');
+parser.add_argument('--regions', nargs = '?', required=True, type = str, help = "Path to the genomic regions, gff/bed format");
+parser.add_argument('--coverage', nargs = '+', required=True, type = str, help = "Path to the bedgraph files");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory");
 parser.add_argument('--annotation', nargs = '?', required=True, type = str, help = "Path to the genomic annotation, plots will be annotated with the provided genomic features");
 parser.add_argument('--custom', nargs = '?', default=False, const=True, type = bool, help = "If set the annotation genes are supposed to be already processed, if not they are supposed to be in NCBI gff3 format");
-
-parser.add_argument('--flen', nargs = '?', default=40, type = int, help = "Length of the peak\'s flanks to be drawn");
 parser.add_argument('--format', nargs = '?', default='png', type = str, help = "Plot format, png by default");
-parser.add_argument('--overlap', nargs = '?', default=0.5, type = float, help = "Minimal reciprocal overlap fraction required for the peaks to be considered as the same peak");
-
-
-#parser.add_argument('--normalize', nargs = '?', default=False, const=True, type = str, help = "If set, normalized coverage is output");
 args = parser.parse_args();
 
 regions = BedTool(args.regions)
 exp_names = [os.path.basename(x).split(".")[0] for x in args.coverage]
 
 
-#def getcoverage(path, normalize):
-    #coverage = pd.read_csv(path, sep="\t" , names = ["chr", "postion", "coverage"]).coverage.values
-    #if(normalize):
-        #coverage = coverage/np.mean(coverage);
-    #return coverage
 
 
-regions = BedTool(args.regions)
-coveragesets = [list(coverage2dict(x).values())[0] for x in args.coverage]
 
+sys.exit()
 
-def splitcoverage(region, coveragesets, flank):
-    signal = [np.concatenate((np.zeros(flank), x[region.start:region.end], np.zeros(flank))) for x in coveragesets]
-    control  = [np.concatenate((x[max(0, region.start-flank):region.start], np.zeros(region.end - region.start), x[region.end:region.end +flank])) for x in coveragesets]
-    return list(zip(signal, control))
-
-#print(len(regions))
-signal_noise_sets = [splitcoverage(x, coveragesets, args.flen) for x in regions];
 
 
 ### Plot functions ###################################################################################################
@@ -82,12 +63,9 @@ def draw_annotation(ax, locan, hlim):
         rect = Rectangle( (an[0], 0.25+c), an[1] - an[0], 0.5, facecolor = 'green', edgecolor = 'green')
         ax.add_patch(rect)
         
-
-ordinal = lambda n: "%d%s" % (n,"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4])    
+ 
     
-#if(args.normalize):
-    #ylabel = 'normalized read coverage (num of means)'
-#else:
+
 ylabel = 'read coverage'
 
 

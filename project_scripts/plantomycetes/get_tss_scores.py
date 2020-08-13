@@ -42,9 +42,7 @@ def get_tss_at_contents(genes, fasta, upstream, downstream):
     low_at = [median - np.percentile(tss_at, p) for p in P_RANGE]
     
     return high_at, low_at;
-    #print(len(tss_at))
-    #print(high_at);
-    #print(low_at);
+
     
 
 
@@ -54,7 +52,6 @@ fasta_files = sorted([os.path.join(args.path, f) for f in listdir(args.path) if 
 
 names = [];
 high_at_list = [[] for i in P_RANGE];
-#print(len(high_at_list))
 differences_list = [[] for i in P_RANGE];
 
 
@@ -66,8 +63,7 @@ for gff, fna in zip(gff_files, fasta_files):
     for c, (hat, lat) in enumerate(zip(high_at, low_at)):
         high_at_list[c].append(hat);
         differences_list[c].append(hat-lat);
-    #print(high_at_list)
-    #break;
+
 
 index_list = [find_elements_order(x) for x in high_at_list]
 index_list.extend([find_elements_order(x) for x in differences_list])
@@ -75,10 +71,7 @@ result_table = []
 for c, name in enumerate(names):
     result_table.append(( [name] + [x[c] for x in index_list] + [x[c] for x in high_at_list] + [x[c] for x in differences_list] ))
     result_table[-1].insert( 1, score_genome(result_table[-1]))
-    
-    #print(result_table[-1])
-    #print(score_genome(result_table[-1]))
-    ##sys.stdout.write("%s\t%s\n" % (name, "\t".join
+
     
 
 result_table.sort(key = lambda x: x[1], reverse = True);

@@ -23,16 +23,16 @@ parser.add_argument('--genome', nargs = '?', required=True, type = str, help = "
 parser.add_argument('--mincov', nargs = '?', default=1, type = float, help = "Minimum allowed coverage")
 args = parser.parse_args();
 
-FLANK = 30;
+FLANKS = [30, 50, 250]
 SAMPLE_REPLICATES = [0,3,5,7,9]
 
 sample_names = read_comments(args.path)[0][1:].strip().split(",")
-header = ["Chrom", "Start", "Stop", "Gene ID", "Gene symbol", "Distance ATG", "Distance to TSS", "Predicted Function", "Annotation", "Sequence"] + ["TC %s" % x for x in sample_names] + ["AC %s" % x for x in sample_names] + ["AS Gene ID", "AS Gene symbol", "AS Distance ATG", "AS Distance to TSS", "AS Predicted Function", "AS Annotation"]
+header = ["Chrom", "Start", "Stop", "Gene ID", "Gene symbol", "Distance ATG", "Distance to TSS", "Predicted Function", "Annotation"] + ["Seq (%d bp)" % (x*2+1) for x in FLANKS] + ["TC %s" % x for x in sample_names] + ["AC %s" % x for x in sample_names] + ["AS Gene ID", "AS Gene symbol", "AS Distance ATG", "AS Distance to TSS", "AS Predicted Function", "AS Annotation"]
 
 
-def interval2seq(interval, reference):
-    start = int(interval.name) - FLANK
-    stop = int(interval.name) + FLANK +1
+def interval2seq(interval, reference, flank):
+    start = int(interval.name) - flank
+    stop = int(interval.name) + flank +1
     if(interval.strand == '+'):
         return str(reference[interval.chrom][start:stop].seq.upper())
     elif(interval.strand == '-'):
@@ -49,7 +49,8 @@ def check_interval(interval, mincov):
     
     
 def output_interval(interval, antisense, genome):
-    a = [interval.chrom, str(interval.start), str(interval.stop), interval.attrs['cg'],  interval.attrs['genesymbol'], interval.attrs['atg'], interval.attrs['tss'], interval.attrs['function'], interval.attrs['annotation'], interval2seq(interval, genome)] + interval.attrs['topcoverage'].split(",") + interval.attrs['area_coverage'].split(",") 
+    seqs = [interval2seq(interval, genome, x) for x in FLANKS]
+    a = [interval.chrom, str(interval.start), str(interval.stop), interval.attrs['cg'],  interval.attrs['genesymbol'], interval.attrs['atg'], interval.attrs['tss'], interval.attrs['function'], interval.attrs['annotation']] + seqs + interval.attrs['topcoverage'].split(",") + interval.attrs['area_coverage'].split(",") 
     if(antisense):
         a.extend([antisense.attrs['cg'],  antisense.attrs['genesymbol'], antisense.attrs['atg'], antisense.attrs['tss'], antisense.attrs['function'], antisense.attrs['annotation']])
     else:

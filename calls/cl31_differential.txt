@@ -26,9 +26,14 @@ head compiled.gff -n 1 > cgpN/compiled.gff
 intersectBed -a compiled.gff -b /hdd/genomic/coryne/nc_003450_3/phages.bed -u >> cgpN/compiled.gff
 
 
-### Differential analyses (the same for all origin types) ###
+### Differential analyses ###
 
 #FOLDER: /hdd/projects/ribo_rna/projects/main/differential/cl31
 
-python ~/afp/rnaseq/differential_multi.py compiled.gff > assigned.tsv
+python ~/afp/rnaseq/differential_multi.py compiled.gff  --foldmethod mean --maxfold 20 > assigned.tsv
 python ~/afp/rnaseq/html_differetnial_genes.py assigned.tsv --annotation /hdd/genomic/coryne/nc_003450_3/cl31/nc3450_cl31.transcripts.gff  --js ~/afp/afbio/html/table.js --css ~/afp/afbio/html/table.css --ucsc philipchick/cl31 --name cl31 --top 200 --outdir results --genes_dir ../../html_genes/
+
+
+#FOLDER: /hdd/projects/ribo_rna/projects/main/differential/genomic
+python ~/afp/rnaseq/differential_multi.py compiled.gff  --foldmethod mean --maxfold 20 > assigned.tsv
+python ~/afp/rnaseq/html_differetnial_genes.py assigned.tsv --annotation /hdd/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff  --js ~/afp/afbio/html/table.js --css ~/afp/afbio/html/table.css --ucsc philipchick/cl31 --name cl31_genomic --top 200 --outdir results --genes_dir ../../html_genes

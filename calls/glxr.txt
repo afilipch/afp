@@ -103,8 +103,12 @@ python /home/IBT/filipchyk/afp/chap/merge_peaks.py glu_wt_rep1.annotated.gff glu
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp/regions
 python ~/afp/chap/annotate.py regions.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --format png --outdir ../regions/ > regions.annotated.gff
 python ~/afp/chap/add_antisense_annotation.py regions.annotated.gff --transcripts ~/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff > regions.antisense.gff
-python ~/afp/project_scripts/glxr/allin_table.py regions.antisense.gff --mincov 1.5 --genome ~/genomic/coryne/nc_003450_3/genome.fasta  > ~/mypapers/glxr/allin_table.seq.tsv
 
+
+FOLDER: /hdd/mypapers/glxr/tables
+
+python ~/afp/project_scripts/glxr/allin_table.py  /hdd/projects/glxr/projects/camp/regions/regions.antisense.gff --mincov 1.5 --genome /hdd/genomic/coryne/nc_003450_3/genome.fasta  > allin_table.seq.tsv
+python ~/afp/project_scripts/glxr/fimo_to_table.py allin_table.seq.tsv --fimo fimo/fimo.tsv > allin_table.motif.tsv 
 
 ##########################################################################################
 # FIGURES
