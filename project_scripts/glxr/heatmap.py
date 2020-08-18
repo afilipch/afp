@@ -10,47 +10,70 @@ import numpy as np;
 import pandas as pd;
 import matplotlib.pyplot as plt;
 from math import log
+from collections import defaultdict
 
 
 parser = argparse.ArgumentParser(description='Draws a heatmap for glxr expression');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the expression table");
 parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Path for the output plot");
+parser.add_argument('--top', nargs = '?', default=50, type = int, help = "Number of top genes to take");
 args = parser.parse_args();
+
+ORDER = ['glu_wt', 'glu_ko_cyab', 'ace_glu_wt', 'ace_glu_ko_cyab']
+
+def merge_with_replicates(exp_labels, mylist):
+    res = defaultdict(list)
+    for label, val in zip(exp_labels, mylist):
+        key = "_".join(label.split('_')[:-1])
+        res[key].append(float(val));
+    res = [log(np.mean(res[x])+1, 2) for x in ORDER]
+    #res = [(x[0], log(x[1]+1, 2)) for x in res.items()]
+    #res.sort(key=lambda x: x[0])
+    return res
+    
+
 
 ### Read the input
 expr_start = 4;
 gene_pos = 2;
-expression = []
-gene_labels = []
+gene_expression = []
+#gene_labels = []
 with open(args.path) as f:
-    exp_labels = next(f).strip().split("\t")[expr_start:]
+    exp_labels = [x.split(" ")[1] for x in next(f).strip().split("\t")[expr_start:]]
+    #replicates_dict = dict([ (x[0], "_".join(x[1].split('_')[:-1])) for x in enumerate(exp_labels) ])
+    #print(replicates_dict)
     for l in f:
         a = l.strip().split("\t")
-        gene_labels.append(a[gene_pos]);
-        expression.append([ log(float(x)+1, 2) for x in a[expr_start:]])
-    
-take_genes = 50
-gene_labels = gene_labels[:take_genes]
-cmatrix = np.array(expression[:take_genes])
+        #gene_labels.append(a[gene_pos]);
+        #expression.append([ log(float(x)+1, 2) for x in a[expr_start:]])
+        gene_expression.append( (a[gene_pos], merge_with_replicates(exp_labels, a[expr_start:])) )
+
+gene_expression.sort(key = lambda x: sum(x[1]), reverse = True)
+gene_expression = gene_expression[:args.top]
+
+expression = [x[1] for x in gene_expression]
+gene_labels = [x[0] for x in gene_expression]
+cmatrix = np.array(expression)
 
 
-print(cmatrix.shape)
 
 ######################################################################################
 ### Draw a heatmap
 
-cmap="GnBu"
-
+#cmap="GnBu"
+cmap="inferno_r"
+fontsize = 22
 fig, ax = plt.subplots(figsize=(8, 30))
-plt.tight_layout(rect=[0.2, 0, 1, 0.8])
+plt.tight_layout(rect=[0.05, 0, 0.9, 0.9])
 im = ax.imshow(cmatrix, cmap=cmap)
 cbar = ax.figure.colorbar(im, ax=ax, cmap=cmap)
-cbar.ax.set_ylabel('Log2(Peak Intensity + 1)', rotation=-90, va="bottom")
+cbar.ax.set_ylabel('Log2(Peak Intensity + 1)', rotation=-90, va="bottom", fontsize=fontsize)
+cbar.ax.tick_params(labelsize=fontsize)
 
-ax.set_xticks(np.arange(len(exp_labels)))
+ax.set_xticks(np.arange(len(ORDER)))
 ax.set_yticks(np.arange(len(gene_labels)))
-ax.set_xticklabels(exp_labels, rotation=90)
-ax.set_yticklabels(gene_labels)
+ax.set_xticklabels(ORDER, rotation=90, fontsize=fontsize)
+ax.set_yticklabels(gene_labels, fontsize=fontsize)
 ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
 
 for edge, spine in ax.spines.items():

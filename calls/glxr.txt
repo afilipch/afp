@@ -122,8 +122,8 @@ time python ~/afp/project_scripts/glxr/global_binding_pattern.py coverage/ --plo
 
 #Draw peak intensities heatmap:
 FOLDER: /hdd/mypapers/glxr
-python ~/afp/project_scripts/glxr/heatmap.py tables/249_glxr_binding_sites.csv --plot figures/heatmap.tiff
-
+python ~/afp/project_scripts/glxr/heatmap.py tables/249_glxr_binding_sites.csv --plot figures/heatmap.50.tiff --top 50
+python ~/afp/project_scripts/glxr/heatmap.py tables/249_glxr_binding_sites.csv --plot figures/heatmap.30.tiff --top 30
 
 # Draw a peak to TSS distance distribution
 FOLDER: /home/IBT/filipchyk/projects/glxr/projects/camp

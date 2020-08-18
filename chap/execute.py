@@ -353,7 +353,7 @@ if(args.multi):
         input_files = output_files
         output_files = os.path.join('regions', 'annotated.tsv')
         final_files.append(output_files)
-        script = get_script('annotated2tsv.py', chap_package, inp = input_files, out = output_files)
+        script = get_script('annotated2tsv.py', chap_package, arguments={'--genome': args.genome, '--outdir': 'regions'}, inp = input_files, out = output_files)
         mlist.append(dependence(input_files, output_files, script));
 
       

@@ -84,6 +84,9 @@ for l in table_list:
         for a in l[1:]:
             s_list.append([str(x) for x in a])
         transcript.attrs['expression'] = ":".join([",".join(x) for x in s_list])
+        tid = transcript.attrs['ID']
+        if(tid.startswith('gene-')):
+            transcript.attrs['ID'] = tid[5:]
         sys.stdout.write(str(transcript))
     else:
         sys.stderr.write("%s transcript was not found\n" % name)

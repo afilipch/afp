@@ -38,7 +38,7 @@ rrna2cov = defaultdict(int)
 for transcript in transcripts:
     if(transcript[2] in ['gene', 'pseudogene']):
         local_cov = covdict[transcript.strand][transcript.chrom][transcript.start:transcript.stop]
-        #print(transcript)
+        #sys.stderr.write(str(transcript))
         transcript_type = transcript.attrs['gene_biotype']
         transcript_types[transcript_type] += sum(local_cov)
         if(transcript_type == 'protein_coding'):

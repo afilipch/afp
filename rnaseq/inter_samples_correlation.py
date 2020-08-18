@@ -46,7 +46,9 @@ else:
 START = 4
 with open(args.path) as f:
     labels = [x for x in next(f).strip().split("\t")[START:] if "|" not in x]
-    stop = START + len(labels)
+    llen = int(len(labels)/3)
+    labels = labels[:llen]
+    stop = START + llen
     expr_list = [[] for i in range(len(labels))];
     #print(expr_list)
     for l in f:

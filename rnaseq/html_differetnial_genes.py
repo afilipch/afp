@@ -18,6 +18,7 @@ parser.add_argument('--name', nargs = '?', default="unknown", type = str, help =
 parser.add_argument('--top', nargs = '?', default=300, type = int, help = "Shows only [top] changed genes");
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory (tsv and html files will be written there)")
 parser.add_argument('--genes_dir', nargs = '?', required=True, type = str, help = "Path to the directory with genes html reports")
+parser.add_argument('--chrom_dict', nargs = '+', type = str, help = "UCSC chrom dictionary. Format real_chrom,ucsc_chrom")
 args = parser.parse_args();
 
 
@@ -39,7 +40,11 @@ data.sort(key = lambda x: float(x[2]), reverse=True)
 data = data[:args.top]
 
 annotation = BedTool(args.annotation)
-chrom_dict = ucsc_convert_chromosomes(annotation)
+if(args.chrom_dict):
+    chrom_dict = dict([ tuple(x.split(",")) for x in args.chrom_dict ])
+else:
+    chrom_dict = ucsc_convert_chromosomes(annotation)
+#sys.stderr.write('%s\n' % chrom_dict)
 gene2annotation = dict([ (x.attrs['ID'], x) for x in annotation])
 
 
@@ -84,11 +89,11 @@ with doc:
         for d in data:
             newd, gene = annotate(d, gene2annotation)
             with tr():
-                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, newd[2] + ".html"), newd[0]) ))
+                td(raw('<a href=%s target="_blank">%s</a>' % (os.path.join(args.genes_dir, newd[0] + ".html"), newd[0]) ))
                 td(newd[1]);
                 td(newd[2]);
                 td(raw('<a href=%s target="_blank">link</a>' % add_ucsc(gene, args.ucsc, chr_dict=chrom_dict) ))
-                for el in newd[1:]:
+                for el in newd[3:]:
                     a = el.split(",")
                     if(len(a)==1):
                         td(el)
