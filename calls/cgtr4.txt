@@ -1,0 +1,12 @@
+# Motif Analyses
+# FOLDER: /hdd/projects/cgtr4/projects/main/motif
+
+python ~/afp/chap/peak2fasta.py ../regions/annotated.gff --genome /hdd/genomic/coryne/nc_003450_3/genome.fasta --flank 30 --mincov 0 > fasta/all_61.fa
+python ~/afp/chap/peak2fasta.py ../regions/annotated.gff --genome /hdd/genomic/coryne/nc_003450_3/genome.fasta --flank 50 --mincov 0 > fasta/all_101.fa
+python ~/afp/chap/peak2fasta.py ../regions/annotated.gff --genome /hdd/genomic/coryne/nc_003450_3/genome.fasta --flank 30 --mincov 3 > fasta/cov3_61.fa
+python ~/afp/chap/peak2fasta.py ../regions/annotated.gff --genome /hdd/genomic/coryne/nc_003450_3/genome.fasta --flank 50 --mincov 3 > fasta/cov3_101.fa
+
+meme fasta/all_61.fa -oc meme/all_61  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 6 -revcomp  -evt 0.00001 -p 6
+meme fasta/all_101.fa -oc meme/all_101  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 6 -revcomp  -evt 0.00001 -p 6
+meme fasta/cov3_61.fa -oc meme/cov3_61  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 4 -revcomp  -evt 0.00001 -p 6
+meme fasta/cov3_101.fa -oc meme/cov3_101  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 4 -revcomp  -evt 0.00001 -p 6

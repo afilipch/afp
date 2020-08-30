@@ -9,3 +9,7 @@ python scripts/get_prophages.py 'prophage_features/*' > prophage_metainfo/propha
 
 #Draw basic statistics on prophages
 python scripts/prophage_basic_stat.py prophage_metainfo/prophages.tsv --bacteria prophage_metainfo/bacteria2taxonomy.tsv --maxlength 300000 --plot plots/ --format png
+
+# Co-occurrence of the regulators
+# FOLDER: 
+python ~/afp/project_scripts/erc_project/regulator_coocurance.py data/filtered_regulators.csv --plot mailbox/cooccurrence_heatmap.svg > mailbox/cooccurrence.tsv

@@ -91,6 +91,15 @@ def interval2seq(interval, reference):
     else:
         sys.stderr.write("Strand is not defined. Plus strand sequence will be returned\n")
         return str(reference[interval.chrom][interval.start:interval.stop].seq.upper())
+    
+    
+def peak2seq(interval, reference, flank):
+    start = int(interval.name) - flank
+    stop = int(interval.name) + flank +1
+    if(interval.strand == '+'):
+        return str(reference[interval.chrom][start:stop].seq.upper())
+    elif(interval.strand == '-'):
+        return str(reference[interval.chrom][start:stop].seq.reverse_complement().upper())
 
 
 def get_distance(i1, i2):
