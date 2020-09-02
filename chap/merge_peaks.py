@@ -43,7 +43,8 @@ def print_compiled(compiled, size):
     compiled_processed = [temp_d.get(x, None) for x in range(size)]
     
     area_coverage = ",".join([x.attrs['area_coverage'] if x else '0' for x in compiled_processed])
-    topcoverage=",".join([x.attrs['topcoverage'] if x else '0' for x in compiled_processed])
+    topcoverage = ",".join([x.attrs['topcoverage'] if x else '0' for x in compiled_processed])
+    zscores = ",".join([x.score if x else '0' for x in compiled_processed])
     compiled_processed = [x for x in compiled_processed if x]
     
     compiled = [x[1] for x in sorted(compiled, key = lambda x: x[0])]
@@ -51,7 +52,7 @@ def print_compiled(compiled, size):
     start = min([x.start for x in compiled_processed])
     stop = min([x.stop for x in compiled_processed])
     
-    consensus = construct_gff_interval(compiled[0].chrom, start, stop, 'consensus', score='0', strand='.', source='.', frame='.', attrs=[('Name', pos), ('topcoverage', topcoverage), ('area_coverage', area_coverage)])
+    consensus = construct_gff_interval(compiled[0].chrom, start, stop, 'consensus', score='0', strand='.', source='.', frame='.', attrs=[('Name', pos), ('topcoverage', topcoverage), ('area_coverage', area_coverage), ('zscores', zscores)])
     
     return str(consensus)
     

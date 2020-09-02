@@ -216,7 +216,35 @@ def shared_peaks_stat_to_string(stat_total_counts, size):
     
     
     
-    
+def find_closest_feature_unstranded(peaks, features):
+    fr_dict = defaultdict(list)
+    for fr in BedTool(features):
+        fr_dict[fr.chrom].append(fr)
+    for peak in peaks:
+        center = int(peak.name)
+        d_list = [(fr, (fr.start+fr.end)/2 - center) for fr in fr_dict[peak.chrom]]
+        yield [peak] + list(min(d_list, key = lambda x: abs(x[1])))
+        
+        
+def find_proximal_feature_unstranded(peaks, features, maxd):
+    fr_dict = defaultdict(list)
+    for fr in BedTool(features):
+        fr_dict[fr.chrom].append(fr)
+    for peak in peaks:
+        center = int(peak.name)
+        d_list = [(fr.start+fr.end)/2 - center for fr in fr_dict[peak.chrom]]
+        yield peak, len([x for x in d_list if abs(x) <= maxd])
+        
+        
+def find_closest_peak_unstranded(peaks, features):
+    p_dict = defaultdict(list)
+    for peak in BedTool(peaks):
+        p_dict[peak.chrom].append(peak)
+        
+    for feature in features:
+        center = (feature.start + feature.end)/2
+        d_list = [(peak, center - int(peak.name)) for peak in p_dict[feature.chrom]]
+        yield [feature] + list(min(d_list, key = lambda x: abs(x[1])))
     
     
     

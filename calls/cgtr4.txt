@@ -10,3 +10,8 @@ meme fasta/all_61.fa -oc meme/all_61  -dna  -nostatus -time 18000 -mod zoops -nm
 meme fasta/all_101.fa -oc meme/all_101  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 6 -revcomp  -evt 0.00001 -p 6
 meme fasta/cov3_61.fa -oc meme/cov3_61  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 4 -revcomp  -evt 0.00001 -p 6
 meme fasta/cov3_101.fa -oc meme/cov3_101  -dna  -nostatus -time 18000 -mod zoops -nmotifs 4 -minw 6 -maxw 30  -minsites 4 -revcomp  -evt 0.00001 -p 6
+
+fimo -oc fimo/all_101 meme/all_101/meme.txt /hdd/genomic/coryne/nc_003450_3/genome.fasta
+fimo -oc fimo/cov3_101 meme/cov3_101/meme.txt /hdd/genomic/coryne/nc_003450_3/genome.fasta
+
+python ~/afp/genomic/motif/peaks_vs_motifs.py ../regions/annotated.gff --fimo fimo/cov3_101/fimo.gff --outdir results/cov3_101  > ../regions/with_motif.gff
