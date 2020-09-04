@@ -82,7 +82,7 @@ else:
         else:
             sys.stderr.write("Sample %s was not found in the provided table\n" % sample)
 
-
+#print(name2sample, args.outdir, args.paired)
 print(makefile_local(name2sample, args.outdir, args.paired))
 with open(args.log, 'w') as f:
     timestr = strftime("%Y-%m-%d %H:%M:%S", gmtime())

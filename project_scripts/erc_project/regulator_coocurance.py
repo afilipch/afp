@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(description='Checks co-occurrence of regulators in among multiple bacterial genomes');
 parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the occurrence table, csv format");
 parser.add_argument('--plot', nargs = '?', default='', type = str, help = "Path for the output plot");
+parser.add_argument('--simnum', nargs = '?', default=100, type = int, help = "Number of random simulations");
 #parser.add_argument('--maxlength', nargs = '?', default=10e10, type = int, help = "Maximal length allowed for prophages");
 args = parser.parse_args();
 
@@ -28,7 +29,7 @@ def normalized_dot(l1, l2):
     norma = sum(l1)*sum(l2)/len(l1)
     return np.dot(l1, l2)/norma
 
-df = pd.read_csv('/hdd/projects/erc_project/data/filtered_regulators.csv', index_col = 0, delimiter = ',')
+df = pd.read_csv(args.path, index_col = 0, delimiter = ',')
 data = df.to_numpy()
 genome_names = list(df.index.values)
 regulator_names = list(df.columns.values)
@@ -42,7 +43,7 @@ for i, j in combinations(range(len(occurrence_list)), 2):
     signal.append((i, j, normalized_dot(occurrence_list[i], occurrence_list[j])))
                                
 noise = []
-for _ in range(1000):
+for _ in range(args.simnum):
     for i, j in combinations(range(data.shape[1]), 2):
         a = occurrence_list[i]
         b = occurrence_list[j]

@@ -1,0 +1,10 @@
+FOLDER: /hdd/projects/dtxr/reads/attempt_030920/raw/
+
+gunzip *.gz
+for file in *.fastq; do fastqc $file -o ../fastqc/ -k 9 -t 6 ; done 
+
+
+FOLDER: /hdd/projects/dtxr/reads/attempt_030920/
+
+python ~/afp/sequencing/preprocessing.py raw/ --package ~/afp/ --outdir collapsed/ --paired --table ../../data/sample2name.csv --log log.txt > Makefile
+make

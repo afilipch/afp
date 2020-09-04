@@ -14,4 +14,6 @@ meme fasta/cov3_101.fa -oc meme/cov3_101  -dna  -nostatus -time 18000 -mod zoops
 fimo -oc fimo/all_101 meme/all_101/meme.txt /hdd/genomic/coryne/nc_003450_3/genome.fasta
 fimo -oc fimo/cov3_101 meme/cov3_101/meme.txt /hdd/genomic/coryne/nc_003450_3/genome.fasta
 
-python ~/afp/genomic/motif/peaks_vs_motifs.py ../regions/annotated.gff --fimo fimo/cov3_101/fimo.gff --outdir results/cov3_101  > ../regions/with_motif.gff
+python ~/afp/genomic/motif/peaks_vs_motifs.py ../regions/annotated.gff --fimo fimo/cov3_101/fimo.gff --outdir results/cov3_101 --maxd 50  
+python /home/andrei/afp/genomic/annotate_intervals_with_transcripts.py results/cov3_101/orphans.gff --maxd 100 --inside 100 --transcripts /hdd/genomic/coryne/nc_003450_3/transcripts.phages_annotated.gff --outdir results/cov3_101/orphans/ | grep 'gtype=upstream' > results/cov3_101/orphans.upstream.gff
+python ~/afp/parsing/gff2tsv.py results/cov3_101/orphans.upstream.gff --attrs sequence pvalue gene genesymbol cg annotation tss atg > results/cov3_101/orphans.upstream.tsv
