@@ -34,6 +34,8 @@ flank_header = ["Seq (%d bp)" % (x*2+1) for x in args.flanks]
 attrs = ['gene', 'genesymbol', 'annotation', 'function', 'tss', 'atg', 'gtype', 'anti_gene', 'anti_genesymbol', 'anti_tss']
 if('cg' in regions[0].attrs.keys()):
     attrs.insert(2, 'cg')
+if('motif' in regions[0].attrs.keys()):
+    attrs.append('motif')
 header = ['Chrom', 'Start', 'End', 'Strand'] + flank_header + labels + attrs
 
 
