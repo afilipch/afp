@@ -10,11 +10,7 @@ import matplotlib.pyplot as plt;
 import numpy as np
 
 from afbio.generators import get_only_files
-from genomic.get_at_stretches import get_at_rich_stretches
-
-
-
-
+from afbio.at_stretches import get_at_rich_stretches, stretch_score
 
 
 
@@ -26,9 +22,7 @@ parser.add_argument('--top', nargs = '?', default=10, type = int, help = "Output
 parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory")
 args = parser.parse_args();
 
- 
-def stretch_score(at_fraction, adend, adstart):
-    return at_fraction*np.log2(adend - adstart)
+
  
 def get_tss_at_contents(genes, fasta, upstream, downstream, top):
     stretches = []
@@ -55,7 +49,8 @@ for name, fasta_path, gff_path in files_list[:]:
             f.write( "%s\t%s\t%d\t%d\t%s\t%1.2f\t%s\n" % el)
 
     
-
+        #for c, stretch in enumerate(stretches, start = 1):
+            #f2.write( "%s\t%d\t%d\tstretch_%d\t%1.1f\t+\n" % (stretch[0], stretch[1], stretch[2], c, stretch[-1]))
 
 
 

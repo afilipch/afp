@@ -45,6 +45,7 @@ def get_anti(tr, mind):
     
 
 def annotate_position(peak, tr_dict, maxd, inside):
+    #sys.stderr.write(str(peak))
     center = int(peak.name)
     tr_plus, tr_minus = tr_dict.get(peak.chrom, [None, None])
     if(not tr_plus):
@@ -93,8 +94,7 @@ def annotate_position(peak, tr_dict, maxd, inside):
                     mindistance = -1*pairs[0][2]
             else:
                 gtype = 'intergenic'
-                                                  
-                
+
     atg = mindistance + float(transcript.attrs['distance'])
     if(str(atg) != "nan"):
         atg = "%d" % atg

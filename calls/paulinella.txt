@@ -1,0 +1,13 @@
+AT-rich sequences analyses for Paulinella 
+# FOLDER: /hdd/projects/paulinella
+
+
+python ~/afp/afbio/at_stretches.py data/genome_paulinella.fa --avgat 0.6202 --anchor 6 --maxgc 3 --minat 0.75 --minlength 30 --flank 250 --top 50 --outdir at
+cp at/at_stretches_top50_flank250.tsv at/paulinella_at_rich_seq_flanks250_top50.tsv 
+echo 'track name=AT_rich_stretches description="flank size 250" color=12,100,198 type=bed visibility=2' > at/ucsc/at_stretches_top50_flank250.bed 
+sed 's/paulinella/chr1/g' at/at_stretches_top50_flank250.bed >> at/ucsc/at_stretches_top50_flank250.bed
+
+python ~/afp/genomic/at_content/get_at_track.py data/genome_paulinella.fa --flen 15 > at/track.bed
+python ~/afp/mapping/coverage2bedgraph.py at/track.bed --multiplier 100 --convert True --trackopts 'track name=AT_track description="window size 31" color=139,1,139 type=bedGraph visibility=2' >  at/track.bedgraph
+
+

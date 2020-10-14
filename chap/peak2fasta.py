@@ -24,7 +24,7 @@ args = parser.parse_args();
 
 genome = SeqIO.to_dict(SeqIO.parse(args.genome, "fasta"))
 for interval in BedTool(args.path):
-    covscore = np.mean([float(x) for x in interval.attrs['topcoverage'].split(',')])
+    covscore = np.mean([float(x) if x != 'None' else 0 for x in interval.attrs['topcoverage'].split(',')])
     if(covscore >= args.mincov):
         seq = peak2seq(interval, genome, args.flank)
         sys.stdout.write( ">%s:%s:%d:%d\n%s\n" % (interval.chrom, interval.strand, interval.start, interval.end, seq))

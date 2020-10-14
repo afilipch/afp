@@ -10,10 +10,11 @@ from collections import Counter;
 
 from afbio.sequencetools import sliding_window
 
-
+def get_at_fraction(s):
+    return (s.count("A") + s.count('T')) / len(s)
 
 def compare_fraction(seq, minat):
-    return (seq.count("A") + seq.count('T')) / len(seq) >= minat
+    return get_at_fraction(seq) >= minat
 
 def extend_anchor_forward(seq, start, length, maxgc, minat):
     gccount = 0;
@@ -113,11 +114,14 @@ def get_at_rich_stretches(seq, anchor_length, minlength, maxgc_num, minat_fracti
                 upper_limit = adend;
                 #print(start, end)
                 lseq = seq[adstart:adend]
-                yield ( adstart, adend, lseq, (lseq.count("A") + lseq.count('T')) / len(lseq), lseq.count('G') + lseq.count('C') )
+                yield ( adstart, adend, lseq, get_at_fraction(lseq), lseq.count('G') + lseq.count('C') )
 
                     
-        
+def stretch_score(at_fraction, adend, adstart):
+    return at_fraction*np.log2(adend - adstart)*10
 
+def stretch_score_flanks(at_fraction, adend, adstart, flanks):
+    return at_fraction*np.log2(adend - adstart) + sum(flanks)*0.5
 
 
 
@@ -125,16 +129,40 @@ def get_at_rich_stretches(seq, anchor_length, minlength, maxgc_num, minat_fracti
 if (__name__ == '__main__'):
     parser = argparse.ArgumentParser(description='Detects AT-rich sequences along the provided genome');
     parser.add_argument('path', metavar = 'N', nargs = '?', type = str, help = "Path to the genome, fasta format");
+    parser.add_argument('--avgat', nargs = '?', required=True, type = float, help = "Average AT content of the provided fasta file (can be found with bin/fastastat.py)");
     parser.add_argument('--anchor', nargs = '?', default=6, type = int, help = "Length of AT only anchor sequence");
     parser.add_argument('--maxgc', nargs = '?', default=2, type = int, help = "Max allowed number of GC inside the stretch");
     parser.add_argument('--minat', nargs = '?', default=0.75, type = float, help = "Min allowed AT content inside the flanks with GC");
     parser.add_argument('--minlength', nargs = '?', default=8, type = int, help = "Min allowed length of a discovered AT stretch");
+    parser.add_argument('--flank', nargs = '?', default=0, type = int, help = "Length of the flanks for AT stretches");
+    parser.add_argument('--outdir', nargs = '?', required=True, type = str, help = "Path to the output directory")
+    parser.add_argument('--top', nargs = '?', default=100, type = int, help = "Output top N stretches");
     args = parser.parse_args();
     
+    stretches = [];
     for seqrec in SeqIO.parse(args.path, 'fasta'):
         seq = seqrec.seq.upper();
         for adstart, adend, lseq, at_fraction, gc_count in get_at_rich_stretches(seq, args.anchor, args.minlength, args.maxgc, args.minat):
-                print( "%s\t%d\t%d\t%s\t%1.1f\t%d" % (seqrec.chrom, adstart, adend, lseq, at_fraction*100, gc_count) )    
+            at_diff = at_fraction - args.avgat
+            if(args.flank):
+                flanks = seq[max(0, adstart-args.flank) : adstart], seq[adend : adend+args.flank]
+                flanks_at = [get_at_fraction(x) - args.avgat for x in flanks]
+                score = stretch_score_flanks(at_diff, adend, adstart, flanks_at)
+            else:
+                flanks_at = 0, 0
+                score = stretch_score(at_diff, adend, adstart)
+                
+            stretches.append(( seqrec.name, adstart, adend, lseq, at_diff*100, gc_count, flanks_at[0]*100, flanks_at[1]*100, score*100))
+            
+            
+    stretches.sort(key = lambda x: x[-1], reverse = True) 
+    
+    paths = [os.path.join(args.outdir, "at_stretches_top%d_flank%d.%s" % (args.top, args.flank, x)) for x in ('tsv', 'bed')]
+    with open(paths[0], 'w') as f1, open(paths[1], 'w') as f2:
+        f1.write( "chromosome\tstart\tstop\tseq\tat_diff\tgc_number\tupstream_diff\tdownstream_diff\tscore\n")
+        for c, stretch in enumerate(stretches[:args.top], start = 1):
+            f2.write( "%s\t%d\t%d\tstretch_%d\t%1.1f\t+\n" % (stretch[0], stretch[1], stretch[2], c, stretch[-1]))
+            f1.write( "%s\t%d\t%d\t%s\t%1.1f\t%d\t%1.1f\t%1.1f\t%1.1f\n" % stretch )   
 
 
 

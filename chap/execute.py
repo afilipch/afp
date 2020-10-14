@@ -246,7 +246,7 @@ def makefile_local(m_input,  control):
         input_files = os.path.join('peaks', '%s.annotated.gff' % name)
         output_files = os.path.join(log_dir, 'peaks.html'), os.path.join(log_dir, 'peaks.tsv');
         final_files.extend(output_files)
-        script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir}, inp = input_files)
+        script = get_script('html_annotated_peaks.py', chap_package, arguments={'--css': os.path.join(html_lib, 'table.css'), '--js': os.path.join(html_lib, 'table.js'), '--ucsc': args.ucsc, '--name': name, '--outdir': log_dir, '--genome': args.genome}, inp = input_files)
         mlist.append(dependence(input_files, output_files, script));
 
 
